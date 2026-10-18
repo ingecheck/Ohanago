@@ -22,8 +22,7 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({ registration, showAction
       `Distancia: 5K\n` +
       `Fecha: 31 de Octubre 2026 - 7:00 P.M.\n` +
       `Partida: Plaza de Armas Tarapoto\n` +
-      `Llegada: Entre Jarras\n\n` +
-      `Inscríbete tú también aquí: https://ohanago.pro`
+      `¡Nos vemos en la meta en Entre Jarras!`
     );
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
