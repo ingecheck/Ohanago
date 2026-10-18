@@ -1,0 +1,49 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif;
+  }
+}
+
+.font-bebas {
+  font-family: 'Bebas Neue', cursive, sans-serif;
+  letter-spacing: 0.05em;
+}
+
+.font-marker {
+  font-family: 'Permanent Marker', cursive, sans-serif;
+}
+
+.glow-neon-lime {
+  box-shadow: 0 0 25px rgba(163, 230, 53, 0.35), 0 0 50px rgba(163, 230, 53, 0.15);
+}
+
+.glow-neon-orange {
+  box-shadow: 0 0 25px rgba(249, 115, 22, 0.4), 0 0 50px rgba(249, 115, 22, 0.15);
+}
+
+.text-glow-lime {
+  text-shadow: 0 0 12px rgba(163, 230, 53, 0.7);
+}
+
+.text-glow-orange {
+  text-shadow: 0 0 12px rgba(249, 115, 22, 0.8);
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .printable-dorsal, .printable-dorsal * {
+    visibility: visible;
+  }
+  .printable-dorsal {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+}
