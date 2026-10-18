@@ -1,37 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Award, Sparkles, ShieldCheck, Upload, Image as ImageIcon, ZoomIn, X, RotateCcw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Award, Sparkles, ShieldCheck, ZoomIn, X } from 'lucide-react';
 
 export const FinisherMedalCard: React.FC = () => {
   const [medalImage, setMedalImage] = useState<string | null>(null);
   const [isZoomed, setIsZoomed] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Check if user previously saved their custom medal photo
+    // Si hay una foto guardada de la medalla, la carga de inmediato
     const saved = localStorage.getItem('ohana_medal_photo_v2');
     if (saved) {
       setMedalImage(saved);
     }
   }, []);
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = reader.result as string;
-        setMedalImage(base64);
-        localStorage.setItem('ohana_medal_photo_v2', base64);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleResetImage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setMedalImage(null);
-    localStorage.removeItem('ohana_medal_photo_v2');
-  };
 
   return (
     <div className="relative group overflow-hidden rounded-3xl bg-gradient-to-b from-neutral-900 via-neutral-950 to-black border border-lime-400/40 p-5 sm:p-6 shadow-2xl transition-all duration-300 hover:border-lime-400 hover:shadow-[0_0_40px_rgba(163,230,53,0.3)]">
@@ -87,24 +67,6 @@ export const FinisherMedalCard: React.FC = () => {
               </button>
             </div>
 
-            {/* Quick Controls below photo */}
-            <div className="flex items-center gap-2 mt-3">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="text-[11px] font-bold text-neutral-300 hover:text-lime-400 flex items-center gap-1 transition cursor-pointer"
-              >
-                <Upload className="w-3.5 h-3.5 text-lime-400" />
-                Cambiar foto
-              </button>
-              <span className="text-neutral-600">•</span>
-              <button
-                onClick={handleResetImage}
-                className="text-[11px] font-bold text-neutral-400 hover:text-red-400 flex items-center gap-1 transition cursor-pointer"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                Restaurar original
-              </button>
-            </div>
           </div>
         ) : (
           /* EXACT FAITHFUL 1:1 RECREATION OF THE MEDAL PHOTO WITH ILLUMINATION */
@@ -219,28 +181,8 @@ export const FinisherMedalCard: React.FC = () => {
               </div>
             </div>
 
-            {/* Upload Button: allows putting their exact file in 1-click */}
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-800/80 hover:bg-neutral-800 text-neutral-300 hover:text-lime-400 border border-neutral-700 hover:border-lime-400 text-xs font-semibold transition cursor-pointer"
-              >
-                <ImageIcon className="w-3.5 h-3.5 text-lime-400" />
-                <span>¿Deseas poner tu archivo PNG/JPG exacto?</span>
-              </button>
-            </div>
-
           </div>
         )}
-
-        {/* Hidden File Input for direct photo upload */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleImageUpload}
-          className="hidden"
-        />
 
       </div>
 
