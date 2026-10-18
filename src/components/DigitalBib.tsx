@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { RunnerRegistration } from '../types/race';
-import { Download, Printer, Share2, CheckCircle2, QrCode } from 'lucide-react';
+import { Printer, Share2, CheckCircle2, QrCode, Award, Droplets, Sparkles, Gift } from 'lucide-react';
 
 interface DigitalBibProps {
   registration: RunnerRegistration;
@@ -8,7 +8,7 @@ interface DigitalBibProps {
 }
 
 export const DigitalBib: React.FC<DigitalBibProps> = ({ registration, showActions = true }) => {
-  const bibRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
     window.print();
@@ -16,140 +16,143 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({ registration, showAction
 
   const handleShareWhatsApp = () => {
     const text = encodeURIComponent(
-      `¡Ya estoy listo para la OHANA GO 5K Por Halloween en Tarapoto! 🎃🏃‍♂️\n\n` +
-      `Mi número de dorsal oficial es: #${String(registration.bibNumber).padStart(4, '0')}\n` +
-      `Corredor: ${registration.firstName} ${registration.lastName}\n` +
+      `¡Ya tengo mi Pase Oficial para la OHANA GO 5K Por Halloween en Tarapoto! 🎃🏃‍♂️\n\n` +
+      `Código de Registro: ${registration.id}\n` +
+      `Participante: ${registration.firstName} ${registration.lastName}\n` +
       `Distancia: 5K\n` +
-      `Fecha: 31 de Octubre 2026 - 7:00 P.M.\n` +
+      `Fecha: Sábado 31 de Octubre 2026 - 7:00 P.M.\n` +
       `Partida: Plaza de Armas Tarapoto\n` +
-      `Llegada: Entre Jarras\n\n` +
+      `Llegada: Entre Jarras (Medalla Finisher & Sorteos)\n\n` +
       `Inscríbete tú también aquí: https://ohanago.pro`
     );
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
 
-  // Generate a mock barcode pattern based on document and bib
-  const barcodePattern = Array.from({ length: 32 }, (_, i) => {
-    const isThick = (registration.bibNumber * 7 + i * 13) % 3 === 0;
-    return isThick ? 'w-1.5' : 'w-0.5';
-  });
-
   return (
-    <div className="flex flex-col items-center">
-      {/* Dorsal Card */}
+    <div className="flex flex-col items-center w-full">
+      {/* Official Athlete Accreditation Pass */}
       <div
-        ref={bibRef}
-        className="printable-dorsal relative w-full max-w-md bg-white text-neutral-900 rounded-3xl p-5 shadow-2xl border-4 border-neutral-900 overflow-hidden"
+        ref={cardRef}
+        className="printable-pass relative w-full max-w-md bg-gradient-to-b from-neutral-900 via-neutral-950 to-black text-white rounded-3xl p-6 shadow-2xl border-2 border-lime-400/60 overflow-hidden"
       >
-        {/* Safety pin perforation circles */}
-        <div className="absolute top-3 left-3 w-3.5 h-3.5 rounded-full bg-neutral-300 border border-neutral-500 shadow-inner" />
-        <div className="absolute top-3 right-3 w-3.5 h-3.5 rounded-full bg-neutral-300 border border-neutral-500 shadow-inner" />
-        <div className="absolute bottom-3 left-3 w-3.5 h-3.5 rounded-full bg-neutral-300 border border-neutral-500 shadow-inner" />
-        <div className="absolute bottom-3 right-3 w-3.5 h-3.5 rounded-full bg-neutral-300 border border-neutral-500 shadow-inner" />
+        {/* Glow ambient background */}
+        <div className="absolute top-0 right-0 w-48 h-48 bg-lime-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
 
         {/* Top Header Bar */}
-        <div className="flex items-center justify-between border-b-2 border-neutral-900 pb-2 mb-2">
+        <div className="flex items-center justify-between border-b border-neutral-800 pb-3 mb-4">
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-bebas text-2xl tracking-wider text-black">
-                OHANA GO <span className="text-lime-600 font-extrabold">&gt;</span>
+              <span className="font-bebas text-2xl tracking-wider text-white">
+                OHANA GO <span className="text-lime-400 font-extrabold">&gt;</span>
               </span>
-              <span className="bg-orange-600 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-sm font-marker">
-                HALLOWEEN
+              <span className="bg-orange-600 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-sm font-marker">
+                5K HALLOWEEN
               </span>
             </div>
-            <p className="text-[10px] font-bold tracking-wider uppercase text-neutral-600">
-              TARAPOTO • 2026
+            <p className="text-[10px] font-bold tracking-wider uppercase text-neutral-400">
+              PASE OFICIAL DE PARTICIPANTE • TARAPOTO 2026
             </p>
           </div>
 
           <div className="text-right">
-            <span className="inline-block bg-neutral-900 text-lime-400 font-bebas text-lg px-2.5 py-0.5 rounded-md tracking-wider">
+            <span className="inline-block bg-lime-400 text-black font-bebas text-lg px-2.5 py-0.5 rounded-lg tracking-wider font-extrabold">
               5K
             </span>
-            <div className="text-[9px] font-bold text-neutral-500 uppercase mt-0.5">
+            <div className="text-[9px] font-bold text-neutral-400 uppercase mt-0.5">
               31 OCT • 7:00 PM
             </div>
           </div>
         </div>
 
-        {/* Center: Giant Bib Number */}
-        <div className="py-2 text-center relative">
-          <div className="absolute inset-0 flex items-center justify-center opacity-5 select-none pointer-events-none">
-            <span className="font-bebas text-9xl">OHANA</span>
+        {/* Center: Participant Details */}
+        <div className="py-2 text-center relative border-b border-neutral-800/80 pb-4">
+          <span className="text-[10px] uppercase font-bold text-neutral-400 tracking-widest block mb-1">
+            PARTICIPANTE REGISTRADO
+          </span>
+          <div className="font-bebas text-3xl sm:text-4xl text-white uppercase tracking-wide leading-tight">
+            {registration.firstName} {registration.lastName}
           </div>
-          
-          <div className="font-bebas text-8xl md:text-9xl leading-none text-neutral-950 font-black tracking-tight drop-shadow-sm select-none">
-            {String(registration.bibNumber).padStart(4, '0')}
+          <div className="text-xs font-mono text-lime-400 font-bold mt-1">
+            {registration.documentType}: {registration.documentNumber}
           </div>
-
-          {/* Runner Name */}
-          <div className="mt-1">
-            <div className="font-bebas text-2xl md:text-3xl text-neutral-900 uppercase tracking-wide truncate max-w-full px-2">
-              {registration.firstName} {registration.lastName}
+          {registration.runningClub && (
+            <div className="text-xs text-neutral-400 uppercase tracking-wider mt-0.5 font-medium">
+              Team: {registration.runningClub}
             </div>
-            {registration.runningClub && (
-              <div className="text-xs font-bold text-neutral-600 uppercase tracking-widest mt-0.5">
-                {registration.runningClub}
-              </div>
-            )}
+          )}
+        </div>
+
+        {/* Unique Registration Code Badge */}
+        <div className="my-4 p-3 bg-neutral-900/90 rounded-2xl border border-neutral-800 flex items-center justify-between">
+          <div>
+            <span className="text-[10px] uppercase font-bold text-neutral-400 block">
+              Código de Registro
+            </span>
+            <span className="font-mono text-lg font-black text-white">
+              {registration.id}
+            </span>
+          </div>
+          <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-3 py-1 rounded-full ${
+            registration.paymentStatus === 'Verificado'
+              ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40'
+              : 'bg-amber-950 text-amber-400 border border-amber-500/40'
+          }`}>
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            {registration.paymentStatus}
+          </span>
+        </div>
+
+        {/* Event Logistics & Included Benefits */}
+        <div className="space-y-2 mb-4 text-xs text-neutral-300 bg-neutral-950/60 p-3 rounded-2xl border border-neutral-800">
+          <div className="flex items-center justify-between">
+            <span className="text-neutral-400">Partida:</span>
+            <span className="text-white font-bold">Plaza de Armas Tarapoto (7:00 PM)</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-neutral-400">Llegada:</span>
+            <span className="text-orange-400 font-bold">Entre Jarras (Jr. Lima cda. 13)</span>
+          </div>
+          {registration.willWearCostume && (
+            <div className="flex items-center justify-between pt-1 border-t border-neutral-800 text-[11px]">
+              <span className="text-purple-400 font-bold">🎃 Disfraz Concurso:</span>
+              <span className="text-white font-medium truncate max-w-[200px]">{registration.costumeName || 'Inscrito al concurso'}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Included benefits icons bar */}
+        <div className="grid grid-cols-4 gap-1.5 py-2 text-center text-[10px] text-neutral-400 border-t border-neutral-800">
+          <div className="flex flex-col items-center">
+            <Award className="w-4 h-4 text-amber-400 mb-0.5" />
+            <span>Medalla</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <Droplets className="w-4 h-4 text-cyan-400 mb-0.5" />
+            <span>Hidratación</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <Sparkles className="w-4 h-4 text-lime-400 mb-0.5" />
+            <span>Artículo Neón</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <Gift className="w-4 h-4 text-purple-400 mb-0.5" />
+            <span>Sorteos</span>
           </div>
         </div>
 
-        {/* Badges Bar: Category, Size, Costume */}
-        <div className="grid grid-cols-3 gap-2 my-3 pt-2 border-t-2 border-neutral-200 text-center">
-          <div className="bg-neutral-100 rounded-lg p-1.5 border border-neutral-300">
-            <span className="text-[9px] uppercase font-bold text-neutral-500 block">Talla Polo</span>
-            <span className="text-sm font-black text-neutral-900 uppercase">{registration.tShirtSize}</span>
-          </div>
-
-          <div className="bg-neutral-100 rounded-lg p-1.5 border border-neutral-300">
-            <span className="text-[9px] uppercase font-bold text-neutral-500 block">Categoría</span>
-            <span className="text-sm font-black text-neutral-900 uppercase">
-              {registration.age < 18 ? 'Juvenil' : registration.age < 40 ? 'Libre 5K' : 'Master 5K'}
+        {/* Bottom Bar: QR Code & Verification */}
+        <div className="flex items-center justify-between pt-3 border-t border-neutral-800">
+          <div>
+            <span className="text-[10px] uppercase font-bold text-lime-400 block">
+              Válido para Canje de Medalla
+            </span>
+            <span className="text-[9px] text-neutral-400">
+              Presenta este pase en la meta en Entre Jarras
             </span>
           </div>
-
-          <div className="bg-neutral-100 rounded-lg p-1.5 border border-neutral-300">
-            <span className="text-[9px] uppercase font-bold text-neutral-500 block">Disfraz</span>
-            <span className="text-xs font-black text-orange-600 uppercase truncate block">
-              {registration.willWearCostume ? 'Sí (Concurso)' : 'Runner'}
-            </span>
-          </div>
-        </div>
-
-        {/* Bottom Bar: Barcode, QR Code & Validation */}
-        <div className="flex items-center justify-between pt-2 border-t border-neutral-300">
-          {/* Simulated Barcode */}
-          <div className="flex flex-col">
-            <div className="flex items-center gap-0.5 h-6">
-              {barcodePattern.map((widthClass, index) => (
-                <div key={index} className={`h-full bg-neutral-900 ${widthClass}`} />
-              ))}
-            </div>
-            <span className="text-[9px] font-mono text-neutral-500 tracking-wider mt-0.5">
-              ID: {registration.id} • DNI: {registration.documentNumber}
-            </span>
-          </div>
-
-          {/* Verification Badge & QR */}
-          <div className="flex items-center gap-2">
-            <div className="text-right">
-              <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                registration.paymentStatus === 'Verificado'
-                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                  : 'bg-amber-100 text-amber-800 border border-amber-300'
-              }`}>
-                <CheckCircle2 className="w-3 h-3" />
-                {registration.paymentStatus}
-              </span>
-              <div className="text-[8px] text-neutral-400 mt-0.5">Llegada: Entre Jarras</div>
-            </div>
-
-            {/* Simulated QR Code box */}
-            <div className="w-10 h-10 bg-neutral-900 text-white rounded p-1 flex items-center justify-center">
-              <QrCode className="w-8 h-8 text-white" />
-            </div>
+          <div className="w-11 h-11 bg-white text-black rounded-xl p-1 flex items-center justify-center">
+            <QrCode className="w-9 h-9 text-black" />
           </div>
         </div>
       </div>
@@ -159,15 +162,15 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({ registration, showAction
         <div className="flex flex-wrap items-center justify-center gap-3 mt-4 print:hidden">
           <button
             onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl text-sm font-semibold transition border border-neutral-700 hover:border-lime-400 shadow-md cursor-pointer"
+            className="flex items-center gap-2 px-5 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl text-xs font-bold transition border border-neutral-700 hover:border-lime-400 shadow-md cursor-pointer"
           >
             <Printer className="w-4 h-4 text-lime-400" />
-            Imprimir Dorsal
+            Imprimir / Guardar Pase
           </button>
 
           <button
             onClick={handleShareWhatsApp}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition shadow-md cursor-pointer"
+            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-md cursor-pointer"
           >
             <Share2 className="w-4 h-4" />
             Compartir en WhatsApp

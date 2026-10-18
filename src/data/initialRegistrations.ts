@@ -1,9 +1,8 @@
 import { RunnerRegistration } from '../types/race';
 
-// Comenzamos con 0 corredores inscritos para que la lista esté 100% limpia para inscripciones reales
 export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [];
 
-const STORAGE_KEY = 'ohana_go_5k_tarapoto_registrations_v3';
+const STORAGE_KEY = 'ohana_go_5k_tarapoto_registrations_v4';
 
 export const getStoredRegistrations = (): RunnerRegistration[] => {
   try {
@@ -28,15 +27,16 @@ export const saveRegistrations = (registrations: RunnerRegistration[]): void => 
   }
 };
 
-export const addRegistration = (newRunner: Omit<RunnerRegistration, 'id' | 'bibNumber' | 'createdAt'>): RunnerRegistration => {
+export const addRegistration = (newRunner: Omit<RunnerRegistration, 'id' | 'registrationNumber' | 'createdAt'>): RunnerRegistration => {
   const current = getStoredRegistrations();
-  const nextBib = current.length > 0 ? Math.max(...current.map(r => r.bibNumber)) + 1 : 101;
-  const newId = `OHA-2026-${String(nextBib).padStart(4, '0')}`;
+  const nextNum = current.length > 0 ? Math.max(...current.map(r => r.registrationNumber || r.bibNumber || 0)) + 1 : 1;
+  const newId = `OHA-2026-${String(nextNum).padStart(4, '0')}`;
   
   const completedRecord: RunnerRegistration = {
     ...newRunner,
     id: newId,
-    bibNumber: nextBib,
+    registrationNumber: nextNum,
+    bibNumber: nextNum,
     createdAt: new Date().toISOString(),
   };
 
@@ -47,7 +47,7 @@ export const addRegistration = (newRunner: Omit<RunnerRegistration, 'id' | 'bibN
 
 export const exportToCSV = (registrations: RunnerRegistration[]): void => {
   const headers = [
-    'Dorsal',
+    'N° Inscripción',
     'ID Registro',
     'Nombres',
     'Apellidos',
@@ -60,7 +60,6 @@ export const exportToCSV = (registrations: RunnerRegistration[]): void => {
     'Ciudad',
     'Distrito',
     'Club',
-    'Talla Polo',
     'Disfraz',
     'Nombre Disfraz',
     'Contacto Emergencia',
@@ -73,7 +72,7 @@ export const exportToCSV = (registrations: RunnerRegistration[]): void => {
   ];
 
   const rows = registrations.map(r => [
-    r.bibNumber,
+    r.registrationNumber || r.bibNumber || 1,
     r.id,
     `"${r.firstName.replace(/"/g, '""')}"`,
     `"${r.lastName.replace(/"/g, '""')}"`,
@@ -86,7 +85,6 @@ export const exportToCSV = (registrations: RunnerRegistration[]): void => {
     `"${r.city}"`,
     `"${r.district}"`,
     `"${r.runningClub}"`,
-    r.tShirtSize,
     r.willWearCostume ? 'SI' : 'NO',
     `"${(r.costumeName || '').replace(/"/g, '""')}"`,
     `"${r.emergencyContactName.replace(/"/g, '""')}"`,

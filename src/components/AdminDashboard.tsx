@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RunnerRegistration, PaymentStatus, TShirtSize } from '../types/race';
+import { RunnerRegistration, PaymentStatus } from '../types/race';
 import { exportToCSV, saveRegistrations } from '../data/initialRegistrations';
 import { adminLogout, updateAdminPassword } from '../data/auth';
 import { 
@@ -9,14 +9,16 @@ import {
   Search, 
   CheckCircle2, 
   Clock, 
-  Shirt, 
   Sparkles, 
   X, 
   Eye, 
   UserPlus,
   LogOut,
   KeyRound,
-  Check
+  Check,
+  Award,
+  Upload,
+  Camera
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -34,12 +36,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterSize, setFilterSize] = useState<string>('all');
   const [viewingProof, setViewingProof] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassInput, setNewPassInput] = useState('');
   const [passSuccess, setPassSuccess] = useState(false);
+
+  // Medal Photo Management in Admin
+  const [showMedalModal, setShowMedalModal] = useState(false);
+  const [currentAdminMedal, setCurrentAdminMedal] = useState<string | null>(() => localStorage.getItem('ohana_medal_photo_v2'));
+  const [tempMedalPreview, setTempMedalPreview] = useState<string | null>(null);
+  const [medalSavedNotice, setMedalSavedNotice] = useState(false);
 
   // New manual registration state
   const [newManual, setNewManual] = useState({
@@ -48,7 +55,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     documentNumber: '',
     whatsapp: '',
     email: '',
-    tShirtSize: 'M' as TShirtSize,
     age: '25',
     emergencyContactName: 'Familiar',
     emergencyContactPhone: '942000000',
@@ -64,24 +70,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const totalIncome = verifiedCount * 50;
   const costumedCount = registrations.filter((r) => r.willWearCostume).length;
 
-  // Size distribution
-  const sizeCounts: { [key in TShirtSize]?: number } = {};
-  registrations.forEach((r) => {
-    sizeCounts[r.tShirtSize] = (sizeCounts[r.tShirtSize] || 0) + 1;
-  });
-
   // Filtered List
   const filtered = registrations.filter((r) => {
+    const regNumStr = String(r.registrationNumber || r.bibNumber || '');
     const matchesSearch =
       r.documentNumber.includes(searchTerm) ||
       `${r.firstName} ${r.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      String(r.bibNumber).includes(searchTerm) ||
+      regNumStr.includes(searchTerm) ||
+      r.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       r.runningClub.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = filterStatus === 'all' || r.paymentStatus === filterStatus;
-    const matchesSize = filterSize === 'all' || r.tShirtSize === filterSize;
 
-    return matchesSearch && matchesStatus && matchesSize;
+    return matchesSearch && matchesStatus;
   });
 
   const togglePaymentStatus = (id: string) => {
@@ -101,10 +102,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     e.preventDefault();
     if (!newManual.firstName || !newManual.documentNumber) return;
 
-    const nextBib = registrations.length > 0 ? Math.max(...registrations.map(r => r.bibNumber)) + 1 : 101;
+    const nextNum = registrations.length > 0 ? Math.max(...registrations.map(r => r.registrationNumber || r.bibNumber || 0)) + 1 : 1;
     const newEntry: RunnerRegistration = {
-      id: `OHA-2026-${String(nextBib).padStart(4, '0')}`,
-      bibNumber: nextBib,
+      id: `OHA-2026-${String(nextNum).padStart(4, '0')}`,
+      registrationNumber: nextNum,
+      bibNumber: nextNum,
       firstName: newManual.firstName,
       lastName: newManual.lastName || 'Tarapoto',
       documentType: 'DNI',
@@ -116,7 +118,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       city: 'Tarapoto',
       district: 'Tarapoto Cercado',
       runningClub: newManual.runningClub,
-      tShirtSize: newManual.tShirtSize,
       emergencyContactName: newManual.emergencyContactName,
       emergencyContactPhone: newManual.emergencyContactPhone,
       bloodType: 'O+',
@@ -151,11 +152,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </span>
             </div>
             <p className="text-xs text-neutral-400">
-              Control de inscritos, recaudación, tallas de polos y exportación a Excel para entrega de kits en Tarapoto.
+              Control de inscritos, pagos y exportación a Excel para la carrera 5K en Tarapoto.
             </p>
+            <div className="mt-1 inline-flex items-center gap-2 text-[11px] text-neutral-400 font-mono bg-neutral-950 px-2.5 py-1 rounded-lg border border-neutral-800">
+              <span>Usuario: <strong className="text-white">admin</strong></span>
+              <span>•</span>
+              <span>Clave: <strong className="text-lime-400">ohana2026</strong></span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const saved = localStorage.getItem('ohana_medal_photo_v2');
+                setCurrentAdminMedal(saved);
+                setTempMedalPreview(saved);
+                setShowMedalModal(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-semibold transition cursor-pointer border border-neutral-700 hover:border-lime-400"
+              title="Cambiar la foto oficial de la medalla finisher para todos los visitantes"
+            >
+              <Award className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Foto Medalla</span>
+            </button>
             <button
               onClick={() => setShowPasswordModal(true)}
               className="flex items-center gap-1.5 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-semibold transition cursor-pointer"
@@ -241,30 +260,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
 
-          {/* Size Count Breakdown (crucial for textile ordering!) */}
-          <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Shirt className="w-4 h-4 text-lime-400" />
-                <h4 className="font-bebas text-lg text-white uppercase tracking-wider">
-                  Inventario para Confección de Polos por Talla
-                </h4>
-              </div>
-              <span className="text-xs text-neutral-400">Total polos solicitados: {totalCount}</span>
-            </div>
-
-            <div className="grid grid-cols-5 gap-2 text-center">
-              {(['XS', 'S', 'M', 'L', 'XL'] as TShirtSize[]).map((size) => (
-                <div key={size} className="bg-neutral-900 p-2.5 rounded-xl border border-neutral-800">
-                  <span className="text-xs text-neutral-400 block uppercase font-bold">Talla {size}</span>
-                  <span className="font-bebas text-2xl text-lime-400">{sizeCounts[size] || 0}</span>
-                  <span className="text-[10px] text-neutral-500 block">
-                    {totalCount > 0 ? Math.round(((sizeCounts[size] || 0) / totalCount) * 100) : 0}%
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
 
           {/* Filters & Actions Bar */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
@@ -273,7 +268,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-3.5" />
               <input
                 type="text"
-                placeholder="Buscar por DNI, Nombre, N° Dorsal o Club..."
+                placeholder="Buscar por DNI, Nombre, N° Registro o Club..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full bg-neutral-950 border border-neutral-800 rounded-xl pl-9 pr-4 py-2.5 text-xs text-white placeholder:text-neutral-500 focus:outline-none focus:border-lime-400"
@@ -291,20 +286,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <option value="Pendiente de Verificación">Solo Pendientes</option>
             </select>
 
-            {/* Size Filter */}
-            <select
-              value={filterSize}
-              onChange={(e) => setFilterSize(e.target.value)}
-              className="bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2.5 text-xs text-neutral-300 focus:outline-none"
-            >
-              <option value="all">Todas las Tallas</option>
-              <option value="XS">Talla XS</option>
-              <option value="S">Talla S</option>
-              <option value="M">Talla M</option>
-              <option value="L">Talla L</option>
-              <option value="XL">Talla XL</option>
-            </select>
-
             <button
               onClick={() => setShowAddModal(true)}
               className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-lime-400 hover:bg-lime-300 text-black rounded-xl text-xs font-bold transition cursor-pointer"
@@ -319,11 +300,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <table className="w-full text-left text-xs text-neutral-300">
               <thead className="bg-neutral-950 text-neutral-400 uppercase text-[10px] font-bold tracking-wider border-b border-neutral-800">
                 <tr>
-                  <th className="py-3 px-3">Dorsal</th>
+                  <th className="py-3 px-3">N° Reg</th>
                   <th className="py-3 px-3">Corredor</th>
                   <th className="py-3 px-3">DNI / Doc</th>
                   <th className="py-3 px-3">WhatsApp</th>
-                  <th className="py-3 px-3">Talla</th>
                   <th className="py-3 px-3">Disfraz</th>
                   <th className="py-3 px-3">Método / Ref</th>
                   <th className="py-3 px-3 text-center">Estado Pago</th>
@@ -334,7 +314,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 {filtered.map((runner) => (
                   <tr key={runner.id} className="hover:bg-neutral-900/60 transition">
                     <td className="py-3 px-3 font-mono font-bold text-lime-400">
-                      #{String(runner.bibNumber).padStart(4, '0')}
+                      #{String(runner.registrationNumber || runner.bibNumber || 1).padStart(3, '0')}
                     </td>
                     <td className="py-3 px-3">
                       <div className="font-semibold text-white">
@@ -356,11 +336,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       >
                         {runner.whatsapp}
                       </a>
-                    </td>
-                    <td className="py-3 px-3">
-                      <span className="px-2 py-0.5 rounded bg-neutral-800 font-bold text-white">
-                        {runner.tShirtSize}
-                      </span>
                     </td>
                     <td className="py-3 px-3">
                       {runner.willWearCostume ? (
@@ -495,34 +470,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-neutral-400 block mb-1">Talla Polo</label>
-                    <select
-                      value={newManual.tShirtSize}
-                      onChange={(e) => setNewManual({ ...newManual, tShirtSize: e.target.value as TShirtSize })}
+                    <label className="text-[10px] uppercase font-bold text-neutral-400 block mb-1">WhatsApp</label>
+                    <input
+                      type="tel"
+                      value={newManual.whatsapp}
+                      onChange={(e) => setNewManual({ ...newManual, whatsapp: e.target.value })}
                       className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white"
-                    >
-                      <option value="S">S</option>
-                      <option value="M">M</option>
-                      <option value="L">L</option>
-                      <option value="XL">XL</option>
-                    </select>
+                    />
                   </div>
-                </div>
-                <div>
-                  <label className="text-[10px] uppercase font-bold text-neutral-400 block mb-1">WhatsApp</label>
-                  <input
-                    type="tel"
-                    value={newManual.whatsapp}
-                    onChange={(e) => setNewManual({ ...newManual, whatsapp: e.target.value })}
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white"
-                  />
                 </div>
 
                 <button
                   type="submit"
                   className="w-full py-3 bg-lime-400 text-black font-bebas text-lg uppercase tracking-wider rounded-xl transition cursor-pointer mt-2"
                 >
-                  Registrar & Asignar Dorsal
+                  Registrar Participante
                 </button>
               </form>
             </div>
@@ -595,6 +557,99 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   Guardar Nueva Clave
                 </button>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Modal: Manage Official Medal Photo */}
+        {showMedalModal && (
+          <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+            <div className="relative max-w-md w-full bg-neutral-900 p-6 rounded-3xl border border-neutral-700 shadow-2xl">
+              <button
+                onClick={() => {
+                  setShowMedalModal(false);
+                  setMedalSavedNotice(false);
+                }}
+                className="absolute top-4 right-4 p-1.5 bg-neutral-800 text-neutral-400 hover:text-white rounded-full cursor-pointer transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-2 mb-2">
+                <Award className="w-5 h-5 text-amber-400" />
+                <h4 className="font-bebas text-2xl text-white uppercase tracking-wider">
+                  Foto Oficial de la Medalla Finisher
+                </h4>
+              </div>
+              <p className="text-xs text-neutral-400 mb-4">
+                Sube aquí la foto que enviaste de la medalla. Se publicará e iluminará automáticamente para todos los visitantes de la web.
+              </p>
+
+              {/* Preview Box */}
+              <div className="my-3 flex flex-col items-center justify-center p-4 bg-neutral-950 rounded-2xl border border-neutral-800">
+                {tempMedalPreview ? (
+                  <div className="relative rounded-2xl overflow-hidden border-2 border-lime-400/80 shadow-[0_0_30px_rgba(163,230,53,0.35)] max-h-60 bg-black">
+                    <img
+                      src={tempMedalPreview}
+                      alt="Vista previa medalla"
+                      className="max-h-56 w-auto object-contain"
+                    />
+                  </div>
+                ) : (
+                  <div className="py-8 text-center text-neutral-500 text-xs">
+                    <Camera className="w-10 h-10 mx-auto text-neutral-600 mb-2" />
+                    <span>Actualmente se muestra el diseño oficial por defecto.</span>
+                  </div>
+                )}
+
+                <label className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl text-xs font-bold border border-neutral-700 hover:border-lime-400 transition cursor-pointer">
+                  <Upload className="w-4 h-4 text-lime-400" />
+                  <span>Seleccionar archivo de foto (PNG / JPG)</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setTempMedalPreview(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {medalSavedNotice && (
+                <div className="my-3 p-3 bg-emerald-950/70 border border-emerald-500/50 rounded-xl text-xs text-emerald-300 flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>¡Foto guardada! Ahora todos los visitantes verán esta foto en la web.</span>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="space-y-2 mt-4">
+                <button
+                  type="button"
+                  disabled={!tempMedalPreview}
+                  onClick={() => {
+                    if (tempMedalPreview) {
+                      localStorage.setItem('ohana_medal_photo_v2', tempMedalPreview);
+                      setCurrentAdminMedal(tempMedalPreview);
+                      window.dispatchEvent(new Event('ohana_medal_updated'));
+                      setMedalSavedNotice(true);
+                      setTimeout(() => setMedalSavedNotice(false), 2500);
+                    }
+                  }}
+                  className="w-full py-3 bg-lime-400 hover:bg-lime-300 disabled:opacity-50 text-black font-bebas text-lg uppercase tracking-wider rounded-xl transition cursor-pointer shadow-lg shadow-lime-400/20"
+                >
+                  Guardar y Publicar en la Web
+                </button>
+
+              </div>
             </div>
           </div>
         )}

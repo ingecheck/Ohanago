@@ -1,12 +1,12 @@
 export type DocumentType = 'DNI' | 'Carnet de Extranjería' | 'Pasaporte';
 export type Gender = 'Masculino' | 'Femenino' | 'Otro';
-export type TShirtSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
 export type PaymentMethod = 'Yape' | 'Plin' | 'Transferencia BCP' | 'Transferencia BBVA' | 'Efectivo / Presencial';
 export type PaymentStatus = 'Verificado' | 'Pendiente de Verificación';
 
 export interface RunnerRegistration {
   id: string;
-  bibNumber: number;
+  registrationNumber: number; // Número correlativo de inscripción (Ej: #001)
+  bibNumber?: number; // compatibilidad
   firstName: string;
   lastName: string;
   documentType: DocumentType;
@@ -18,7 +18,7 @@ export interface RunnerRegistration {
   city: string;
   district: string;
   runningClub: string;
-  tShirtSize: TShirtSize;
+  tShirtSize?: string;
   emergencyContactName: string;
   emergencyContactPhone: string;
   bloodType?: string;

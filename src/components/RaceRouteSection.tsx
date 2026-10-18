@@ -329,7 +329,7 @@ export const RaceRouteSection: React.FC = () => {
           </div>
           <div className="bg-neutral-900/60 p-3 rounded-2xl border border-neutral-800 flex items-center gap-2.5">
             <Gift className="w-4 h-4 text-purple-400 shrink-0" />
-            <span><strong>Sorteos</strong> con tu número de dorsal en la llegada</span>
+            <span><strong>Sorteos</strong> con tu código de registro en la meta</span>
           </div>
         </div>
 

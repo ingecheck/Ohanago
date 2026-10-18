@@ -35,10 +35,10 @@
   body * {
     visibility: hidden;
   }
-  .printable-dorsal, .printable-dorsal * {
+  .printable-pass, .printable-pass *, .printable-dorsal, .printable-dorsal * {
     visibility: visible;
   }
-  .printable-dorsal {
+  .printable-pass, .printable-dorsal {
     position: absolute;
     left: 0;
     top: 0;

@@ -82,12 +82,12 @@ export default function App() {
       a: '¡Por supuesto! El circuito de 5 kilómetros está diseñado para que todos los amantes del deporte, amigos y familias de Tarapoto puedan completarlo a su propio ritmo.',
     },
     {
-      q: '¿Dónde y cuándo se recogen los kits?',
-      a: 'La entrega de kits se llevará a cabo los días 30 y 31 de Octubre en Entre Jarras o en la Plaza de Armas de Tarapoto, mostrando tu DNI o el Dorsal Digital emitido al inscribirte.',
+      q: '¿Dónde y cuándo se entrega la medalla y el artículo neón?',
+      a: 'El artículo neón se entrega en la Plaza de Armas de Tarapoto antes de la largada mostrando tu DNI o tu Pase Digital. La Medalla Finisher oficial metálica se entrega en la meta en Entre Jarras a todos los corredores al completar los 5 kilómetros.',
     },
     {
       q: '¿Cómo valido mi pago por Yape, Plin o Transferencia?',
-      a: 'Ingresa tu número de operación y sube la captura de pantalla en el paso 3 del formulario. El sistema reservará tu dorsal y los organizadores confirmarán el pago en el panel de control.',
+      a: 'Ingresa tu número de operación y sube la captura de pantalla en el paso 3 del formulario. El sistema confirmará tu inscripción y los organizadores verificarán el pago en el panel de control.',
     },
   ];
 
@@ -97,7 +97,7 @@ export default function App() {
       <div className="bg-gradient-to-r from-orange-600 via-amber-500 to-lime-500 text-black py-2 px-4 text-center font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2">
         <Bell className="w-3.5 h-3.5 shrink-0" />
         <span>
-          ¡Inscripciones Abiertas para la 5K en Tarapoto! Asegura tu medalla finisher metálica y kit oficial
+          ¡Inscripciones Abiertas para la 5K en Tarapoto! Asegura tu medalla finisher metálica y pase oficial
         </span>
       </div>
 

@@ -183,7 +183,7 @@ export const EventHero: React.FC<EventHeroProps> = ({
             className="w-full sm:w-auto px-8 py-4 bg-neutral-900 hover:bg-neutral-800 text-white font-bebas text-xl uppercase tracking-wider rounded-2xl border border-neutral-700 hover:border-lime-400 transition flex items-center justify-center gap-2 cursor-pointer shadow-lg"
           >
             <Trophy className="w-5 h-5 text-amber-400" />
-            Ver Medalla y Kit de Corredor
+            Ver Medalla Finisher Oficial
           </button>
         </div>
 

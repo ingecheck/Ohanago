@@ -49,7 +49,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
               Horario de atención: Lun a Sáb 9:00 AM - 8:00 PM
             </li>
             <li className="text-neutral-500">
-              Entrega de Kits: Entre Jarras / Plaza de Armas
+              Meta y Sorteos: Entre Jarras (Jr. Lima cda. 13)
             </li>
           </ul>
         </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RunnerRegistration, DocumentType, Gender, TShirtSize, PaymentMethod } from '../types/race';
+import { RunnerRegistration, DocumentType, Gender, PaymentMethod } from '../types/race';
 import { 
   User, 
   CreditCard, 
@@ -10,7 +10,7 @@ import {
   Check, 
   Sparkles, 
   HeartHandshake, 
-  Shirt, 
+  ShieldCheck, 
   ArrowRight, 
   ArrowLeft,
   X,
@@ -38,7 +38,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
     city: 'Tarapoto',
     district: 'Tarapoto Cercado',
     runningClub: '',
-    tShirtSize: 'M' as TShirtSize,
     emergencyContactName: '',
     emergencyContactPhone: '',
     bloodType: '',
@@ -171,7 +170,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
         console.error(err);
       }
 
-      const registrationData: Omit<RunnerRegistration, 'id' | 'bibNumber' | 'createdAt'> = {
+      const registrationData: Omit<RunnerRegistration, 'id' | 'registrationNumber' | 'bibNumber' | 'createdAt'> = {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         documentType: formData.documentType,
@@ -183,7 +182,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
         city: formData.city.trim(),
         district: formData.district.trim(),
         runningClub: formData.runningClub.trim() || 'Independiente',
-        tShirtSize: formData.tShirtSize,
         emergencyContactName: formData.emergencyContactName.trim(),
         emergencyContactPhone: formData.emergencyContactPhone.trim(),
         bloodType: formData.bloodType.trim(),
@@ -218,7 +216,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
           Formulario de <span className="text-lime-400 text-glow-lime">Inscripción</span>
         </h2>
         <p className="text-neutral-400 text-sm md:text-base mt-1">
-          Completa tus datos en 3 sencillos pasos y obtén tu <strong>Dorsal Digital</strong> al instante.
+          Completa tus datos en 3 sencillos pasos y obtén tu <strong>Pase Oficial de Inscripción</strong> al instante.
         </p>
       </div>
 
@@ -241,7 +239,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
           }`}>
             2
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-wider">Talla & Disfraz</span>
+          <span className="text-[11px] font-bold uppercase tracking-wider">Seguridad & Disfraz</span>
         </div>
 
         <div className={`h-1 flex-1 mx-3 rounded-full transition-all ${currentStep >= 3 ? 'bg-lime-400' : 'bg-neutral-800'}`} />
@@ -356,7 +354,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
                   <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5 flex items-center justify-between">
                     <span>Celular WhatsApp (Perú) *</span>
                     <span className="text-[10px] text-lime-400 flex items-center gap-1">
-                      <Phone className="w-3 h-3" /> Envío de dorsal
+                      <Phone className="w-3 h-3" /> Envío de pase oficial
                     </span>
                   </label>
                   <div className="relative">
@@ -489,43 +487,14 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
             </div>
           )}
 
-          {/* STEP 2: TALLA DE POLO, SEGURIDAD & DISFRAZ */}
+          {/* STEP 2: SEGURIDAD & DISFRAZ */}
           {currentStep === 2 && (
             <div className="space-y-6">
               <div className="flex items-center gap-2 border-b border-neutral-800 pb-3">
-                <Shirt className="w-5 h-5 text-lime-400" />
+                <ShieldCheck className="w-5 h-5 text-lime-400" />
                 <h3 className="font-bebas text-2xl text-white tracking-wide uppercase">
-                  Paso 2: Talla de Polo del Kit & Seguridad Médica
+                  Paso 2: Seguridad Médica & Concurso de Disfraz
                 </h3>
-              </div>
-
-              {/* Talla Selector Visual */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">
-                  Selecciona la Talla de tu Polo Oficial Ohana Go *
-                </label>
-                <div className="grid grid-cols-5 gap-2 sm:gap-3">
-                  {(['XS', 'S', 'M', 'L', 'XL'] as TShirtSize[]).map((size) => (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, tShirtSize: size })}
-                      className={`py-3 rounded-2xl border text-center transition flex flex-col items-center justify-center cursor-pointer ${
-                        formData.tShirtSize === size
-                          ? 'bg-lime-400 text-black border-lime-400 font-extrabold shadow-[0_0_15px_rgba(163,230,53,0.3)]'
-                          : 'bg-neutral-950 text-white border-neutral-800 hover:border-neutral-600'
-                      }`}
-                    >
-                      <span className="font-bebas text-2xl leading-none">{size}</span>
-                      <span className="text-[10px] uppercase tracking-tighter opacity-80 mt-0.5">
-                        {size === 'S' ? '38-40"' : size === 'M' ? '40-42"' : size === 'L' ? '42-44"' : size === 'XL' ? '44-46"' : 'Slim'}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-                <p className="text-[11px] text-neutral-400 mt-2">
-                  * Polos confeccionados en tejido dry-fit transpirable con corte unisex.
-                </p>
               </div>
 
               {/* Concurso de Disfraz */}
@@ -822,7 +791,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
                 {formData.paymentMethod === 'Efectivo / Presencial' && (
                   <div className="p-3 bg-neutral-900 rounded-xl border border-neutral-800">
                     <p className="text-xs text-neutral-300 leading-relaxed">
-                      💡 <strong>Pago en Entrega:</strong> Tu cupo y dorsal quedarán pre-reservados. Podrás cancelar tus <strong>S/ 50</strong> en efectivo al momento de recoger tu kit en Entre Jarras o Plaza de Armas antes de la carrera.
+                      💡 <strong>Pago Presencial:</strong> Tu inscripción quedará pre-registrada. Podrás abonar tus <strong>S/ 50</strong> en efectivo al presentarte antes de la largada en Plaza de Armas o en Entre Jarras.
                     </p>
                   </div>
                 )}
@@ -912,7 +881,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
                     <span className="text-white font-semibold block mb-0.5">
                       Declaración de Buena Salud y Deslinde Deportivo *
                     </span>
-                    Declaro estar en condiciones físicas óptimas para participar en la corrida nocturna 5K, asumo mi propia responsabilidad y acepto el reglamento de seguridad y entrega de kits de Ohana Go 2026.
+                    Declaro estar en condiciones físicas óptimas para participar en la corrida nocturna 5K, asumo mi propia responsabilidad y acepto el reglamento de seguridad de Ohana Go 2026.
                   </div>
                 </label>
                 {errors.disclaimerAccepted && (
@@ -940,11 +909,11 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
                   className="px-8 py-4 bg-gradient-to-r from-lime-400 via-lime-500 to-lime-400 hover:from-lime-300 hover:to-lime-400 text-black font-bebas text-2xl uppercase tracking-wider rounded-xl transition shadow-xl shadow-lime-400/30 flex items-center gap-2 cursor-pointer glow-neon-lime disabled:opacity-50"
                 >
                   {isSubmitting ? (
-                    <>Generando Dorsal...</>
+                    <>Generando Pase Oficial...</>
                   ) : (
                     <>
                       <HeartHandshake className="w-6 h-6" />
-                      ¡Confirmar Inscripción & Obtener Dorsal!
+                      ¡Confirmar Inscripción & Obtener Pase Oficial!
                     </>
                   )}
                 </button>

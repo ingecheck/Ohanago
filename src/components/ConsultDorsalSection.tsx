@@ -30,17 +30,18 @@ export const ConsultDorsalSection: React.FC<ConsultDorsalSectionProps> = ({ regi
   };
 
   return (
-    <section id="consultar-dorsal" className="py-16 px-4 max-w-4xl mx-auto">
+    <section id="consultar-inscripcion" className="py-16 px-4 max-w-4xl mx-auto scroll-mt-20">
+      <div id="consultar-dorsal" />
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 text-xs font-black uppercase tracking-wider mb-2">
           <Search className="w-3.5 h-3.5" />
           Consulta en Línea
         </div>
         <h2 className="font-bebas text-4xl sm:text-5xl text-white tracking-wider uppercase">
-          ¿Ya te inscribiste? <span className="text-cyan-400">Consulta tu Dorsal</span>
+          ¿Ya te inscribiste? <span className="text-cyan-400">Consulta tu Pase Oficial</span>
         </h2>
         <p className="text-neutral-400 text-sm md:text-base mt-1">
-          Ingresa tu número de DNI, dorsal o documento para ver tu acreditación digital oficial.
+          Ingresa tu número de DNI o código de registro para ver tu pase digital de participante.
         </p>
       </div>
 
@@ -51,7 +52,7 @@ export const ConsultDorsalSection: React.FC<ConsultDorsalSectionProps> = ({ regi
             <Search className="w-5 h-5 text-neutral-400 shrink-0" />
             <input
               type="text"
-              placeholder="Ingresa tu DNI o N° de Dorsal (Ej: 72849102)"
+              placeholder="Ingresa tu DNI o Código (Ej: 72849102)"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-transparent text-white text-sm focus:outline-none placeholder:text-neutral-500 py-2"

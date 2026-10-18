@@ -45,8 +45,8 @@ export const EventKitSection: React.FC<EventKitSectionProps> = ({ onGoToRegister
       color: 'from-purple-500/20 to-fuchsia-500/20',
       borderColor: 'border-purple-500/40',
       iconColor: 'text-purple-400',
-      description: 'Sorteos con tu número de dorsal en la llegada de Entre Jarras (Jr. Lima cda. 13) y premiación al mejor disfraz de Halloween.',
-      feature: 'Participas automáticamente con tu número de dorsal'
+      description: 'Sorteos con tu código de inscripción en la llegada de Entre Jarras (Jr. Lima cda. 13) y premiación al mejor disfraz de Halloween.',
+      feature: 'Participas automáticamente con tu código de registro'
     }
   ];
 
@@ -56,7 +56,7 @@ export const EventKitSection: React.FC<EventKitSectionProps> = ({ onGoToRegister
       <div className="text-center max-w-3xl mx-auto mb-12">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-400/10 border border-lime-400/30 text-lime-400 text-xs font-black uppercase tracking-wider mb-3">
           <Sparkles className="w-3.5 h-3.5" />
-          Kit de Corredor Oficial
+          Beneficios Oficiales de tu Pase
         </div>
         <h2 className="font-bebas text-4xl sm:text-5xl md:text-6xl text-white tracking-wider uppercase">
           Tu Inscripción <span className="text-lime-400 text-glow-lime">Incluye</span>
@@ -75,20 +75,20 @@ export const EventKitSection: React.FC<EventKitSectionProps> = ({ onGoToRegister
           <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-5 backdrop-blur-md">
             <h4 className="font-bebas text-xl text-white tracking-wide uppercase flex items-center gap-2">
               <MapPin className="w-4 h-4 text-lime-400" />
-              Recojo de Kit en Tarapoto
+              Entrega de Medalla & Neón
             </h4>
             <ul className="mt-3 space-y-2 text-xs text-neutral-300">
               <li className="flex items-start gap-2">
                 <Check className="w-4 h-4 text-lime-400 shrink-0 mt-0.5" />
-                <span><strong>Fecha:</strong> 30 y 31 de Octubre (previo a la largada)</span>
+                <span><strong>Artículo Neón:</strong> Entrega previa antes de la largada en Plaza de Armas</span>
               </li>
               <li className="flex items-start gap-2">
                 <Check className="w-4 h-4 text-lime-400 shrink-0 mt-0.5" />
-                <span><strong>Lugar:</strong> Punto oficial en Entre Jarras o Plaza de Armas</span>
+                <span><strong>Medalla Finisher Oficial:</strong> Entrega en la meta en Entre Jarras</span>
               </li>
               <li className="flex items-start gap-2">
                 <Check className="w-4 h-4 text-lime-400 shrink-0 mt-0.5" />
-                <span><strong>Requisito:</strong> Presentar DNI o tu <strong>Dorsal Digital</strong> desde tu celular</span>
+                <span><strong>Requisito:</strong> Presentar DNI o tu <strong>Pase Digital</strong> desde tu celular</span>
               </li>
             </ul>
 

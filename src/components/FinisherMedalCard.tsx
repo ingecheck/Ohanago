@@ -7,10 +7,17 @@ export const FinisherMedalCard: React.FC = () => {
 
   useEffect(() => {
     // Si hay una foto guardada de la medalla, la carga de inmediato
-    const saved = localStorage.getItem('ohana_medal_photo_v2');
-    if (saved) {
-      setMedalImage(saved);
-    }
+    const loadSaved = () => {
+      const saved = localStorage.getItem('ohana_medal_photo_v2');
+      setMedalImage(saved || null);
+    };
+
+    loadSaved();
+
+    // Escucha actualizaciones realizadas desde el panel de admin
+    const handleUpdate = () => loadSaved();
+    window.addEventListener('ohana_medal_updated', handleUpdate);
+    return () => window.removeEventListener('ohana_medal_updated', handleUpdate);
   }, []);
 
   return (

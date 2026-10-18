@@ -1,7 +1,7 @@
 import React from 'react';
 import { RunnerRegistration } from '../types/race';
 import { DigitalBib } from './DigitalBib';
-import { CheckCircle, X, MapPin, Calendar, Shirt, AlertCircle } from 'lucide-react';
+import { CheckCircle, X, MapPin, Calendar, AlertCircle } from 'lucide-react';
 
 interface RegistrationSuccessModalProps {
   registration: RunnerRegistration | null;
@@ -59,16 +59,16 @@ export const RegistrationSuccessModal: React.FC<RegistrationSuccessModalProps> =
               <span><strong>Partida:</strong> Plaza de Armas Tarapoto</span>
             </div>
             <div className="flex items-center gap-2">
-              <Shirt className="w-4 h-4 text-lime-400 shrink-0" />
-              <span><strong>Tu Talla de Polo:</strong> {registration.tShirtSize}</span>
+              <span className="text-lime-400 font-bold font-mono">REGISTRO</span>
+              <span><strong>Código:</strong> {registration.id}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-lime-400 font-bold font-mono">DORSAL</span>
-              <span><strong>N° Oficial:</strong> #{String(registration.bibNumber).padStart(4, '0')}</span>
+              <MapPin className="w-4 h-4 text-orange-400 shrink-0" />
+              <span><strong>Meta:</strong> Entre Jarras (Jr. Lima cda. 13)</span>
             </div>
           </div>
           <p className="text-[11px] text-neutral-400 pt-2 border-t border-neutral-800/80">
-            * Para recoger tu kit oficial con medalla finisher y artículo neón, muestra una captura de pantalla de este dorsal en la entrega de kits o el día del evento.
+            * Guarda una captura de pantalla de este pase oficial para canjear tu medalla finisher y artículo neón el día de la carrera.
           </p>
         </div>
 

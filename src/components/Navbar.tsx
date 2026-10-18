@@ -53,7 +53,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onGoToSection }) =>
             onClick={() => handleNavClick('kit-evento')}
             className="hover:text-lime-400 transition cursor-pointer"
           >
-            Kit & Medalla
+            Medalla & Beneficios
           </button>
           <button
             onClick={() => handleNavClick('ruta-5k')}
@@ -62,11 +62,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onGoToSection }) =>
             Ruta 5K
           </button>
           <button
-            onClick={() => handleNavClick('consultar-dorsal')}
+            onClick={() => handleNavClick('consultar-inscripcion')}
             className="hover:text-cyan-400 transition cursor-pointer flex items-center gap-1 text-cyan-400/90"
           >
             <Search className="w-3.5 h-3.5" />
-            Consultar Dorsal
+            Consultar Mi Pase
           </button>
         </div>
 
@@ -113,7 +113,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onGoToSection }) =>
             onClick={() => handleNavClick('kit-evento')}
             className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-neutral-200 border-b border-neutral-900"
           >
-            🏅 Kit y Medalla Finisher
+            🏅 Medalla Finisher & Beneficios
           </button>
           <button
             onClick={() => handleNavClick('ruta-5k')}
@@ -122,10 +122,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onGoToSection }) =>
             🗺️ Ruta Oficial 5K Tarapoto
           </button>
           <button
-            onClick={() => handleNavClick('consultar-dorsal')}
+            onClick={() => handleNavClick('consultar-inscripcion')}
             className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-cyan-400 border-b border-neutral-900 flex items-center gap-1.5"
           >
-            <Search className="w-4 h-4" /> Consultar Mi Dorsal
+            <Search className="w-4 h-4" /> Consultar Mi Pase
           </button>
         </div>
       )}
