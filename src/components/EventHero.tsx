@@ -98,7 +98,7 @@ export const EventHero: React.FC<EventHeroProps> = ({
         <div className="my-5 flex flex-wrap items-center justify-center gap-3">
           <span className="px-4 py-2 rounded-xl bg-neutral-900/90 border border-neutral-700 text-xs font-semibold text-neutral-300 flex items-center gap-1.5">
             <Trophy className="w-4 h-4 text-amber-400" />
-            Medalla Finisher Metálica
+            Medalla Finisher 5K
           </span>
           <span className="px-4 py-2 rounded-xl bg-neutral-900/90 border border-neutral-700 text-xs font-semibold text-neutral-300 flex items-center gap-1.5">
             <Gift className="w-4 h-4 text-purple-400" />

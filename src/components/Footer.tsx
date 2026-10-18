@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, MapPin, Instagram, Clock, ExternalLink, ShieldCheck, Heart } from 'lucide-react';
+import { MapPin, Instagram, Clock, ExternalLink, ShieldCheck, Heart } from 'lucide-react';
 
 interface FooterProps {
   onOpenAdmin: () => void;
@@ -78,20 +78,9 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
               </div>
             </li>
 
-            {/* WhatsApp */}
-            <li>
-              <a
-                href="https://wa.me/51942851234?text=Hola,%20tengo%20una%20consulta%20sobre%20la%20inscripción%20OHANA%20GO%205K%20Halloween"
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 bg-emerald-950/30 hover:bg-emerald-950/50 px-3 py-2 rounded-xl border border-emerald-500/30 transition"
-              >
-                <Phone className="w-3.5 h-3.5" />
-                <span className="font-semibold">WhatsApp: +51 942 851 234</span>
-              </a>
-            </li>
-            <li className="text-neutral-500 text-[11px] px-1">
-              Meta y Sorteos: Entre Jarras (Jr. Lima cda. 13)
+            {/* Sede y meta */}
+            <li className="text-neutral-400 text-xs px-1">
+              📍 Meta y Sorteos: <strong>Entre Jarras</strong> (Jr. Lima cda. 13)
             </li>
           </ul>
         </div>

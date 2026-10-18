@@ -103,7 +103,7 @@ export default function App() {
     },
     {
       q: '¿Dónde y cuándo se entrega la medalla y el artículo neón?',
-      a: 'El artículo neón se entrega en la Plaza de Armas de Tarapoto antes de la largada mostrando tu DNI o tu Pase Digital. La Medalla Finisher oficial metálica se entrega en la meta en Entre Jarras a todos los corredores al completar los 5 kilómetros.',
+      a: 'El artículo neón se entrega en la Plaza de Armas de Tarapoto antes de la largada mostrando tu DNI o tu Pase Digital. La Medalla Finisher 5K se entrega en la meta en Entre Jarras a todos los corredores al completar los 5 kilómetros.',
     },
     {
       q: '¿Cómo valido mi pago por Yape, Plin o Transferencia?',
@@ -117,7 +117,7 @@ export default function App() {
       <div className="bg-gradient-to-r from-orange-600 via-amber-500 to-lime-500 text-black py-2 px-4 text-center font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2">
         <Bell className="w-3.5 h-3.5 shrink-0" />
         <span>
-          ¡Inscripciones Abiertas para la 5K en Tarapoto! Asegura tu medalla finisher metálica y pase oficial
+          ¡Inscripciones Abiertas para la 5K en Tarapoto! Asegura tu Medalla Finisher 5K y pase oficial
         </span>
       </div>
 

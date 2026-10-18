@@ -42,6 +42,27 @@ function writeJSON<T>(filePath: string, data: T): void {
   }
 }
 
+function savePublicMedalImage(image: string | null): void {
+  if (!image || typeof image !== 'string' || !image.startsWith('data:image')) return;
+  try {
+    const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+    const publicDir = path.join(__dirname, 'public');
+    if (!fs.existsSync(publicDir)) {
+      fs.mkdirSync(publicDir, { recursive: true });
+    }
+    fs.writeFileSync(path.join(publicDir, 'official-medal.png'), Buffer.from(base64Data, 'base64'));
+    console.log('[Medal] Successfully saved /public/official-medal.png');
+  } catch (err) {
+    console.error('Error writing public/official-medal.png:', err);
+  }
+}
+
+// On startup, ensure public/official-medal.png exists if medal.json has image
+const initialMedal = readJSON<{ image: string | null }>(MEDAL_FILE, { image: null });
+if (initialMedal && initialMedal.image) {
+  savePublicMedalImage(initialMedal.image);
+}
+
 // ================= API ROUTES =================
 
 // 1. Medal Photo API: Shared across ALL users, devices and browsers
@@ -57,6 +78,9 @@ app.post('/api/medal', (req, res) => {
     updatedAt: new Date().toISOString(),
   };
   writeJSON(MEDAL_FILE, data);
+  if (image) {
+    savePublicMedalImage(image);
+  }
   res.json({ success: true, ...data });
 });
 

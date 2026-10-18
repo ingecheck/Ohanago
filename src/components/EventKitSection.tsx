@@ -10,12 +10,12 @@ export const EventKitSection: React.FC<EventKitSectionProps> = ({ onGoToRegister
   const kitItems = [
     {
       icon: Award,
-      title: 'Medalla Finisher Oficial',
-      badge: 'Exclusiva Coleccionable',
+      title: 'Medalla Finisher 5K',
+      badge: 'Oficial',
       color: 'from-amber-500/20 to-orange-500/20',
       borderColor: 'border-amber-500/40',
       iconColor: 'text-amber-400',
-      description: 'Hermosa medalla metálica fundida con relieve de palmeras tropicales, silueta de corredores, atardecer y motivo Halloween Tarapoto 2026.',
+      description: 'Hermosa medalla oficial con relieve de palmeras tropicales, silueta de corredores y motivo Halloween Tarapoto 2026.',
       feature: 'Solo para los que crucen la meta en Entre Jarras'
     },
     {

@@ -31,9 +31,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onGoToSection }) =>
               <span className="font-bebas text-2xl tracking-wider text-white">
                 OHANA <span className="text-lime-400 font-extrabold">GO</span>
               </span>
-              <span className="bg-orange-600 text-white text-[9px] font-black uppercase px-1.5 py-0.5 rounded-sm font-marker">
-                5K
-              </span>
             </div>
             <span className="text-[10px] uppercase font-bold tracking-widest text-neutral-400 block -mt-0.5">
               Tarapoto • 31 Octubre 2026
