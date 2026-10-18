@@ -30,9 +30,9 @@ export const ConsultDorsalSection: React.FC<ConsultDorsalSectionProps> = ({ regi
   };
 
   return (
-    <section id="consultar-inscripcion" className="py-16 px-4 max-w-4xl mx-auto scroll-mt-20">
+    <section id="consultar-inscripcion" className="pt-4 pb-3 px-4 max-w-4xl mx-auto scroll-mt-20">
       <div id="consultar-dorsal" />
-      <div className="text-center mb-8">
+      <div className="text-center mb-4">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 text-xs font-black uppercase tracking-wider mb-2">
           <Search className="w-3.5 h-3.5" />
           Consulta en Línea
@@ -46,7 +46,7 @@ export const ConsultDorsalSection: React.FC<ConsultDorsalSectionProps> = ({ regi
       </div>
 
       {/* Search Input Box */}
-      <form onSubmit={handleSearch} className="max-w-xl mx-auto mb-8">
+      <form onSubmit={handleSearch} className="max-w-xl mx-auto mb-4">
         <div className="flex flex-col sm:flex-row items-center gap-2 bg-neutral-900 border border-neutral-700 p-2 rounded-2xl shadow-xl">
           <div className="flex items-center gap-2 px-3 w-full">
             <Search className="w-5 h-5 text-neutral-400 shrink-0" />

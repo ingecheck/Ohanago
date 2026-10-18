@@ -44,7 +44,7 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({ registration, showAction
           <div>
             <div className="flex items-center gap-1.5">
               <span className="font-bebas text-2xl tracking-wider text-white">
-                OHANA GO <span className="text-lime-400 font-extrabold">&gt;</span>
+                OHANA <span className="text-lime-400 font-extrabold">GO</span>
               </span>
               <span className="bg-orange-600 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-sm font-marker">
                 5K HALLOWEEN

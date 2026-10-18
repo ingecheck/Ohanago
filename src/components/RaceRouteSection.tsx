@@ -1,11 +1,11 @@
 import React from 'react';
-import { MapPin, Flag, Clock, Calendar, Navigation, CheckCircle2, Award, Gift, Droplets } from 'lucide-react';
+import { Navigation, CheckCircle2 } from 'lucide-react';
 
 export const RaceRouteSection: React.FC = () => {
   return (
-    <section id="ruta-5k" className="py-16 px-4 max-w-7xl mx-auto">
+    <section id="ruta-5k" className="pt-4 pb-3 px-4 max-w-7xl mx-auto">
       {/* Section Header */}
-      <div className="text-center max-w-3xl mx-auto mb-10">
+      <div className="text-center max-w-3xl mx-auto mb-5">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-400/10 border border-lime-400/30 text-lime-400 text-xs font-black uppercase tracking-wider mb-2">
           <Navigation className="w-3.5 h-3.5" />
           Circuito Nocturno Oficial
@@ -255,84 +255,7 @@ export const RaceRouteSection: React.FC = () => {
               </g>
             </svg>
           </div>
-
-          {/* Bottom Official Data Strip (matching exact flyer bottom bar) */}
-          <div className="mt-4 pt-4 border-t border-neutral-800 grid grid-cols-2 md:grid-cols-5 gap-3 text-center sm:text-left">
-            
-            <div className="bg-neutral-900/90 rounded-2xl p-3 border border-neutral-800 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center shrink-0">
-                <Calendar className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-bold text-neutral-400 block">Fecha Oficial</span>
-                <span className="font-bebas text-lg text-white">Sábado 31 Octubre</span>
-                <span className="text-[10px] text-neutral-500 block">2026</span>
-              </div>
-            </div>
-
-            <div className="bg-neutral-900/90 rounded-2xl p-3 border border-neutral-800 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-lime-400/10 text-lime-400 flex items-center justify-center shrink-0">
-                <Clock className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-bold text-neutral-400 block">Hora de Partida</span>
-                <span className="font-bebas text-lg text-lime-400">7:00 P. M.</span>
-                <span className="text-[10px] text-neutral-500 block">Puntual</span>
-              </div>
-            </div>
-
-            <div className="bg-neutral-900/90 rounded-2xl p-3 border border-neutral-800 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
-                <MapPin className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-bold text-neutral-400 block">Punto de Inicio</span>
-                <span className="font-bebas text-lg text-white truncate block">Plaza de Armas</span>
-                <span className="text-[10px] text-neutral-500 block">Tarapoto</span>
-              </div>
-            </div>
-
-            <div className="bg-neutral-900/90 rounded-2xl p-3 border border-neutral-800 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center shrink-0">
-                <Flag className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-bold text-neutral-400 block">Punto Final</span>
-                <span className="font-bebas text-lg text-orange-400 truncate block">Entre Jarras</span>
-                <span className="text-[10px] text-neutral-500 block">Jr. Lima cda. 13</span>
-              </div>
-            </div>
-
-            <div className="col-span-2 md:col-span-1 bg-lime-400/10 rounded-2xl p-3 border border-lime-400/30 flex items-center justify-center md:justify-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-lime-400 text-black flex items-center justify-center font-bold shrink-0">
-                5K
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-bold text-neutral-400 block">Distancia Total</span>
-                <span className="font-bebas text-xl text-white">5.00 KM</span>
-              </div>
-            </div>
-
-          </div>
-
         </div>
-
-        {/* Route Highlights & Logistics */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 text-xs text-neutral-300">
-          <div className="bg-neutral-900/60 p-3 rounded-2xl border border-neutral-800 flex items-center gap-2.5">
-            <Droplets className="w-4 h-4 text-cyan-400 shrink-0" />
-            <span>Puntos de hidratación con <strong>Agua Nativa</strong> en el recorrido</span>
-          </div>
-          <div className="bg-neutral-900/60 p-3 rounded-2xl border border-neutral-800 flex items-center gap-2.5">
-            <Award className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>Entrega de <strong>Medalla Finisher</strong> oficial al cruzar la meta</span>
-          </div>
-          <div className="bg-neutral-900/60 p-3 rounded-2xl border border-neutral-800 flex items-center gap-2.5">
-            <Gift className="w-4 h-4 text-purple-400 shrink-0" />
-            <span><strong>Sorteos</strong> con tu código de registro en la meta</span>
-          </div>
-        </div>
-
       </div>
     </section>
   );

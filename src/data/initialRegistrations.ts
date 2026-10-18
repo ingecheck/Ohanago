@@ -22,6 +22,11 @@ export const getStoredRegistrations = (): RunnerRegistration[] => {
 export const saveRegistrations = (registrations: RunnerRegistration[]): void => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(registrations));
+    fetch('/api/registrations', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ registrations }),
+    }).catch(() => {});
   } catch (e) {
     console.error('Error saving registrations to localStorage:', e);
   }
@@ -42,6 +47,13 @@ export const addRegistration = (newRunner: Omit<RunnerRegistration, 'id' | 'regi
 
   const updated = [completedRecord, ...current];
   saveRegistrations(updated);
+
+  fetch('/api/registrations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(completedRecord),
+  }).catch(() => {});
+
   return completedRecord;
 };
 

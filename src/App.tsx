@@ -27,9 +27,29 @@ export default function App() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   useEffect(() => {
-    // Carga los registros almacenados (0 iniciales hasta que alguien se registre)
+    // 1. Carga los registros almacenados en local
     const data = getStoredRegistrations();
     setRegistrations(data);
+
+    // 2. Sincroniza con el servidor para ver los inscritos desde cualquier dispositivo
+    fetch('/api/registrations')
+      .then((res) => {
+        if (!res.ok) throw new Error('Network error');
+        return res.json();
+      })
+      .then((serverData) => {
+        if (Array.isArray(serverData) && serverData.length > 0) {
+          setRegistrations(serverData);
+          localStorage.setItem('ohana_go_5k_tarapoto_registrations_v4', JSON.stringify(serverData));
+        } else if (data && data.length > 0) {
+          fetch('/api/registrations', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ registrations: data }),
+          }).catch(() => {});
+        }
+      })
+      .catch((err) => console.warn('Conexión con /api/registrations:', err));
 
     // Atajo de teclado discreto para el organizador (Alt + A)
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -135,8 +155,8 @@ export default function App() {
       />
 
       {/* Frequently Asked Questions */}
-      <section className="py-16 px-4 max-w-3xl mx-auto w-full">
-        <div className="text-center mb-8">
+      <section className="pt-4 pb-12 px-4 max-w-3xl mx-auto w-full">
+        <div className="text-center mb-5">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-900/40 text-purple-300 text-xs font-bold uppercase tracking-wider mb-2 border border-purple-500/30">
             <HelpCircle className="w-3.5 h-3.5" />
             Preguntas Frecuentes

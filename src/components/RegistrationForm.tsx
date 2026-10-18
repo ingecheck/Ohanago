@@ -205,9 +205,9 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
   };
 
   return (
-    <section id="formulario-registro" className="py-16 px-4 max-w-4xl mx-auto">
+    <section id="formulario-registro" className="pt-4 pb-3 px-4 max-w-4xl mx-auto">
       {/* Title */}
-      <div className="text-center mb-8">
+      <div className="text-center mb-5">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-400/10 border border-lime-400/30 text-lime-400 text-xs font-black uppercase tracking-wider mb-2">
           <Sparkles className="w-3.5 h-3.5" />
           Inscripciones Oficiales Abiertas
@@ -221,7 +221,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
       </div>
 
       {/* Steps Breadcrumb */}
-      <div className="flex items-center justify-between mb-8 px-2 max-w-xl mx-auto">
+      <div className="flex items-center justify-between mb-5 px-2 max-w-xl mx-auto">
         <div className={`flex flex-col items-center gap-1.5 ${currentStep >= 1 ? 'text-lime-400' : 'text-neutral-600'}`}>
           <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bebas text-xl border transition-all ${
             currentStep >= 1 ? 'bg-lime-400 text-black border-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.4)]' : 'bg-neutral-900 text-neutral-500 border-neutral-800'

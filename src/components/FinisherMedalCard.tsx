@@ -6,16 +6,47 @@ export const FinisherMedalCard: React.FC = () => {
   const [isZoomed, setIsZoomed] = useState(false);
 
   useEffect(() => {
-    // Si hay una foto guardada de la medalla, la carga de inmediato
-    const loadSaved = () => {
+    // 1. Cargar primero de localStorage si existe para visualización inmediata
+    const local = localStorage.getItem('ohana_medal_photo_v2');
+    if (local) {
+      setMedalImage(local);
+    }
+
+    // 2. Consultar al servidor (/api/medal) para obtener la medalla oficial para todos los dispositivos
+    fetch('/api/medal')
+      .then((res) => {
+        if (!res.ok) throw new Error('Network error');
+        return res.json();
+      })
+      .then((data) => {
+        if (data && data.image) {
+          setMedalImage(data.image);
+          localStorage.setItem('ohana_medal_photo_v2', data.image);
+        } else if (local) {
+          // Si el servidor no la tiene aún pero este cliente la tiene en local, sincronizarla al servidor
+          fetch('/api/medal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ image: local }),
+          }).catch(() => {});
+        }
+      })
+      .catch((err) => {
+        console.warn('Conexión con /api/medal:', err);
+      });
+
+    // 3. Escuchar actualizaciones en tiempo real realizadas desde el panel de admin
+    const handleUpdate = () => {
       const saved = localStorage.getItem('ohana_medal_photo_v2');
-      setMedalImage(saved || null);
+      if (saved) setMedalImage(saved);
+      fetch('/api/medal')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.image) setMedalImage(data.image);
+        })
+        .catch(() => {});
     };
 
-    loadSaved();
-
-    // Escucha actualizaciones realizadas desde el panel de admin
-    const handleUpdate = () => loadSaved();
     window.addEventListener('ohana_medal_updated', handleUpdate);
     return () => window.removeEventListener('ohana_medal_updated', handleUpdate);
   }, []);

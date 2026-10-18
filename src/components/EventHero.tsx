@@ -40,7 +40,7 @@ export const EventHero: React.FC<EventHeroProps> = ({
   }, [targetDate]);
 
   return (
-    <div className="relative overflow-hidden pt-8 pb-14 md:pt-12 md:pb-20 border-b border-neutral-900 bg-radial-[at_top] from-neutral-900 via-neutral-950 to-black">
+    <div className="relative overflow-hidden pt-6 pb-8 md:pt-8 md:pb-10 border-b border-neutral-900 bg-radial-[at_top] from-neutral-900 via-neutral-950 to-black">
       {/* Background Neon ambient glows */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-lime-500/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute top-10 right-10 w-96 h-96 bg-orange-600/15 rounded-full blur-[140px] pointer-events-none" />
@@ -55,32 +55,37 @@ export const EventHero: React.FC<EventHeroProps> = ({
       </div>
 
       <div className="relative max-w-6xl mx-auto px-4 text-center">
-        {/* Top Badges */}
-        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-6">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-lime-400/10 text-lime-400 border border-lime-400/30">
-            <Flame className="w-3.5 h-3.5 text-lime-400" />
-            Tarapoto 2026
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/30">
-            <Sparkles className="w-3.5 h-3.5 text-orange-400" />
-            Carrera Nocturna de Halloween
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-neutral-300 bg-neutral-900 border border-neutral-800">
-            <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-            {registeredCount > 0 ? `${registeredCount} inscritos` : 'Inscripciones Oficiales Abiertas'}
-          </span>
+        {/* Top Prominent 5K Callout & Badges */}
+        <div className="flex flex-col items-center justify-center gap-2 mb-4">
+          <div className="inline-flex items-center gap-2.5 px-6 py-1.5 rounded-2xl bg-gradient-to-r from-lime-400 via-lime-300 to-lime-400 text-black shadow-lg shadow-lime-400/25 border border-lime-300">
+            <Flame className="w-5 h-5 text-black shrink-0" />
+            <span className="font-bebas text-2xl sm:text-3xl tracking-wider font-black">
+              5K OFICIAL TARAPOTO
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/30">
+              <Sparkles className="w-3.5 h-3.5 text-orange-400" />
+              Carrera Nocturna de Halloween
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-neutral-300 bg-neutral-900 border border-neutral-800">
+              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+              {registeredCount > 0 ? `${registeredCount} inscritos` : 'Inscripciones Oficiales Abiertas'}
+            </span>
+          </div>
         </div>
 
         {/* Giant Main Title */}
         <div className="mb-4">
           <div className="font-bebas text-6xl sm:text-7xl md:text-9xl text-white font-extrabold tracking-tight uppercase leading-none drop-shadow-2xl">
-            OHANA <span className="text-lime-400 text-glow-lime">GO &gt;</span>
+            OHANA <span className="text-lime-400 text-glow-lime">GO</span>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 -mt-2 md:-mt-4">
-            <span className="font-bebas text-5xl sm:text-7xl md:text-8xl text-white uppercase tracking-tighter">
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 mt-1 md:mt-2">
+            <span className="font-bebas text-6xl sm:text-8xl md:text-9xl text-lime-400 uppercase tracking-tight font-black text-glow-lime">
               5K
             </span>
-            <span className="font-marker text-3xl sm:text-5xl md:text-6xl text-orange-500 tracking-wide transform -rotate-1 text-glow-orange">
+            <span className="font-marker text-4xl sm:text-6xl md:text-7xl text-orange-500 tracking-wide transform -rotate-1 text-glow-orange">
               HALLOWEEN
             </span>
           </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, Shield, Search, Flame } from 'lucide-react';
+import { Menu, X, Shield, Search, Flame, Instagram } from 'lucide-react';
 
 interface NavbarProps {
   onOpenAdmin: () => void;
@@ -29,7 +29,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onGoToSection }) =>
           <div>
             <div className="flex items-center gap-1 leading-none">
               <span className="font-bebas text-2xl tracking-wider text-white">
-                OHANA GO <span className="text-lime-400 font-extrabold">&gt;</span>
+                OHANA <span className="text-lime-400 font-extrabold">GO</span>
               </span>
               <span className="bg-orange-600 text-white text-[9px] font-black uppercase px-1.5 py-0.5 rounded-sm font-marker">
                 5K
@@ -72,6 +72,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onGoToSection }) =>
 
         {/* Right Action Buttons */}
         <div className="hidden md:flex items-center gap-3">
+          {/* Instagram Link Button */}
+          <a
+            href="https://www.instagram.com/ohanago.peru/"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Instagram Oficial @ohanago.peru"
+            className="p-2.5 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white hover:opacity-90 shadow-md shadow-pink-500/20 transition hover:scale-105 flex items-center gap-1.5"
+          >
+            <Instagram className="w-4 h-4" />
+            <span className="text-xs font-bold font-sans">@ohanago.peru</span>
+          </a>
+
           {/* Register CTA */}
           <button
             onClick={() => handleNavClick('formulario-registro')}
@@ -83,6 +95,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onGoToSection }) =>
 
         {/* Mobile menu trigger */}
         <div className="flex md:hidden items-center gap-2">
+          <a
+            href="https://www.instagram.com/ohanago.peru/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram"
+            className="p-2 rounded-lg bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white"
+          >
+            <Instagram className="w-4 h-4" />
+          </a>
+
           <button
             onClick={() => handleNavClick('formulario-registro')}
             className="px-3.5 py-1.5 bg-lime-400 text-black font-bebas text-base uppercase rounded-lg tracking-wider"
@@ -127,6 +149,17 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onGoToSection }) =>
           >
             <Search className="w-4 h-4" /> Consultar Mi Pase
           </button>
+          <a
+            href="https://www.instagram.com/ohanago.peru/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full p-2.5 rounded-xl bg-gradient-to-r from-purple-900/60 via-pink-900/40 to-neutral-900 border border-pink-500/40 text-white flex items-center justify-between text-xs font-bold"
+          >
+            <span className="flex items-center gap-2">
+              <Instagram className="w-4 h-4 text-pink-400" /> Instagram: @ohanago.peru
+            </span>
+            <span className="text-[10px] text-pink-300 uppercase">Seguir</span>
+          </a>
         </div>
       )}
     </nav>

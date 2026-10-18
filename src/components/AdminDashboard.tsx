@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RunnerRegistration, PaymentStatus } from '../types/race';
 import { exportToCSV, saveRegistrations } from '../data/initialRegistrations';
 import { adminLogout, updateAdminPassword } from '../data/auth';
@@ -47,6 +47,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [currentAdminMedal, setCurrentAdminMedal] = useState<string | null>(() => localStorage.getItem('ohana_medal_photo_v2'));
   const [tempMedalPreview, setTempMedalPreview] = useState<string | null>(null);
   const [medalSavedNotice, setMedalSavedNotice] = useState(false);
+
+  useEffect(() => {
+    // Sincronizar con el servidor para que la medalla sea consistente en todos los dispositivos
+    fetch('/api/medal')
+      .then((res) => {
+        if (!res.ok) throw new Error('Network error');
+        return res.json();
+      })
+      .then((data) => {
+        if (data && data.image) {
+          setCurrentAdminMedal(data.image);
+          localStorage.setItem('ohana_medal_photo_v2', data.image);
+        } else {
+          // Si el servidor aún no tiene la medalla pero este admin ya la tiene localmente, subirla al servidor
+          const local = localStorage.getItem('ohana_medal_photo_v2');
+          if (local) {
+            fetch('/api/medal', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ image: local }),
+            }).catch(() => {});
+          }
+        }
+      })
+      .catch((err) => console.warn('Admin /api/medal fetch:', err));
+  }, []);
 
   // New manual registration state
   const [newManual, setNewManual] = useState({
@@ -635,18 +661,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <button
                   type="button"
                   disabled={!tempMedalPreview}
-                  onClick={() => {
+                  onClick={async () => {
                     if (tempMedalPreview) {
                       localStorage.setItem('ohana_medal_photo_v2', tempMedalPreview);
                       setCurrentAdminMedal(tempMedalPreview);
                       window.dispatchEvent(new Event('ohana_medal_updated'));
+
+                      // Persistir en el servidor para que todos los usuarios de la web la vean
+                      try {
+                        await fetch('/api/medal', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ image: tempMedalPreview }),
+                        });
+                      } catch (err) {
+                        console.error('Error enviando medalla al servidor:', err);
+                      }
+
                       setMedalSavedNotice(true);
                       setTimeout(() => setMedalSavedNotice(false), 2500);
                     }
                   }}
                   className="w-full py-3 bg-lime-400 hover:bg-lime-300 disabled:opacity-50 text-black font-bebas text-lg uppercase tracking-wider rounded-xl transition cursor-pointer shadow-lg shadow-lime-400/20"
                 >
-                  Guardar y Publicar en la Web
+                  Guardar y Publicar en la Web (Visible para Todos)
                 </button>
 
               </div>
