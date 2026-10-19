@@ -61,9 +61,8 @@ export const EventHero: React.FC<EventHeroProps> = ({
             <Sparkles className="w-3.5 h-3.5 text-orange-400" />
             Carrera Nocturna de Halloween
           </span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-neutral-300 bg-neutral-900 border border-neutral-800">
-            <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-            {registeredCount > 0 ? `${registeredCount} inscritos` : 'Inscripciones Oficiales Abiertas'}
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-purple-500/10 text-purple-300 border border-purple-500/30">
+            Modalidad Presencial & Virtual
           </span>
         </div>
 

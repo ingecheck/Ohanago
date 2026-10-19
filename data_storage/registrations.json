@@ -23,10 +23,10 @@
     "paymentReference": "YAPE-FORMS-0001",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-03T16:51:47.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0002",
@@ -52,10 +52,10 @@
     "paymentReference": "YAPE-FORMS-0002",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-04T16:20:39.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0003",
@@ -81,10 +81,10 @@
     "paymentReference": "YAPE-FORMS-0003",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-06T10:12:46.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0004",
@@ -110,10 +110,10 @@
     "paymentReference": "YAPE-FORMS-0004",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-07T11:34:47.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0005",
@@ -139,10 +139,10 @@
     "paymentReference": "YAPE-FORMS-0005",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-07T13:24:24.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0006",
@@ -168,10 +168,10 @@
     "paymentReference": "YAPE-FORMS-0006",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-08T10:24:48.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0007",
@@ -197,10 +197,10 @@
     "paymentReference": "YAPE-FORMS-0007",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-08T23:34:43.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0008",
@@ -226,10 +226,10 @@
     "paymentReference": "YAPE-FORMS-0008",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-09T15:03:16.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0009",
@@ -255,10 +255,10 @@
     "paymentReference": "YAPE-FORMS-0009",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-09T15:09:56.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0010",
@@ -284,10 +284,10 @@
     "paymentReference": "YAPE-FORMS-0010",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-10T13:00:05.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0011",
@@ -313,10 +313,10 @@
     "paymentReference": "YAPE-FORMS-0011",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-11T09:02:42.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0012",
@@ -342,10 +342,10 @@
     "paymentReference": "YAPE-FORMS-0012",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-11T15:22:13.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0013",
@@ -371,10 +371,10 @@
     "paymentReference": "YAPE-FORMS-0013",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-11T23:12:51.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0014",
@@ -400,10 +400,10 @@
     "paymentReference": "YAPE-FORMS-0014",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-12T14:08:18.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0015",
@@ -429,10 +429,10 @@
     "paymentReference": "YAPE-FORMS-0015",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-12T19:30:21.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0016",
@@ -458,10 +458,10 @@
     "paymentReference": "YAPE-FORMS-0016",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-13T13:32:15.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0017",
@@ -487,10 +487,10 @@
     "paymentReference": "YAPE-FORMS-0017",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-13T22:29:37.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0018",
@@ -516,10 +516,10 @@
     "paymentReference": "YAPE-FORMS-0018",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-14T10:07:15.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0019",
@@ -545,10 +545,10 @@
     "paymentReference": "YAPE-FORMS-0019",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-14T14:27:23.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0020",
@@ -574,10 +574,10 @@
     "paymentReference": "YAPE-FORMS-0020",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-14T19:03:46.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0021",
@@ -603,10 +603,10 @@
     "paymentReference": "YAPE-FORMS-0021",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-14T20:23:24.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0022",
@@ -632,10 +632,10 @@
     "paymentReference": "YAPE-FORMS-0022",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-15T11:25:23.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0023",
@@ -661,10 +661,10 @@
     "paymentReference": "YAPE-FORMS-0023",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-15T11:44:42.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0024",
@@ -690,10 +690,10 @@
     "paymentReference": "YAPE-FORMS-0024",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-15T12:26:22.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0025",
@@ -719,10 +719,10 @@
     "paymentReference": "YAPE-FORMS-0025",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-15T15:37:54.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0026",
@@ -748,10 +748,10 @@
     "paymentReference": "YAPE-FORMS-0026",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-15T20:03:51.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0027",
@@ -777,10 +777,10 @@
     "paymentReference": "YAPE-FORMS-0027",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-15T20:56:00.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0028",
@@ -806,10 +806,10 @@
     "paymentReference": "YAPE-FORMS-0028",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-16T08:58:30.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0029",
@@ -835,10 +835,10 @@
     "paymentReference": "YAPE-FORMS-0029",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-16T20:19:28.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   },
   {
     "id": "OHA-2026-0030",
@@ -864,9 +864,9 @@
     "paymentReference": "YAPE-FORMS-0030",
     "paymentStatus": "Verificado",
     "confirmedAtStart": false,
-    "totalCandies": 0,
-    "potionsCollected": [],
     "createdAt": "2026-10-17T14:35:49.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "modality": "Presencial",
+    "department": "San Martín"
   }
 ]

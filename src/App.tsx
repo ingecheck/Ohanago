@@ -1,12 +1,4 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState, useEffect } from 'react';
-import { RunnerRegistration } from './types/race';
-import { getStoredRegistrations } from './data/initialRegistrations';
-import { isAdminAuthenticated } from './data/auth';
 import { Navbar } from './components/Navbar';
 import { EventHero } from './components/EventHero';
 import { EventKitSection } from './components/EventKitSection';
@@ -18,14 +10,18 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { CompetitorPortalModal } from './components/CompetitorPortalModal';
 import { Footer } from './components/Footer';
-import { HelpCircle, ChevronDown, ChevronUp, Bell, Sparkles } from 'lucide-react';
+import { RunnerRegistration } from './types/race';
+import { getStoredRegistrations } from './data/initialRegistrations';
+import { isAdminAuthenticated } from './data/auth';
+import { HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
-export default function App() {
+export const App: React.FC = () => {
   const [registrations, setRegistrations] = useState<RunnerRegistration[]>([]);
   const [recentlyRegistered, setRecentlyRegistered] = useState<RunnerRegistration | null>(null);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
   const [loginModalTab, setLoginModalTab] = useState<'admin' | 'competitor'>('admin');
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
   
   // Active competitor session
   const [activeCompetitor, setActiveCompetitor] = useState<RunnerRegistration | null>(() => {
@@ -38,41 +34,38 @@ export default function App() {
   });
   const [isCompetitorPortalOpen, setIsCompetitorPortalOpen] = useState(false);
 
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
-
   useEffect(() => {
-    // 1. Carga los registros almacenados en local
-    const data = getStoredRegistrations();
-    setRegistrations(data);
+    // 1. Carga inmediata desde local para no bloquear la vista inicial
+    const initialLocal = getStoredRegistrations();
+    setRegistrations(initialLocal);
 
-    // 2. Sincroniza con el servidor para ver los inscritos desde cualquier dispositivo
-    fetch('/api/registrations')
-      .then((res) => {
-        if (!res.ok) throw new Error('Network error');
-        return res.json();
-      })
-      .then((serverData) => {
-        if (Array.isArray(serverData) && serverData.length > 0) {
-          setRegistrations(serverData);
-          localStorage.setItem('ohana_go_5k_tarapoto_registrations_v4', JSON.stringify(serverData));
+    // 2. Sincronización en tiempo real con el servidor para todos los navegadores
+    const syncRegistrations = () => {
+      fetch('/api/registrations')
+        .then((res) => {
+          if (!res.ok) throw new Error('Network error');
+          return res.json();
+        })
+        .then((serverData) => {
+          if (Array.isArray(serverData) && serverData.length > 0) {
+            setRegistrations(serverData);
 
-          // If active competitor is saved, sync their latest state
-          if (activeCompetitor) {
-            const found = serverData.find((r) => r.id === activeCompetitor.id);
-            if (found) {
-              setActiveCompetitor(found);
-              localStorage.setItem('ohana_active_competitor', JSON.stringify(found));
+            // Sincroniza al competidor activo si está logueado
+            if (activeCompetitor) {
+              const found = serverData.find((r: RunnerRegistration) => r.id === activeCompetitor.id);
+              if (found) {
+                setActiveCompetitor(found);
+                localStorage.setItem('ohana_active_competitor', JSON.stringify(found));
+              }
             }
           }
-        } else if (data && data.length > 0) {
-          fetch('/api/registrations', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ registrations: data }),
-          }).catch(() => {});
-        }
-      })
-      .catch((err) => console.warn('Conexión con /api/registrations:', err));
+        })
+        .catch(() => {});
+    };
+
+    syncRegistrations();
+    const intervalId = setInterval(syncRegistrations, 4000);
+    window.addEventListener('focus', syncRegistrations);
 
     // Atajo de teclado discreto para el organizador (Alt + A)
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -82,13 +75,18 @@ export default function App() {
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('focus', syncRegistrations);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   const handleRegistrationSuccess = (newReg: RunnerRegistration) => {
-    // Actualiza el estado para que el contador y la nómina se sincronicen
+    // Actualiza el estado para que la nómina se sincronice
     setRegistrations((prev) => [newReg, ...prev]);
-    // Abre el dorsal oficial digital
+    // Abre el pase oficial digital
     setRecentlyRegistered(newReg);
     // Establece como competidor activo para acceso instantáneo
     setActiveCompetitor(newReg);
@@ -126,39 +124,36 @@ export default function App() {
 
   const faqs = [
     {
-      q: '¿Qué incluye exactamente mi inscripción?',
-      a: 'Tu pase incluye la Medalla Finisher 5K oficial (para los que completen el recorrido en Entre Jarras), hidratación con agua mineral Nativa en ruta y meta, un artículo luminoso Neón para la noche, derecho a participar en sorteos y en el minijuego post-carrera del Caldero de Pociones.',
+      q: '¿Cuál es la diferencia entre la Modalidad Presencial y la Modalidad Virtual?',
+      a: 'En la modalidad Presencial, corres en vivo el sábado 31 de Octubre a las 7:00 PM desde la Plaza de Armas de Tarapoto hasta Entre Jarras, con hidratación en ruta, pulseras neón y entrega de tu Medalla Finisher física al cruzar la meta. En la modalidad Virtual, puedes correr o caminar tus 5K desde cualquier ciudad del Perú o del mundo entre el 28 de Octubre y el 2 de Noviembre con tu app favorita (Strava, Nike, Garmin), subes tu captura en tu Portal de Competidor y te enviamos tu Medalla Finisher física y kit oficial a domicilio o agencia.',
     },
     {
-      q: '¿Es obligatorio ir con disfraz de Halloween?',
-      a: 'No es obligatorio, puedes correr con tu indumentaria deportiva. Sin embargo, te invitamos a traer un disfraz o accesorio si deseas competir por premios sorpresa al mejor atuendo runner de la noche.',
+      q: '¿Qué incluye exactamente el valor de mi inscripción (S/ 50.00)?',
+      a: 'Ambas modalidades reciben la Medalla Finisher 5K Oficial en relieve metálico de colección. Los corredores presenciales cuentan con artículo luminoso neón para la noche, hidratación con Agua Nativa y participación en sorteos en Entre Jarras. Los corredores virtuales reciben el envío de su medalla física y kit a su localidad. Ambos obtienen su Pase Digital Oficial con número de registro y acceso a su cuenta.',
     },
     {
-      q: '¿Puedo caminar o trotar si soy principiante?',
-      a: '¡Por supuesto! El circuito de 5 kilómetros está diseñado para que todos los amantes del deporte, amigos y familias de Tarapoto puedan completarlo a su propio ritmo.',
+      q: 'Si elijo la modalidad Virtual, ¿cómo y cuándo registro mi tiempo?',
+      a: 'Podrás completar tus 5 kilómetros en cualquier momento entre el 28 de Octubre y el 2 de Noviembre. Al finalizar, ingresa a la web en el botón "Portal Competidor" con tu DNI, haz clic en "Subir Evidencia 5K", registra tu tiempo y sube una captura de pantalla de Strava, Nike Run Club, Garmin, Apple Watch o foto de la pantalla de tu trotadora.',
     },
     {
-      q: '¿Dónde y cuándo se entrega la medalla y el artículo neón?',
-      a: 'El artículo neón se entrega en la Plaza de Armas de Tarapoto antes de la largada mostrando tu DNI o tu Pase Digital. La Medalla Finisher 5K se entrega en la meta en Entre Jarras a todos los corredores al completar los 5 kilómetros.',
+      q: '¿Es obligatorio correr con disfraz de Halloween?',
+      a: 'No es obligatorio. Puedes participar con tu ropa deportiva favorita. Sin embargo, si deseas sumarte al concurso de disfraces en la llegada de Entre Jarras, habrá premios en efectivo y regalos sorpresa de aliados estratégicos para los mejores atuendos runner.',
     },
     {
-      q: '¿Cómo funciona el minijuego Caldero de Pociones?',
-      a: 'Al cruzar la meta en Entre Jarras, ingresas a la zona de recuperación. Allí encontrarás 5 códigos QR distribuidos en puntos clave (Hidratación, Fotos, Guardarropa, Aliados Estratégicos y Meta). Escanéalos desde tu celular para acumular dulces de azar y competir por un premio especial de OHANA GO.',
+      q: '¿Puedo caminar o trotar a mi propio ritmo si soy principiante?',
+      a: '¡Por supuesto! El circuito de 5K está pensado para que deportistas experimentados, aficionados, familias y principiantes puedan disfrutar de una noche de deporte y diversión a su propio ritmo.',
     },
     {
-      q: '¿Cómo valido mi pago por Yape, Plin o Transferencia?',
-      a: 'Ingresa tu número de operación y sube la captura de pantalla en el formulario de inscripción. El sistema confirmará tu pase y los organizadores verificarán el pago en el panel.',
+      q: '¿Cómo se entregan las medallas y kits en cada modalidad?',
+      a: 'En la modalidad Presencial, las pulseras neón se entregan antes de la largada en la Plaza de Armas (a partir de las 6:00 PM) y la medalla se entrega en el arco de meta en Entre Jarras. En la modalidad Virtual, la medalla física y kit se despachan por agencia o courier (Olva / Shalom) a la dirección indicada en tu ficha de registro.',
     },
   ];
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans selection:bg-lime-400 selection:text-black">
-      {/* Top Announcement Bar */}
-      <div className="bg-gradient-to-r from-orange-600 via-amber-500 to-lime-500 text-black py-2 px-4 text-center font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2">
-        <Bell className="w-3.5 h-3.5 shrink-0" />
-        <span>
-          ¡Inscripciones Abiertas! Carrera 5K Tarapoto • 31 Octubre • Medalla Finisher 5K Oficial
-        </span>
+      {/* Top Banner */}
+      <div className="bg-gradient-to-r from-orange-600 via-amber-500 to-lime-500 py-1.5 px-4 text-center text-black font-bebas text-sm sm:text-base tracking-wider uppercase shadow-md relative z-40">
+        Carrera 5K Tarapoto • 31 Octubre • Modalidad Presencial & Virtual
       </div>
 
       {/* Main Navbar */}
@@ -166,17 +161,14 @@ export default function App() {
         onOpenAdmin={handleAdminAccess}
         onOpenCompetitorLogin={handleCompetitorAccess}
         onGoToSection={scrollToSection}
-        loggedInCompetitorName={activeCompetitor ? activeCompetitor.firstName : null}
       />
 
       {/* Hero Section */}
-      <div id="inicio">
-        <EventHero
-          onRegisterClick={() => scrollToSection('formulario-registro')}
-          onExploreKitClick={() => scrollToSection('kit-evento')}
-          registeredCount={registrations.length}
-        />
-      </div>
+      <EventHero
+        registeredCount={registrations.length}
+        onRegisterClick={() => scrollToSection('formulario-registro')}
+        onExploreKitClick={() => scrollToSection('kit-evento')}
+      />
 
       {/* Kit & Medal Section */}
       <EventKitSection
@@ -197,22 +189,25 @@ export default function App() {
       />
 
       {/* Frequently Asked Questions */}
-      <section className="pt-4 pb-12 px-4 max-w-3xl mx-auto w-full">
-        <div className="text-center mb-5">
+      <section id="preguntas-frecuentes" className="pt-6 pb-12 px-4 max-w-4xl mx-auto w-full scroll-mt-20">
+        <div className="text-center mb-6">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-900/40 text-purple-300 text-xs font-bold uppercase tracking-wider mb-2 border border-purple-500/30">
             <HelpCircle className="w-3.5 h-3.5" />
             Preguntas Frecuentes
           </div>
-          <h3 className="font-bebas text-4xl text-white uppercase tracking-wider">
+          <h3 className="font-bebas text-4xl sm:text-5xl text-white uppercase tracking-wider">
             Todo lo que necesitas saber
           </h3>
+          <p className="text-xs text-neutral-400 mt-1">
+            Información oficial sobre las modalidades Presencial y Virtual de la OHANA GO 5K.
+          </p>
         </div>
 
         <div className="space-y-3">
           {faqs.map((faq, idx) => (
             <div
               key={idx}
-              className="bg-neutral-900/80 border border-neutral-800 rounded-2xl overflow-hidden transition"
+              className="bg-neutral-900/80 border border-neutral-800 rounded-2xl overflow-hidden transition hover:border-neutral-700"
             >
               <button
                 onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
@@ -226,7 +221,7 @@ export default function App() {
                 )}
               </button>
               {openFaq === idx && (
-                <div className="px-4 pb-4 text-xs text-neutral-400 leading-relaxed border-t border-neutral-800/60 pt-3">
+                <div className="px-4 pb-4 text-xs text-neutral-300 leading-relaxed border-t border-neutral-800/60 pt-3">
                   {faq.a}
                 </div>
               )}
@@ -262,37 +257,36 @@ export default function App() {
         />
       )}
 
-      {/* Competitor Portal Modal (Caldero de Pociones, Start QR, Dorsal) */}
+      {/* Competitor Portal Modal (Presencial checkin & Virtual evidence) */}
       {isCompetitorPortalOpen && activeCompetitor && (
         <CompetitorPortalModal
-          runner={activeCompetitor}
-          onUpdateRunner={(updated) => {
+          competitor={activeCompetitor}
+          onClose={() => setIsCompetitorPortalOpen(false)}
+          onLogout={() => {
+            setActiveCompetitor(null);
+            localStorage.removeItem('ohana_active_competitor');
+          }}
+          onUpdateCompetitor={(updated) => {
             setActiveCompetitor(updated);
             localStorage.setItem('ohana_active_competitor', JSON.stringify(updated));
             setRegistrations((prev) =>
               prev.map((r) => (r.id === updated.id ? updated : r))
             );
           }}
-          onClose={() => setIsCompetitorPortalOpen(false)}
-          onLogout={() => {
-            setActiveCompetitor(null);
-            localStorage.removeItem('ohana_active_competitor');
-            setIsCompetitorPortalOpen(false);
-          }}
         />
       )}
 
-      {/* Admin Dashboard Modal */}
+      {/* Admin Dashboard */}
       {isAdminOpen && (
         <AdminDashboard
           registrations={registrations}
-          onUpdateRegistrations={setRegistrations}
+          onUpdateRegistrations={(updated) => setRegistrations(updated)}
           onClose={() => setIsAdminOpen(false)}
-          onLogout={() => {
-            setIsAdminOpen(false);
-          }}
+          onLogout={() => setIsAdminOpen(false)}
         />
       )}
     </div>
   );
-}
+};
+
+export default App;

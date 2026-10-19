@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RunnerRegistration, PaymentStatus } from '../types/race';
+import { RunnerRegistration, PaymentStatus, RaceModality, VirtualEvidence } from '../types/race';
 import { exportToCSV, saveRegistrations } from '../data/initialRegistrations';
 import { adminLogout, updateAdminPassword } from '../data/auth';
 import {
@@ -20,14 +20,14 @@ import {
   Upload,
   Camera,
   QrCode,
-  Trophy,
-  Crown,
+  Globe,
+  MapPin,
+  Truck,
   AlertCircle,
   Trash2,
-  Printer,
+  Activity
 } from 'lucide-react';
-import { OfficialEventQRsModal } from './OfficialEventQRsModal';
-import { QRScannerModal } from './QRScannerModal';
+import { DigitalBib } from './DigitalBib';
 
 interface AdminDashboardProps {
   registrations: RunnerRegistration[];
@@ -36,58 +36,67 @@ interface AdminDashboardProps {
   onLogout: () => void;
 }
 
+const DEPARTMENTS_PERU = [
+  'San Martín',
+  'Lima',
+  'Loreto',
+  'Ucayali',
+  'Amazonas',
+  'La Libertad',
+  'Lambayeque',
+  'Piura',
+  'Cajamarca',
+  'Arequipa',
+  'Cusco',
+  'Junín',
+  'Áncash',
+  'Otro Departamento'
+];
+
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   registrations,
   onUpdateRegistrations,
   onClose,
   onLogout,
 }) => {
-  const [activeMainTab, setActiveMainTab] = useState<'registrations' | 'caldero'>('registrations');
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterModality, setFilterModality] = useState<'all' | 'Presencial' | 'Virtual'>('all');
+  const [filterPayment, setFilterPayment] = useState<'all' | 'Verificado' | 'Pendiente'>('all');
+  
+  // Modals
   const [viewingProof, setViewingProof] = useState<string | null>(null);
+  const [viewingEvidenceRunner, setViewingEvidenceRunner] = useState<RunnerRegistration | null>(null);
+  const [viewingBibRunner, setViewingBibRunner] = useState<RunnerRegistration | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassInput, setNewPassInput] = useState('');
   const [passSuccess, setPassSuccess] = useState(false);
 
-  // QR modals & scanning
-  const [showQRsModal, setShowQRsModal] = useState(false);
-  const [showStaffScanner, setShowStaffScanner] = useState(false);
-  const [staffScanNotice, setStaffScanNotice] = useState<string | null>(null);
-
   // Medal Photo Management in Admin
   const [showMedalModal, setShowMedalModal] = useState(false);
-  const [currentAdminMedal, setCurrentAdminMedal] = useState<string | null>(() =>
-    localStorage.getItem('ohana_medal_photo_v2')
-  );
+  const [currentAdminMedal, setCurrentAdminMedal] = useState<string | null>(null);
   const [tempMedalPreview, setTempMedalPreview] = useState<string | null>(null);
   const [medalSavedNotice, setMedalSavedNotice] = useState(false);
 
-  // Potion game states for exclusive admin view
-  const [potionData, setPotionData] = useState<{
-    leaderboard: any[];
-    totalScans: number;
-    winner: any;
-    recentFeed: any[];
-  }>({
-    leaderboard: [],
-    totalScans: 0,
-    winner: null,
-    recentFeed: [],
+  // New Manual Runner Form
+  const [newManual, setNewManual] = useState({
+    modality: 'Presencial' as RaceModality,
+    firstName: '',
+    lastName: '',
+    documentNumber: '',
+    whatsapp: '',
+    email: '',
+    age: '25',
+    department: 'San Martín',
+    city: 'Tarapoto',
+    district: 'Tarapoto',
+    shippingAddress: '',
+    runningClub: 'Independiente',
+    emergencyContactName: 'Familiar',
+    emergencyContactPhone: '942000000',
+    willWearCostume: false,
+    costumeName: '',
   });
-  const [isProclaimingWinner, setIsProclaimingWinner] = useState(false);
-
-  const fetchPotionLeaderboard = () => {
-    fetch('/api/potions')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.leaderboard) {
-          setPotionData(data);
-        }
-      })
-      .catch((err) => console.warn('Error fetching potion leaderboard:', err));
-  };
 
   useEffect(() => {
     // Sincronizar con el servidor para que la medalla sea consistente en todos los dispositivos
@@ -99,98 +108,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       .then((data) => {
         if (data && data.image) {
           setCurrentAdminMedal(data.image);
-          localStorage.setItem('ohana_medal_photo_v2', data.image);
         } else {
           setCurrentAdminMedal(null);
-          localStorage.removeItem('ohana_medal_photo_v2');
         }
       })
       .catch((err) => console.warn('Admin /api/medal fetch:', err));
-
-    fetchPotionLeaderboard();
   }, []);
 
-  // New manual registration state
-  const [newManual, setNewManual] = useState({
-    firstName: '',
-    lastName: '',
-    documentNumber: '',
-    whatsapp: '',
-    email: '',
-    age: '25',
-    emergencyContactName: 'Familiar',
-    emergencyContactPhone: '942000000',
-    runningClub: 'Ohana Go',
-    willWearCostume: false,
-    costumeName: '',
-  });
-
-  // Calculate Metrics
-  const totalCount = registrations.length;
-  const verifiedCount = registrations.filter((r) => r.paymentStatus === 'Verificado').length;
-  const pendingCount = registrations.filter((r) => r.paymentStatus === 'Pendiente de Verificación').length;
-  const totalIncome = verifiedCount * 50;
-  const costumedCount = registrations.filter((r) => r.willWearCostume).length;
-  const confirmedAtStartCount = registrations.filter((r) => r.confirmedAtStart).length;
-
-  // Filtered List
-  const filtered = registrations.filter((r) => {
-    const regNumStr = String(r.registrationNumber || r.bibNumber || '');
-    const matchesSearch =
-      r.documentNumber.includes(searchTerm) ||
-      `${r.firstName} ${r.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      regNumStr.includes(searchTerm) ||
-      r.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.runningClub.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesStatus = filterStatus === 'all' || r.paymentStatus === filterStatus;
-
-    return matchesSearch && matchesStatus;
-  });
-
-  const togglePaymentStatus = (id: string) => {
-    const updated = registrations.map((r) => {
-      if (r.id === id) {
-        const nextStatus: PaymentStatus =
-          r.paymentStatus === 'Verificado' ? 'Pendiente de Verificación' : 'Verificado';
-        return { ...r, paymentStatus: nextStatus };
-      }
-      return r;
-    });
+  // Handlers for payments and check-in
+  const handleTogglePayment = async (id: string, currentStatus: PaymentStatus) => {
+    const newStatus: PaymentStatus =
+      currentStatus === 'Verificado' ? 'Pendiente de Verificación' : 'Verificado';
+    const updated = registrations.map((r) =>
+      r.id === id ? { ...r, paymentStatus: newStatus } : r
+    );
     onUpdateRegistrations(updated);
     saveRegistrations(updated);
   };
 
-  const toggleStartCheckin = async (runner: RunnerRegistration) => {
-    const nextVal = !runner.confirmedAtStart;
-    try {
-      await fetch('/api/start-checkin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          runnerId: runner.id,
-          dorsal: runner.registrationNumber || runner.bibNumber,
-          dni: runner.documentNumber,
-          token: 'ADMIN_CHECKIN_OVERRIDE',
-        }),
-      });
-    } catch (e) {}
-
-    const updated = registrations.map((r) => {
-      if (r.id === runner.id) {
-        return {
-          ...r,
-          confirmedAtStart: nextVal,
-          startCheckinTime: nextVal ? new Date().toISOString() : undefined,
-        };
-      }
-      return r;
-    });
+  const handleToggleCheckin = async (runnerId: string, currentVal: boolean) => {
+    const updated = registrations.map((r) =>
+      r.id === runnerId
+        ? {
+            ...r,
+            confirmedAtStart: !currentVal,
+            startCheckinTime: !currentVal ? new Date().toISOString() : undefined,
+          }
+        : r
+      );
     onUpdateRegistrations(updated);
     saveRegistrations(updated);
   };
 
-  const handleCreateManual = (e: React.FormEvent) => {
+  const handleCreateManual = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newManual.firstName || !newManual.documentNumber) return;
 
@@ -203,27 +153,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       id: `OHA-2026-${String(nextNum).padStart(4, '0')}`,
       registrationNumber: nextNum,
       bibNumber: nextNum,
+      modality: newManual.modality,
       firstName: newManual.firstName,
-      lastName: newManual.lastName || 'Tarapoto',
+      lastName: newManual.lastName || '',
       documentType: 'DNI',
       documentNumber: newManual.documentNumber,
-      email: newManual.email || `${newManual.documentNumber}@ohanago.pe`,
+      email: newManual.email || `${newManual.documentNumber}@correo.pe`,
       whatsapp: newManual.whatsapp || '942000000',
       age: parseInt(newManual.age) || 25,
       gender: 'Masculino',
-      city: 'Tarapoto',
-      district: 'Tarapoto',
+      department: newManual.department,
+      city: newManual.city,
+      district: newManual.district,
+      shippingAddress: newManual.shippingAddress,
       runningClub: newManual.runningClub || 'Independiente',
       emergencyContactName: newManual.emergencyContactName,
       emergencyContactPhone: newManual.emergencyContactPhone,
       willWearCostume: newManual.willWearCostume,
       costumeName: newManual.costumeName,
       paymentMethod: 'Efectivo / Presencial',
-      paymentReference: 'REGISTRO-MANUAL-LOCAL',
+      paymentReference: 'REGISTRO-MANUAL-ORGANIZADOR',
       paymentStatus: 'Verificado',
       confirmedAtStart: false,
-      totalCandies: 0,
-      potionsCollected: [],
       createdAt: new Date().toISOString(),
       disclaimerAccepted: true,
     };
@@ -232,147 +183,126 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     onUpdateRegistrations(updated);
     saveRegistrations(updated);
 
-    // Sync to backend
-    fetch('/api/registrations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newEntry),
-    }).catch(() => {});
-
     setShowAddModal(false);
     setNewManual({
+      modality: 'Presencial',
       firstName: '',
       lastName: '',
       documentNumber: '',
       whatsapp: '',
       email: '',
       age: '25',
+      department: 'San Martín',
+      city: 'Tarapoto',
+      district: 'Tarapoto',
+      shippingAddress: '',
+      runningClub: 'Independiente',
       emergencyContactName: 'Familiar',
       emergencyContactPhone: '942000000',
-      runningClub: 'Ohana Go',
       willWearCostume: false,
       costumeName: '',
     });
   };
 
-  // Staff scans runner's dorsal QR at starting arch
-  const handleStaffDorsalScan = (scannedCode: string) => {
-    setShowStaffScanner(false);
-    // Code format: OHANA-RUNNER-{dni}-{dorsal} or raw DNI or number
-    let found = registrations.find(
-      (r) =>
-        scannedCode.includes(r.documentNumber) ||
-        scannedCode === String(r.registrationNumber) ||
-        scannedCode === String(r.bibNumber) ||
-        scannedCode.includes(r.id)
-    );
-
-    if (found) {
-      toggleStartCheckin(found);
-      setStaffScanNotice(`✓ ¡Dorsal #${found.registrationNumber || found.bibNumber} (${found.firstName} ${found.lastName}) confirmado en partida!`);
-      setTimeout(() => setStaffScanNotice(null), 4000);
-    } else {
-      setStaffScanNotice(`⚠️ No se encontró corredor con código: ${scannedCode}`);
-      setTimeout(() => setStaffScanNotice(null), 4000);
-    }
+  const handleUpdatePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassInput.trim()) return;
+    updateAdminPassword(newPassInput.trim());
+    setPassSuccess(true);
+    setNewPassInput('');
+    setTimeout(() => {
+      setPassSuccess(false);
+      setShowPasswordModal(false);
+    }, 1500);
   };
 
-  // Proclaim winner of Caldero
-  const handleProclaimWinner = async (leader: any) => {
-    setIsProclaimingWinner(true);
-    try {
-      const res = await fetch('/api/potions/proclaim-winner', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          runnerId: leader.runnerId,
-          notes: `Ganador absoluto del Caldero de Pociones con ${leader.totalCandies} dulces acumulados por azar.`,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok && data.winner) {
-        fetchPotionLeaderboard();
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsProclaimingWinner(false);
-    }
-  };
+  // Metrics calculation
+  const totalCount = registrations.length;
+  const presencialCount = registrations.filter((r) => (r.modality || 'Presencial') === 'Presencial').length;
+  const virtualCount = registrations.filter((r) => r.modality === 'Virtual').length;
+  const verifiedCount = registrations.filter((r) => r.paymentStatus === 'Verificado').length;
+  const pendingCount = totalCount - verifiedCount;
+  const checkinPresencialCount = registrations.filter((r) => r.confirmedAtStart).length;
+  const virtualEvidenceCount = registrations.filter((r) => r.modality === 'Virtual' && r.virtualEvidence?.proofImage).length;
+  const totalRevenue = verifiedCount * 50;
 
-  // Reset runner score to 0 (useful for tests or recalibration)
-  const handleResetRunnerScore = async (runnerId: string, runnerName: string) => {
-    try {
-      await fetch('/api/potions/reset-runner', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ runnerId }),
-      });
-      fetchPotionLeaderboard();
-      const updated = registrations.map((r) =>
-        r.id === runnerId ? { ...r, totalCandies: 0, potionsCollected: [] } : r
-      );
-      onUpdateRegistrations(updated);
-      saveRegistrations(updated);
-      setStaffScanNotice(`✓ Se reinició el puntaje a 0 para ${runnerName}.`);
-      setTimeout(() => setStaffScanNotice(null), 3500);
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  // Filtered registrations
+  const filteredRegistrations = registrations.filter((r) => {
+    // Search query
+    const query = searchTerm.toLowerCase();
+    const matchSearch =
+      r.firstName.toLowerCase().includes(query) ||
+      r.lastName.toLowerCase().includes(query) ||
+      r.documentNumber.includes(query) ||
+      r.whatsapp.includes(query) ||
+      r.id.toLowerCase().includes(query) ||
+      String(r.registrationNumber || r.bibNumber || '').includes(query) ||
+      r.city.toLowerCase().includes(query) ||
+      (r.department && r.department.toLowerCase().includes(query));
 
-  const topLeader = potionData.leaderboard.length > 0 ? potionData.leaderboard[0] : null;
+    // Modality filter
+    const matchModality =
+      filterModality === 'all' ||
+      (filterModality === 'Presencial' && (r.modality || 'Presencial') === 'Presencial') ||
+      (filterModality === 'Virtual' && r.modality === 'Virtual');
+
+    // Payment filter
+    const matchPayment =
+      filterPayment === 'all' ||
+      (filterPayment === 'Verificado' && r.paymentStatus === 'Verificado') ||
+      (filterPayment === 'Pendiente' && r.paymentStatus !== 'Verificado');
+
+    return matchSearch && matchModality && matchPayment;
+  });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/90 backdrop-blur-md">
-      <div className="relative w-full max-w-7xl h-[95vh] bg-neutral-900 border border-neutral-700 rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+      <div className="relative w-full max-w-7xl bg-neutral-900 border border-neutral-800 rounded-3xl shadow-2xl p-4 sm:p-6 overflow-hidden my-4 max-h-[95vh] flex flex-col">
         
-        {/* Top Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-neutral-800">
+        {/* Header Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-800 pb-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bebas text-2xl tracking-wider text-white">
-                OHANA <span className="text-lime-400 font-extrabold">GO</span>
+              <span className="font-bebas text-3xl sm:text-4xl text-white tracking-wide uppercase">
+                Panel del <span className="text-lime-400">Organizador</span>
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-lime-400/20 text-lime-400 font-bold uppercase text-[10px] tracking-wider border border-lime-400/30">
-                Panel Organizador
+              <span className="px-2.5 py-0.5 rounded-full bg-lime-400/20 text-lime-400 font-bold uppercase text-[10px] tracking-wider border border-lime-400/30">
+                OHANA GO 5K Oficial
               </span>
             </div>
             <p className="text-xs text-neutral-400 mt-0.5">
-              Gestión oficial de la carrera 5K, check-in de partida y minijuego "Caldero de Pociones".
+              Gestión centralizada de corredores presenciales y virtuales, pagos, asistencias y medalla oficial.
             </p>
           </div>
 
           {/* Quick Actions Buttons */}
           <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={() => setShowQRsModal(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-purple-900 to-indigo-900 hover:from-purple-800 hover:to-indigo-800 text-purple-200 rounded-xl text-xs font-bold border border-purple-500/40 transition cursor-pointer shadow-md"
-              title="Ver e imprimir códigos QR del evento"
-            >
-              <QrCode className="w-3.5 h-3.5 text-lime-400" />
-              <span>QRs del Evento</span>
-            </button>
-
-            <button
-              onClick={() => setShowStaffScanner(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-lime-400 rounded-xl text-xs font-bold border border-lime-400/30 transition cursor-pointer"
-              title="Escanear dorsal de corredor en largada"
-            >
-              <Camera className="w-3.5 h-3.5 text-lime-400" />
-              <span className="hidden sm:inline">Escanear Asistencia</span>
-            </button>
-
-            <button
               onClick={() => {
                 setTempMedalPreview(currentAdminMedal);
                 setShowMedalModal(true);
               }}
-              className="flex items-center gap-1.5 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-semibold transition border border-neutral-700 hover:border-lime-400 cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 rounded-xl text-xs font-semibold transition border border-neutral-700 hover:border-lime-400 cursor-pointer shadow-sm"
               title="Subir o cambiar foto de la medalla oficial"
             >
               <Award className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden sm:inline">Foto Medalla</span>
+              <span>Foto Medalla Oficial</span>
+            </button>
+
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-lime-400 hover:bg-lime-300 text-black rounded-xl text-xs font-bold transition shadow-md shadow-lime-400/20 cursor-pointer"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>+ Nuevo Corredor</span>
+            </button>
+
+            <button
+              onClick={() => exportToCSV(registrations)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Exportar CSV</span>
             </button>
 
             <button
@@ -382,14 +312,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             >
               <KeyRound className="w-3.5 h-3.5 text-lime-400" />
               <span className="hidden sm:inline">Clave</span>
-            </button>
-
-            <button
-              onClick={() => exportToCSV(registrations)}
-              className="hidden sm:flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow cursor-pointer"
-            >
-              <Download className="w-4 h-4" />
-              CSV
             </button>
 
             <button
@@ -413,591 +335,594 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
 
-        {/* Staff Scan Notice Banner */}
-        {staffScanNotice && (
-          <div className="my-2 p-3 rounded-2xl bg-lime-950/90 border border-lime-400/50 text-lime-300 text-xs flex items-center justify-between">
-            <span>{staffScanNotice}</span>
-            <button onClick={() => setStaffScanNotice(null)} className="text-neutral-400 hover:text-white">✕</button>
+        {/* Metrics Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 py-4">
+          <div className="bg-neutral-950 p-3 rounded-2xl border border-neutral-800">
+            <span className="text-[10px] uppercase font-bold text-neutral-400 block">Total Inscritos</span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="font-bebas text-2xl sm:text-3xl text-white">{totalCount}</span>
+              <span className="text-[10px] text-neutral-500">runners</span>
+            </div>
           </div>
-        )}
 
-        {/* Main Sections Navigation Tabs */}
-        <div className="flex gap-2 py-3 border-b border-neutral-800 text-xs">
-          <button
-            onClick={() => setActiveMainTab('registrations')}
-            className={`px-4 py-2 rounded-xl font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${
-              activeMainTab === 'registrations'
-                ? 'bg-lime-400 text-black shadow-md'
-                : 'bg-neutral-800 text-neutral-300 hover:text-white'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            Inscritos & Asistencia ({totalCount})
-          </button>
+          <div className="bg-neutral-950 p-3 rounded-2xl border border-lime-400/30">
+            <span className="text-[10px] uppercase font-bold text-lime-400 block flex items-center gap-1">
+              <MapPin className="w-3 h-3" /> Presencial
+            </span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="font-bebas text-2xl sm:text-3xl text-lime-300">{presencialCount}</span>
+              <span className="text-[10px] text-neutral-500">Tarapoto</span>
+            </div>
+          </div>
 
-          <button
-            onClick={() => {
-              setActiveMainTab('caldero');
-              fetchPotionLeaderboard();
-            }}
-            className={`px-4 py-2 rounded-xl font-bold uppercase tracking-wider flex items-center gap-1.5 transition cursor-pointer ${
-              activeMainTab === 'caldero'
-                ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-md'
-                : 'bg-neutral-800 text-neutral-300 hover:text-white'
-            }`}
-          >
-            <Sparkles className="w-4 h-4 text-lime-400" />
-            Caldero de Pociones: Ranking Exclusivo ({potionData.totalScans} escaneos)
-          </button>
+          <div className="bg-neutral-950 p-3 rounded-2xl border border-purple-500/30">
+            <span className="text-[10px] uppercase font-bold text-purple-400 block flex items-center gap-1">
+              <Globe className="w-3 h-3" /> Virtual
+            </span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="font-bebas text-2xl sm:text-3xl text-purple-300">{virtualCount}</span>
+              <span className="text-[10px] text-neutral-500">nacional</span>
+            </div>
+          </div>
+
+          <div className="bg-neutral-950 p-3 rounded-2xl border border-emerald-500/30">
+            <span className="text-[10px] uppercase font-bold text-emerald-400 block">Pagos Verificados</span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="font-bebas text-2xl sm:text-3xl text-emerald-400">{verifiedCount}</span>
+              <span className="text-[10px] text-neutral-500">de {totalCount}</span>
+            </div>
+          </div>
+
+          <div className="bg-neutral-950 p-3 rounded-2xl border border-amber-500/30">
+            <span className="text-[10px] uppercase font-bold text-amber-400 block">Pendientes Pago</span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="font-bebas text-2xl sm:text-3xl text-amber-400">{pendingCount}</span>
+              <span className="text-[10px] text-neutral-500">por cobrar</span>
+            </div>
+          </div>
+
+          <div className="bg-neutral-950 p-3 rounded-2xl border border-neutral-800">
+            <span className="text-[10px] uppercase font-bold text-neutral-400 block">Recaudación Oficial</span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="font-bebas text-2xl sm:text-3xl text-lime-400">S/ {totalRevenue}</span>
+            </div>
+          </div>
         </div>
 
-        {/* Scrollable Content Body */}
-        <div className="overflow-y-auto flex-1 pr-1 space-y-6 py-4">
-          
-          {/* TAB 1: REGISTRATIONS & ATTENDANCE */}
-          {activeMainTab === 'registrations' && (
-            <div className="space-y-6">
-              {/* Key Metrics KPI Cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-                <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800 flex items-center gap-3">
-                  <div className="p-3 bg-lime-400/10 text-lime-400 rounded-xl">
-                    <Users className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-neutral-400 block">Total Inscritos</span>
-                    <span className="font-bebas text-3xl text-white">{totalCount}</span>
-                  </div>
-                </div>
+        {/* Filter and Search Toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-neutral-800 text-xs">
+          {/* Search Box */}
+          <div className="relative flex-1 min-w-[240px] max-w-md">
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-neutral-500" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Buscar por nombre, DNI, celular, dorsal o ciudad..."
+              className="w-full pl-9 pr-3 py-2 bg-neutral-950 border border-neutral-800 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-lime-400 transition text-xs"
+            />
+          </div>
 
-                <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800 flex items-center gap-3">
-                  <div className="p-3 bg-emerald-400/10 text-emerald-400 rounded-xl">
-                    <DollarSign className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-neutral-400 block">Recaudado (Verificado)</span>
-                    <span className="font-bebas text-3xl text-lime-400">S/ {totalIncome}</span>
-                  </div>
-                </div>
+          {/* Filter Pills */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Modality Filter */}
+            <div className="flex items-center bg-neutral-950 p-1 rounded-xl border border-neutral-800">
+              <button
+                onClick={() => setFilterModality('all')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                  filterModality === 'all' ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                Todas Modalidades
+              </button>
+              <button
+                onClick={() => setFilterModality('Presencial')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1 ${
+                  filterModality === 'Presencial' ? 'bg-lime-400 text-black font-bold' : 'text-neutral-400 hover:text-lime-300'
+                }`}
+              >
+                <MapPin className="w-3 h-3" /> Presencial ({presencialCount})
+              </button>
+              <button
+                onClick={() => setFilterModality('Virtual')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1 ${
+                  filterModality === 'Virtual' ? 'bg-purple-600 text-white font-bold' : 'text-neutral-400 hover:text-purple-300'
+                }`}
+              >
+                <Globe className="w-3 h-3" /> Virtual ({virtualCount})
+              </button>
+            </div>
 
-                <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800 flex items-center gap-3">
-                  <div className="p-3 bg-amber-400/10 text-amber-400 rounded-xl">
-                    <Clock className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-neutral-400 block">Pendientes Pago</span>
-                    <span className="font-bebas text-3xl text-amber-400">{pendingCount}</span>
-                  </div>
-                </div>
+            {/* Payment Filter */}
+            <div className="flex items-center bg-neutral-950 p-1 rounded-xl border border-neutral-800">
+              <button
+                onClick={() => setFilterPayment('all')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                  filterPayment === 'all' ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                Todos Pagos
+              </button>
+              <button
+                onClick={() => setFilterPayment('Verificado')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer text-emerald-400 ${
+                  filterPayment === 'Verificado' ? 'bg-emerald-950 border border-emerald-500/40' : 'hover:text-emerald-300'
+                }`}
+              >
+                Pagados
+              </button>
+              <button
+                onClick={() => setFilterPayment('Pendiente')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer text-amber-400 ${
+                  filterPayment === 'Pendiente' ? 'bg-amber-950 border border-amber-500/40' : 'hover:text-amber-300'
+                }`}
+              >
+                Pendientes
+              </button>
+            </div>
+          </div>
+        </div>
 
-                <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800 flex items-center gap-3">
-                  <div className="p-3 bg-cyan-400/10 text-cyan-400 rounded-xl">
-                    <CheckCircle2 className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-neutral-400 block">Presentes en Partida</span>
-                    <span className="font-bebas text-3xl text-cyan-400">{confirmedAtStartCount}</span>
-                  </div>
-                </div>
+        {/* Registrations Table */}
+        <div className="flex-1 overflow-y-auto mt-2 -mx-4 sm:-mx-6 px-4 sm:px-6">
+          <table className="w-full text-left border-collapse text-xs">
+            <thead className="sticky top-0 bg-neutral-900 border-b border-neutral-800 text-neutral-400 uppercase text-[10px] font-bold tracking-wider z-10">
+              <tr>
+                <th className="py-3 px-3"># Dorsal</th>
+                <th className="py-3 px-3">Corredor / Runner</th>
+                <th className="py-3 px-3">Modalidad</th>
+                <th className="py-3 px-3">Ubicación</th>
+                <th className="py-3 px-3">Asistencia / Evidencia</th>
+                <th className="py-3 px-3">Estado Pago</th>
+                <th className="py-3 px-3 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-800/60">
+              {filteredRegistrations.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-8 text-center text-neutral-500 text-xs">
+                    No se encontraron inscripciones con los filtros actuales.
+                  </td>
+                </tr>
+              ) : (
+                filteredRegistrations.map((runner) => {
+                  const isRunVirtual = runner.modality === 'Virtual';
+                  return (
+                    <tr key={runner.id} className="hover:bg-neutral-800/40 transition">
+                      {/* Dorsal */}
+                      <td className="py-3 px-3 font-mono font-bold text-lime-400 text-sm">
+                        #{String(runner.registrationNumber || runner.bibNumber || '01').padStart(3, '0')}
+                      </td>
 
-                <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800 flex items-center gap-3">
-                  <div className="p-3 bg-purple-400/10 text-purple-400 rounded-xl">
-                    <Sparkles className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-neutral-400 block">Con Disfraz</span>
-                    <span className="font-bebas text-3xl text-purple-400">{costumedCount}</span>
-                  </div>
-                </div>
-              </div>
+                      {/* Runner info */}
+                      <td className="py-3 px-3">
+                        <div className="font-bold text-white text-xs">
+                          {runner.firstName} {runner.lastName}
+                        </div>
+                        <div className="text-[11px] text-neutral-400 flex items-center gap-1.5 mt-0.5">
+                          <span>{runner.documentType}: <strong>{runner.documentNumber}</strong></span>
+                          <span>•</span>
+                          <span>Wsp: {runner.whatsapp}</span>
+                          {runner.willWearCostume && (
+                            <span className="text-[10px] text-purple-400 bg-purple-950/60 px-1.5 py-0.2 rounded border border-purple-500/30">
+                              Disfraz: {runner.costumeName || 'Sí'}
+                            </span>
+                          )}
+                        </div>
+                      </td>
 
-              {/* Filters & Actions Bar */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                <div className="relative flex-1">
-                  <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-3.5" />
-                  <input
-                    type="text"
-                    placeholder="Buscar por DNI, Nombre, N° Registro o Club..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl pl-9 pr-4 py-2.5 text-xs text-white placeholder:text-neutral-500 focus:outline-none focus:border-lime-400"
-                  />
-                </div>
+                      {/* Modality */}
+                      <td className="py-3 px-3">
+                        {isRunVirtual ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-purple-950/80 text-purple-300 border border-purple-500/40">
+                            <Globe className="w-3 h-3 text-purple-400" />
+                            Virtual 5K
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-lime-950/80 text-lime-400 border border-lime-500/40">
+                            <MapPin className="w-3 h-3 text-lime-400" />
+                            Presencial
+                          </span>
+                        )}
+                      </td>
 
-                <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2.5 text-xs text-neutral-300 focus:outline-none"
-                >
-                  <option value="all">Todos los Estados</option>
-                  <option value="Verificado">Solo Verificados</option>
-                  <option value="Pendiente de Verificación">Solo Pendientes</option>
-                </select>
+                      {/* Location */}
+                      <td className="py-3 px-3 text-[11px] text-neutral-300">
+                        <div className="font-semibold text-white">{runner.department || 'San Martín'}</div>
+                        <div className="text-neutral-400">{runner.city} • {runner.district}</div>
+                      </td>
 
-                <button
-                  onClick={() => setShowAddModal(true)}
-                  className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-lime-400 hover:bg-lime-300 text-black rounded-xl text-xs font-bold transition cursor-pointer"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  Inscribir en Físico
-                </button>
-              </div>
-
-              {/* Registrations Table */}
-              <div className="overflow-x-auto rounded-2xl border border-neutral-800">
-                <table className="w-full text-left text-xs text-neutral-300">
-                  <thead className="bg-neutral-950 text-neutral-400 uppercase text-[10px] font-bold tracking-wider border-b border-neutral-800">
-                    <tr>
-                      <th className="py-3 px-3">Dorsal</th>
-                      <th className="py-3 px-3">Corredor</th>
-                      <th className="py-3 px-3">DNI / Doc</th>
-                      <th className="py-3 px-3">WhatsApp</th>
-                      <th className="py-3 px-3 text-center">Partida</th>
-                      <th className="py-3 px-3 text-center">Pociones</th>
-                      <th className="py-3 px-3 text-center">Estado Pago</th>
-                      <th className="py-3 px-3 text-right">Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-neutral-800/60 bg-neutral-950/40">
-                    {filtered.map((runner) => (
-                      <tr key={runner.id} className="hover:bg-neutral-900/60 transition">
-                        <td className="py-3 px-3 font-mono font-bold text-lime-400">
-                          #{String(runner.registrationNumber || runner.bibNumber || 1).padStart(3, '0')}
-                        </td>
-                        <td className="py-3 px-3">
-                          <div className="font-semibold text-white">
-                            {runner.firstName} {runner.lastName}
-                          </div>
-                          <div className="text-[10px] text-neutral-500">
-                            {runner.age} años • {runner.runningClub || 'Independiente'}
-                          </div>
-                        </td>
-                        <td className="py-3 px-3 font-mono text-neutral-400">
-                          {runner.documentNumber}
-                        </td>
-                        <td className="py-3 px-3 text-neutral-400">
-                          {runner.whatsapp}
-                        </td>
-                        {/* Start Line Check-in Status */}
-                        <td className="py-3 px-3 text-center">
+                      {/* Attendance / Virtual Evidence */}
+                      <td className="py-3 px-3">
+                        {isRunVirtual ? (
+                          runner.virtualEvidence?.proofImage || runner.virtualEvidence?.timeRecorded ? (
+                            <button
+                              onClick={() => setViewingEvidenceRunner(runner)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-500/40 transition cursor-pointer"
+                            >
+                              <Activity className="w-3.5 h-3.5 text-purple-300" />
+                              Ver Evidencia ({runner.virtualEvidence.timeRecorded || 'OK'})
+                            </button>
+                          ) : (
+                            <span className="text-[11px] text-neutral-500 italic">
+                              Pendiente envío
+                            </span>
+                          )
+                        ) : (
                           <button
-                            onClick={() => toggleStartCheckin(runner)}
-                            className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase transition cursor-pointer flex items-center justify-center gap-1 mx-auto ${
+                            onClick={() => handleToggleCheckin(runner.id, !!runner.confirmedAtStart)}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase transition cursor-pointer border ${
                               runner.confirmedAtStart
-                                ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40'
-                                : 'bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-700'
-                            }`}
-                            title="Haz clic para marcar o desmarcar presencia en partida"
-                          >
-                            {runner.confirmedAtStart ? (
-                              <>
-                                <Check className="w-3 h-3 text-emerald-400" />
-                                <span>Presente</span>
-                              </>
-                            ) : (
-                              <span>Check-in</span>
-                            )}
-                          </button>
-                        </td>
-                        {/* Potions mini-game */}
-                        <td className="py-3 px-3 text-center">
-                          <span className="font-mono text-[11px] text-purple-300 font-bold">
-                            {(runner.potionsCollected || []).length}/5
-                          </span>
-                          <span className="text-[10px] text-neutral-500 block">
-                            {runner.totalCandies || 0} dulces
-                          </span>
-                        </td>
-                        {/* Payment Status */}
-                        <td className="py-3 px-3 text-center">
-                          <button
-                            onClick={() => togglePaymentStatus(runner.id)}
-                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase transition cursor-pointer ${
-                              runner.paymentStatus === 'Verificado'
-                                ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30'
-                                : 'bg-amber-950 text-amber-400 border border-amber-500/30'
+                                ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/40 hover:bg-emerald-900'
+                                : 'bg-neutral-800 text-neutral-400 border-neutral-700 hover:text-white hover:border-lime-400'
                             }`}
                           >
-                            {runner.paymentStatus}
+                            <Check className="w-3.5 h-3.5" />
+                            {runner.confirmedAtStart ? 'Confirmado Partida' : 'Marcar Asistencia'}
                           </button>
-                        </td>
-                        {/* Action: view proof */}
-                        <td className="py-3 px-3 text-right">
-                          {runner.paymentProofImage ? (
+                        )}
+                      </td>
+
+                      {/* Payment */}
+                      <td className="py-3 px-3">
+                        <button
+                          onClick={() => handleTogglePayment(runner.id, runner.paymentStatus)}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase transition cursor-pointer border flex items-center gap-1 ${
+                            runner.paymentStatus === 'Verificado'
+                              ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/40 hover:bg-emerald-900'
+                              : 'bg-amber-950/80 text-amber-400 border-amber-500/40 hover:bg-amber-900'
+                          }`}
+                        >
+                          <CheckCircle2 className="w-3 h-3" />
+                          {runner.paymentStatus === 'Verificado' ? 'Verificado' : 'Pendiente'}
+                        </button>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-3 px-3 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {runner.paymentProofImage && (
                             <button
                               onClick={() => setViewingProof(runner.paymentProofImage || null)}
-                              className="p-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-lg transition cursor-pointer"
-                              title="Ver comprobante de pago"
+                              className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-lime-400 transition cursor-pointer"
+                              title="Ver voucher de pago"
                             >
-                              <Eye className="w-3.5 h-3.5" />
+                              <DollarSign className="w-3.5 h-3.5" />
                             </button>
-                          ) : (
-                            <span className="text-[10px] text-neutral-600">Sin voucher</span>
                           )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
 
-          {/* TAB 2: CALDERO DE POCIONES - EXCLUSIVE ADMIN LEADERBOARD & WINNER */}
-          {activeMainTab === 'caldero' && (
-            <div className="space-y-6">
-              {/* Header Box */}
-              <div className="p-6 rounded-3xl bg-gradient-to-r from-purple-950 via-neutral-900 to-black border-2 border-purple-500/40 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                <div>
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 text-purple-300 text-xs font-black uppercase mb-2">
-                    <Trophy className="w-3.5 h-3.5 text-amber-400" />
-                    Vista Exclusiva del Administrador
-                  </div>
-                  <h4 className="font-bebas text-3xl sm:text-4xl text-white tracking-wider uppercase">
-                    Tablero Maestro: Caldero de Pociones
-                  </h4>
-                  <p className="text-xs text-neutral-300 max-w-xl mt-1 leading-relaxed">
-                    Los corredores buscan los 5 QRs en Entre Jarras y el sistema les asigna valores aleatorios por cada poción. Por solicitud tuya,{' '}
-                    <strong className="text-lime-400">
-                      solo tú como Administrador puedes ver esta tabla completa con el total de dulces de cada uno
-                    </strong>{' '}
-                    para determinar con total transparencia al ganador del premio especial de OHANA GO.
-                  </p>
-                </div>
-
-                {/* Leader Card & Proclaim Button */}
-                {topLeader && (
-                  <div className="bg-neutral-950/95 border-2 border-amber-400/60 p-5 rounded-2xl text-center min-w-[240px] shadow-2xl shrink-0">
-                    <div className="inline-flex items-center gap-1 text-[11px] font-black uppercase text-amber-400 mb-1">
-                      <Crown className="w-4 h-4 fill-amber-400" />
-                      Líder Actual #1
-                    </div>
-                    <span className="font-bebas text-4xl text-lime-400 font-black block leading-none my-1">
-                      {topLeader.totalCandies} Dulces
-                    </span>
-                    <span className="text-xs font-bold text-white block truncate max-w-[200px] mx-auto">
-                      Dorsal #{String(topLeader.dorsal).padStart(3, '0')} • {topLeader.runnerName}
-                    </span>
-                    <span className="text-[10px] text-purple-300 block mb-3">
-                      {topLeader.potionsCollected?.length || 0} de 5 pociones descubiertas
-                    </span>
-
-                    <button
-                      onClick={() => handleProclaimWinner(topLeader)}
-                      disabled={isProclaimingWinner || topLeader.totalCandies === 0}
-                      className="w-full py-2.5 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 disabled:opacity-50 text-black font-bebas text-base uppercase tracking-wider rounded-xl transition cursor-pointer shadow-lg shadow-amber-500/20"
-                    >
-                      {potionData.winner?.proclaimed ? 'Actualizar Ganador' : 'Proclamar Ganador Oficial'}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Winner Banner if Proclaimed */}
-              {potionData.winner?.proclaimed && (
-                <div className="p-4 rounded-2xl bg-amber-950/80 border-2 border-amber-400 text-amber-200 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-amber-400 text-black flex items-center justify-center font-bold">
-                      <Crown className="w-7 h-7 fill-black" />
-                    </div>
-                    <div>
-                      <span className="text-[10px] uppercase font-black tracking-widest text-amber-400 block">
-                        Ganador Oficial Proclamado
-                      </span>
-                      <h5 className="font-bebas text-2xl text-white">
-                        Dorsal #{String(potionData.winner.dorsal).padStart(3, '0')} • {potionData.winner.runnerName} ({potionData.winner.totalCandies} Dulces)
-                      </h5>
-                      <span className="text-[11px] text-amber-300">
-                        {potionData.winner.notes}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Full Ranked Table */}
-              <div className="overflow-x-auto rounded-2xl border border-neutral-800">
-                <table className="w-full text-left text-xs text-neutral-300">
-                  <thead className="bg-neutral-950 text-neutral-400 uppercase text-[10px] font-bold tracking-wider border-b border-neutral-800">
-                    <tr>
-                      <th className="py-3 px-3 text-center">Rank</th>
-                      <th className="py-3 px-3">Dorsal</th>
-                      <th className="py-3 px-3">Competidor</th>
-                      <th className="py-3 px-3">DNI</th>
-                      <th className="py-3 px-3 text-center">Pociones (5 max)</th>
-                      <th className="py-3 px-3 text-center font-bold text-lime-400">Total Dulces de Azar</th>
-                      <th className="py-3 px-3 text-right">Último Escaneo</th>
-                      <th className="py-3 px-3 text-right">Acción</th>
+                          <button
+                            onClick={() => setViewingBibRunner(runner)}
+                            className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition cursor-pointer"
+                            title="Ver pase oficial digital"
+                          >
+                            <QrCode className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-neutral-800/60 bg-neutral-950/40">
-                    {potionData.leaderboard.map((item, idx) => (
-                      <tr
-                        key={item.runnerId}
-                        className={`hover:bg-neutral-900/60 transition ${
-                          idx === 0 && item.totalCandies > 0 ? 'bg-amber-950/20' : ''
-                        }`}
-                      >
-                        <td className="py-3 px-3 text-center font-bold">
-                          {idx === 0 && item.totalCandies > 0 ? (
-                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-400 text-black font-black text-xs">
-                              1°
-                            </span>
-                          ) : (
-                            <span className="text-neutral-500 font-mono">{idx + 1}°</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-3 font-mono font-bold text-lime-400">
-                          #{String(item.dorsal).padStart(3, '0')}
-                        </td>
-                        <td className="py-3 px-3 font-semibold text-white">
-                          {item.runnerName}
-                        </td>
-                        <td className="py-3 px-3 font-mono text-neutral-400">
-                          {item.documentNumber}
-                        </td>
-                        <td className="py-3 px-3 text-center">
-                          <span className="font-mono font-bold text-purple-300">
-                            {item.potionsCollected?.length || 0}/5
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 text-center">
-                          <span className="font-bebas text-2xl text-lime-400 font-black">
-                            {item.totalCandies} 🍬
-                          </span>
-                        </td>
-                        <td className="py-3 px-3 text-right text-[11px] text-neutral-500">
-                          {item.lastScanAt
-                            ? new Date(item.lastScanAt).toLocaleTimeString('es-PE', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })
-                            : 'Sin escaneos'}
-                        </td>
-                        <td className="py-3 px-3 text-right">
-                          {item.totalCandies > 0 ? (
-                            <button
-                              onClick={() => handleResetRunnerScore(item.runnerId, item.runnerName)}
-                              className="px-2 py-1 bg-neutral-800 hover:bg-red-950 text-neutral-400 hover:text-red-300 rounded-lg text-[10px] font-bold border border-neutral-700 transition cursor-pointer"
-                              title="Reiniciar dulces y pociones a 0"
-                            >
-                              Poner a 0
-                            </button>
-                          ) : (
-                            <span className="text-[10px] text-neutral-600">-</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
 
-        {/* Modal: View Payment Proof */}
-        {viewingProof && (
-          <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90">
-            <div className="relative max-w-lg w-full bg-neutral-900 p-4 rounded-3xl border border-neutral-700">
+      </div>
+
+      {/* Modal: View Payment Voucher */}
+      {viewingProof && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className="relative max-w-lg w-full bg-neutral-900 rounded-2xl p-4 border border-neutral-800">
+            <div className="flex items-center justify-between mb-3 border-b border-neutral-800 pb-2">
+              <h4 className="font-bebas text-xl text-white uppercase">Comprobante de Pago</h4>
               <button
                 onClick={() => setViewingProof(null)}
-                className="absolute top-4 right-4 p-2 bg-neutral-800 text-neutral-400 hover:text-white rounded-full cursor-pointer"
+                className="p-1 rounded-full bg-neutral-800 text-neutral-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="rounded-xl overflow-hidden bg-black flex items-center justify-center max-h-[70vh]">
+              <img src={viewingProof} alt="Voucher" className="max-w-full max-h-[70vh] object-contain" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: View Virtual Evidence Details */}
+      {viewingEvidenceRunner && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className="relative max-w-xl w-full bg-neutral-900 rounded-3xl p-5 border border-purple-500/40">
+            <div className="flex items-center justify-between mb-4 border-b border-neutral-800 pb-3">
+              <div>
+                <span className="text-[10px] text-purple-400 uppercase font-black tracking-wider block">Evidencia 5K Virtual</span>
+                <h4 className="font-bebas text-2xl text-white uppercase">
+                  {viewingEvidenceRunner.firstName} {viewingEvidenceRunner.lastName} (Dorsal #{viewingEvidenceRunner.registrationNumber})
+                </h4>
+              </div>
+              <button
+                onClick={() => setViewingEvidenceRunner(null)}
+                className="p-1.5 rounded-full bg-neutral-800 text-neutral-400 hover:text-white"
               >
                 <X className="w-5 h-5" />
               </button>
-              <h4 className="font-bebas text-2xl text-white uppercase tracking-wider mb-3">
-                Comprobante de Pago
-              </h4>
-              <div className="max-h-[70vh] overflow-auto rounded-2xl bg-black flex items-center justify-center">
-                <img src={viewingProof} alt="Voucher" className="max-w-full h-auto object-contain" />
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 text-xs bg-neutral-950 p-3 rounded-2xl border border-neutral-800">
+                <div>
+                  <span className="text-neutral-500 uppercase font-bold text-[10px] block">App Utilizada</span>
+                  <span className="text-white font-semibold">{viewingEvidenceRunner.virtualEvidence?.appName || 'Strava'}</span>
+                </div>
+                <div>
+                  <span className="text-neutral-500 uppercase font-bold text-[10px] block">Tiempo Registrado</span>
+                  <span className="text-lime-400 font-bebas text-xl">{viewingEvidenceRunner.virtualEvidence?.timeRecorded || 'N/A'}</span>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-neutral-500 uppercase font-bold text-[10px] block">Dirección de Envío de Medalla</span>
+                  <span className="text-neutral-300 font-medium">
+                    {viewingEvidenceRunner.shippingAddress || 'No especificada aún'} ({viewingEvidenceRunner.city}, {viewingEvidenceRunner.department})
+                  </span>
+                </div>
               </div>
+
+              {viewingEvidenceRunner.virtualEvidence?.proofImage ? (
+                <div className="rounded-2xl overflow-hidden bg-black flex items-center justify-center max-h-[50vh] border border-neutral-800">
+                  <img
+                    src={viewingEvidenceRunner.virtualEvidence.proofImage}
+                    alt="Evidencia 5K"
+                    className="max-w-full max-h-[50vh] object-contain"
+                  />
+                </div>
+              ) : (
+                <p className="text-xs text-neutral-400 text-center py-4">No se adjuntó captura de pantalla aún.</p>
+              )}
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Modal: Add Manual Runner */}
-        {showAddModal && (
-          <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90">
-            <div className="relative max-w-md w-full bg-neutral-900 p-6 rounded-3xl border border-neutral-700">
+      {/* Modal: View Digital Bib */}
+      {viewingBibRunner && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className="relative max-w-lg w-full bg-neutral-900 rounded-3xl p-5 border border-neutral-800">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-bebas text-xl text-white uppercase">Pase Digital de Participante</h4>
+              <button
+                onClick={() => setViewingBibRunner(null)}
+                className="p-1 rounded-full bg-neutral-800 text-neutral-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <DigitalBib registration={viewingBibRunner} />
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Add Manual Runner */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md overflow-y-auto">
+          <div className="relative max-w-xl w-full bg-neutral-900 rounded-3xl p-6 border border-neutral-800 my-4">
+            <div className="flex items-center justify-between mb-4 border-b border-neutral-800 pb-3">
+              <h4 className="font-bebas text-2xl text-white uppercase flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-lime-400" />
+                Registrar Nuevo Corredor Manualmente
+              </h4>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="absolute top-4 right-4 p-1.5 bg-neutral-800 text-neutral-400 hover:text-white rounded-full cursor-pointer"
+                className="p-1 rounded-full bg-neutral-800 text-neutral-400 hover:text-white"
               >
                 <X className="w-4 h-4" />
               </button>
-              <h4 className="font-bebas text-2xl text-white uppercase tracking-wider mb-4">
-                Inscripción Presencial / Manual
-              </h4>
-              <form onSubmit={handleCreateManual} className="space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] uppercase font-bold text-neutral-400 block mb-1">Nombres</label>
-                    <input
-                      type="text"
-                      required
-                      value={newManual.firstName}
-                      onChange={(e) => setNewManual({ ...newManual, firstName: e.target.value })}
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] uppercase font-bold text-neutral-400 block mb-1">Apellidos</label>
-                    <input
-                      type="text"
-                      value={newManual.lastName}
-                      onChange={(e) => setNewManual({ ...newManual, lastName: e.target.value })}
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] uppercase font-bold text-neutral-400 block mb-1">DNI</label>
-                    <input
-                      type="text"
-                      required
-                      value={newManual.documentNumber}
-                      onChange={(e) => setNewManual({ ...newManual, documentNumber: e.target.value })}
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] uppercase font-bold text-neutral-400 block mb-1">WhatsApp</label>
-                    <input
-                      type="tel"
-                      value={newManual.whatsapp}
-                      onChange={(e) => setNewManual({ ...newManual, whatsapp: e.target.value })}
-                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-xs text-white"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-3 bg-lime-400 text-black font-bebas text-lg uppercase tracking-wider rounded-xl transition cursor-pointer mt-2"
-                >
-                  Registrar Participante
-                </button>
-              </form>
             </div>
-          </div>
-        )}
 
-        {/* Modal: Change Password */}
-        {showPasswordModal && (
-          <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90">
-            <div className="relative max-w-sm w-full bg-neutral-900 p-6 rounded-3xl border border-neutral-700">
-              <button
-                onClick={() => {
-                  setShowPasswordModal(false);
-                  setPassSuccess(false);
-                  setNewPassInput('');
-                }}
-                className="absolute top-4 right-4 p-1.5 bg-neutral-800 text-neutral-400 hover:text-white rounded-full cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
+            <form onSubmit={handleCreateManual} className="space-y-4">
+              {/* Modality radio */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-neutral-300 mb-1.5">
+                  Modalidad de Participación *
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setNewManual({ ...newManual, modality: 'Presencial' })}
+                    className={`p-3 rounded-xl border text-center transition cursor-pointer flex items-center justify-center gap-2 ${
+                      newManual.modality === 'Presencial'
+                        ? 'bg-lime-400/20 border-lime-400 text-lime-300 font-bold'
+                        : 'bg-neutral-950 border-neutral-800 text-neutral-400'
+                    }`}
+                  >
+                    <MapPin className="w-4 h-4" />
+                    Presencial Tarapoto
+                  </button>
 
-              <h4 className="font-bebas text-2xl text-white uppercase tracking-wider mb-2">
-                Cambiar Contraseña Admin
-              </h4>
-              <p className="text-xs text-neutral-400 mb-4">
-                Define una nueva clave para acceder a este panel de administración.
-              </p>
+                  <button
+                    type="button"
+                    onClick={() => setNewManual({ ...newManual, modality: 'Virtual' })}
+                    className={`p-3 rounded-xl border text-center transition cursor-pointer flex items-center justify-center gap-2 ${
+                      newManual.modality === 'Virtual'
+                        ? 'bg-purple-600/30 border-purple-400 text-purple-300 font-bold'
+                        : 'bg-neutral-950 border-neutral-800 text-neutral-400'
+                    }`}
+                  >
+                    <Globe className="w-4 h-4" />
+                    Virtual 5K
+                  </button>
+                </div>
+              </div>
 
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (newPassInput.trim().length >= 4) {
-                    updateAdminPassword(newPassInput.trim());
-                    setPassSuccess(true);
-                    setTimeout(() => {
-                      setShowPasswordModal(false);
-                      setPassSuccess(false);
-                      setNewPassInput('');
-                    }, 1500);
-                  }
-                }}
-                className="space-y-3"
-              >
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] uppercase font-bold text-neutral-400 block mb-1">
-                    Nueva Contraseña
+                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1">
+                    Nombres *
                   </label>
                   <input
-                    type="password"
+                    type="text"
                     required
-                    minLength={4}
-                    value={newPassInput}
-                    onChange={(e) => setNewPassInput(e.target.value)}
-                    placeholder="Escribe tu nueva clave"
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-lime-400"
+                    value={newManual.firstName}
+                    onChange={(e) => setNewManual({ ...newManual, firstName: e.target.value })}
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-lime-400"
                   />
                 </div>
 
-                {passSuccess && (
-                  <div className="p-2.5 bg-emerald-950/60 border border-emerald-500/40 rounded-xl text-xs text-emerald-300 flex items-center gap-1.5">
-                    <Check className="w-4 h-4 text-emerald-400" />
-                    ¡Contraseña actualizada exitosamente!
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1">
+                    Apellidos
+                  </label>
+                  <input
+                    type="text"
+                    value={newManual.lastName}
+                    onChange={(e) => setNewManual({ ...newManual, lastName: e.target.value })}
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-lime-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1">
+                    DNI / Documento *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newManual.documentNumber}
+                    onChange={(e) => setNewManual({ ...newManual, documentNumber: e.target.value })}
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-lime-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1">
+                    Celular WhatsApp
+                  </label>
+                  <input
+                    type="tel"
+                    value={newManual.whatsapp}
+                    onChange={(e) => setNewManual({ ...newManual, whatsapp: e.target.value })}
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-lime-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1">
+                    Departamento
+                  </label>
+                  <select
+                    value={newManual.department}
+                    onChange={(e) => setNewManual({ ...newManual, department: e.target.value })}
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-lime-400"
+                  >
+                    {DEPARTMENTS_PERU.map((dep) => (
+                      <option key={dep} value={dep}>{dep}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1">
+                    Ciudad / Provincia
+                  </label>
+                  <input
+                    type="text"
+                    value={newManual.city}
+                    onChange={(e) => setNewManual({ ...newManual, city: e.target.value })}
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-lime-400"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1">
+                    Distrito
+                  </label>
+                  <input
+                    type="text"
+                    value={newManual.district}
+                    onChange={(e) => setNewManual({ ...newManual, district: e.target.value })}
+                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-lime-400"
+                  />
+                </div>
+
+                {newManual.modality === 'Virtual' && (
+                  <div className="col-span-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1">
+                      Dirección de Envío para Medalla
+                    </label>
+                    <input
+                      type="text"
+                      value={newManual.shippingAddress}
+                      onChange={(e) => setNewManual({ ...newManual, shippingAddress: e.target.value })}
+                      placeholder="Dirección o agencia de entrega"
+                      className="w-full bg-neutral-950 border border-purple-500/40 rounded-xl px-3 py-2 text-white text-xs focus:outline-none"
+                    />
                   </div>
                 )}
+              </div>
 
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 rounded-xl bg-neutral-800 text-neutral-300 text-xs font-semibold"
+                >
+                  Cancelar
+                </button>
                 <button
                   type="submit"
-                  className="w-full py-3 bg-lime-400 text-black font-bebas text-lg uppercase tracking-wider rounded-xl transition cursor-pointer mt-2"
+                  className="px-6 py-2 rounded-xl bg-lime-400 hover:bg-lime-300 text-black font-bebas text-lg uppercase tracking-wider"
                 >
-                  Guardar Nueva Clave
+                  Guardar Inscripción
                 </button>
-              </form>
-            </div>
+              </div>
+            </form>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Modal: Manage Official Medal Photo */}
-        {showMedalModal && (
-          <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-            <div className="relative max-w-md w-full bg-neutral-900 p-6 rounded-3xl border border-neutral-700 shadow-2xl">
+      {/* Modal: Official Medal Photo Management */}
+      {showMedalModal && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className="relative max-w-lg w-full bg-neutral-900 rounded-3xl p-6 border border-neutral-800">
+            <div className="flex items-center justify-between mb-4 border-b border-neutral-800 pb-3">
+              <h4 className="font-bebas text-2xl text-white uppercase flex items-center gap-2">
+                <Award className="w-5 h-5 text-amber-400" />
+                Foto Oficial de la Medalla Finisher 5K
+              </h4>
               <button
-                onClick={() => {
-                  setShowMedalModal(false);
-                  setMedalSavedNotice(false);
-                }}
-                className="absolute top-4 right-4 p-1.5 bg-neutral-800 text-neutral-400 hover:text-white rounded-full cursor-pointer transition"
+                onClick={() => setShowMedalModal(false)}
+                className="p-1 rounded-full bg-neutral-800 text-neutral-400 hover:text-white"
               >
                 <X className="w-4 h-4" />
               </button>
+            </div>
 
-              <div className="flex items-center gap-2 mb-2">
-                <Award className="w-5 h-5 text-amber-400" />
-                <h4 className="font-bebas text-2xl text-white uppercase tracking-wider">
-                  Foto Oficial de la Medalla Finisher
-                </h4>
-              </div>
-              <p className="text-xs text-neutral-400 mb-4">
-                Sube la foto real de la medalla. Se sincronizará inmediatamente en todos los navegadores y dispositivos de los visitantes.
+            <div className="space-y-4">
+              <p className="text-xs text-neutral-400">
+                La foto que subas aquí se guardará en el servidor y se mostrará en tiempo real a todos los visitantes, dispositivos y navegadores.
               </p>
 
-              <div className="my-3 flex flex-col items-center justify-center p-4 bg-neutral-950 rounded-2xl border border-neutral-800">
+              {/* Preview Box */}
+              <div className="h-64 rounded-2xl bg-black border border-neutral-800 overflow-hidden flex items-center justify-center relative">
                 {tempMedalPreview ? (
-                  <div className="relative rounded-2xl overflow-hidden border-2 border-lime-400/80 shadow-[0_0_30px_rgba(163,230,53,0.35)] max-h-60 bg-black">
-                    <img
-                      src={tempMedalPreview}
-                      alt="Vista previa medalla"
-                      className="max-h-56 w-auto object-contain"
-                    />
-                  </div>
+                  <img
+                    src={tempMedalPreview}
+                    alt="Medalla Finisher Oficial"
+                    className="max-h-full max-w-full object-contain"
+                  />
                 ) : (
-                  <div className="py-8 text-center text-neutral-500 text-xs">
-                    <Camera className="w-10 h-10 mx-auto text-neutral-600 mb-2" />
-                    <span>Sin foto personalizada activa. Se muestra el distintivo oficial.</span>
+                  <div className="text-center p-4">
+                    <Award className="w-12 h-12 text-neutral-600 mx-auto mb-2" />
+                    <span className="text-xs text-neutral-400 block">Sin foto cargada</span>
+                    <span className="text-[10px] text-neutral-600">Se mostrará el emblema oficial predeterminado</span>
                   </div>
                 )}
+              </div>
 
-                <label className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl text-xs font-bold border border-neutral-700 hover:border-lime-400 transition cursor-pointer">
-                  <Upload className="w-4 h-4 text-lime-400" />
-                  <span>Seleccionar archivo de foto (PNG / JPG)</span>
+              {/* Upload Input */}
+              <div className="flex items-center gap-2">
+                <label className="flex-1 px-4 py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-semibold text-center cursor-pointer transition border border-neutral-700">
+                  <Upload className="w-4 h-4 inline mr-2" />
+                  Elegir Foto de la Medalla
                   <input
                     type="file"
                     accept="image/*"
@@ -1014,91 +939,109 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     className="hidden"
                   />
                 </label>
-              </div>
 
-              {medalSavedNotice && (
-                <div className="my-3 p-3 bg-emerald-950/70 border border-emerald-500/50 rounded-xl text-xs text-emerald-300 flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>¡Foto actualizada y publicada para todos los visitantes!</span>
-                </div>
-              )}
-
-              <div className="space-y-2 mt-4">
-                <button
-                  type="button"
-                  disabled={!tempMedalPreview}
-                  onClick={async () => {
-                    if (tempMedalPreview) {
-                      localStorage.setItem('ohana_medal_photo_v2', tempMedalPreview);
-                      setCurrentAdminMedal(tempMedalPreview);
-                      window.dispatchEvent(new Event('ohana_medal_updated'));
-
-                      try {
-                        await fetch('/api/medal', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ image: tempMedalPreview }),
-                        });
-                      } catch (err) {
-                        console.error('Error enviando medalla al servidor:', err);
-                      }
-
-                      setMedalSavedNotice(true);
-                      setTimeout(() => setMedalSavedNotice(false), 2500);
-                    }
-                  }}
-                  className="w-full py-3 bg-lime-400 hover:bg-lime-300 disabled:opacity-50 text-black font-bebas text-lg uppercase tracking-wider rounded-xl transition cursor-pointer shadow-lg shadow-lime-400/20"
-                >
-                  Guardar y Publicar en la Web (Visible para Todos)
-                </button>
-
-                {currentAdminMedal && (
+                {tempMedalPreview && (
                   <button
-                    type="button"
-                    onClick={async () => {
-                      localStorage.removeItem('ohana_medal_photo_v2');
-                      setCurrentAdminMedal(null);
-                      setTempMedalPreview(null);
-                      window.dispatchEvent(new Event('ohana_medal_updated'));
-
-                      try {
-                        await fetch('/api/medal', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ image: null }),
-                        });
-                      } catch (err) {}
-
-                      setMedalSavedNotice(true);
-                      setTimeout(() => setMedalSavedNotice(false), 2500);
-                    }}
-                    className="w-full py-2 bg-neutral-950 hover:bg-red-950 text-neutral-400 hover:text-red-400 text-xs font-bold rounded-xl transition cursor-pointer border border-neutral-800"
+                    onClick={() => setTempMedalPreview(null)}
+                    className="px-3 py-2.5 rounded-xl bg-red-950/60 hover:bg-red-900 text-red-300 text-xs font-semibold transition border border-red-500/30"
+                    title="Eliminar foto de medalla"
                   >
-                    Eliminar Foto y Restablecer
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 )}
               </div>
+
+              {medalSavedNotice && (
+                <div className="p-3 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Foto sincronizada exitosamente con el servidor.</span>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowMedalModal(false)}
+                  className="px-4 py-2 rounded-xl bg-neutral-800 text-neutral-300 text-xs font-semibold"
+                >
+                  Cerrar
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setCurrentAdminMedal(tempMedalPreview);
+                    try {
+                      await fetch('/api/medal', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: tempMedalPreview }),
+                      });
+                      try {
+                        localStorage.setItem('ohana_medal_photo_v2', tempMedalPreview || '');
+                      } catch (e) {}
+                      window.dispatchEvent(new CustomEvent('ohana_medal_updated'));
+                      setMedalSavedNotice(true);
+                      setTimeout(() => {
+                        setMedalSavedNotice(false);
+                        setShowMedalModal(false);
+                      }, 1200);
+                    } catch (e) {
+                      console.error('Error saving medal:', e);
+                    }
+                  }}
+                  className="px-6 py-2 rounded-xl bg-lime-400 hover:bg-lime-300 text-black font-bebas text-lg uppercase tracking-wider"
+                >
+                  Guardar y Publicar Medalla
+                </button>
+              </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Modal: Official Event QRs Generator & Printer */}
-        {showQRsModal && (
-          <OfficialEventQRsModal onClose={() => setShowQRsModal(false)} />
-        )}
+      {/* Modal: Change Password */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className="relative max-w-sm w-full bg-neutral-900 rounded-3xl p-6 border border-neutral-800">
+            <h4 className="font-bebas text-2xl text-white uppercase mb-2">Cambiar Contraseña de Administrador</h4>
+            <p className="text-xs text-neutral-400 mb-4">
+              Ingresa la nueva clave para el acceso del organizador.
+            </p>
+            <form onSubmit={handleUpdatePassword} className="space-y-3">
+              <input
+                type="text"
+                required
+                value={newPassInput}
+                onChange={(e) => setNewPassInput(e.target.value)}
+                placeholder="Nueva contraseña"
+                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-lime-400"
+              />
+              {passSuccess && (
+                <p className="text-emerald-400 text-xs flex items-center gap-1">
+                  <Check className="w-3.5 h-3.5" /> Clave actualizada exitosamente.
+                </p>
+              )}
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordModal(false)}
+                  className="px-4 py-2 rounded-xl bg-neutral-800 text-neutral-300 text-xs font-semibold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-lime-400 text-black font-bebas text-base uppercase"
+                >
+                  Guardar Clave
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
-        {/* Modal: Staff Scanner to Check-in Runners at Start Line */}
-        {showStaffScanner && (
-          <QRScannerModal
-            title="Escanear Asistencia de Partida"
-            subtitle="Apunta la cámara al QR del pase digital o dorsal físico del corredor."
-            expectedType="any"
-            onScanSuccess={handleStaffDorsalScan}
-            onClose={() => setShowStaffScanner(false)}
-          />
-        )}
-
-      </div>
     </div>
   );
 };

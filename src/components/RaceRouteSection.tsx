@@ -6,10 +6,6 @@ export const RaceRouteSection: React.FC = () => {
     <section id="ruta-5k" className="pt-4 pb-3 px-4 max-w-7xl mx-auto">
       {/* Section Header */}
       <div className="text-center max-w-3xl mx-auto mb-5">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-400/10 border border-lime-400/30 text-lime-400 text-xs font-black uppercase tracking-wider mb-2">
-          <Navigation className="w-3.5 h-3.5" />
-          Circuito Nocturno Oficial
-        </div>
         <h2 className="font-bebas text-4xl sm:text-5xl md:text-6xl text-white tracking-wider uppercase">
           Ruta Oficial <span className="text-lime-400 text-glow-lime">5 Kilómetros</span>
         </h2>

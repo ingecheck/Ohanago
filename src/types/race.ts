@@ -2,6 +2,15 @@ export type DocumentType = 'DNI' | 'Carnet de Extranjería' | 'Pasaporte';
 export type Gender = 'Masculino' | 'Femenino' | 'Otro';
 export type PaymentMethod = 'Yape' | 'Plin' | 'Transferencia BCP' | 'Transferencia BBVA' | 'Efectivo / Presencial';
 export type PaymentStatus = 'Verificado' | 'Pendiente de Verificación';
+export type RaceModality = 'Presencial' | 'Virtual';
+
+export interface VirtualEvidence {
+  appName?: string; // Strava, Nike Run Club, Garmin, etc.
+  timeRecorded?: string; // Ej: 24:35 min
+  distanceKm?: string; // Ej: 5.02 km
+  proofImage?: string; // captura de pantalla base64 o url
+  submittedAt?: string;
+}
 
 export interface RunnerRegistration {
   id: string;
@@ -15,8 +24,9 @@ export interface RunnerRegistration {
   whatsapp: string;
   age: number;
   gender: Gender;
-  city: string;
-  district: string;
+  department?: string; // Departamento (Ej: San Martín, Lima, etc.)
+  city: string; // Ciudad / Provincia
+  district: string; // Distrito
   runningClub: string;
   tShirtSize?: string;
   emergencyContactName: string;
@@ -31,12 +41,16 @@ export interface RunnerRegistration {
   paymentStatus: PaymentStatus;
   createdAt: string;
   disclaimerAccepted: boolean;
-  // Race day check-in verification
+  // Modality: Presencial en Tarapoto vs Virtual desde cualquier lugar
+  modality?: RaceModality;
+  shippingAddress?: string; // Dirección para envío de medalla física a virtuales
+  virtualEvidence?: VirtualEvidence;
+  // Race day check-in verification for presencial
   confirmedAtStart?: boolean;
   startCheckinTime?: string;
-  // Mini-game candy points & collected potions
+  // Compatibility fields
   totalCandies?: number;
-  potionsCollected?: string[]; // array of qr tokens or IDs
+  potionsCollected?: string[];
 }
 
 export interface EventInfo {
@@ -51,40 +65,4 @@ export interface EventInfo {
   finishLocation: string;
   city: string;
   maxCap: number;
-}
-
-export interface PotionLocation {
-  id: string;
-  qrToken: string;
-  name: string;
-  potionName: string;
-  zone: string;
-  description: string;
-  color: string;
-  bgGlow: string;
-  minCandies: number;
-  maxCandies: number;
-}
-
-export interface PotionScanRecord {
-  id: string;
-  runnerId: string;
-  runnerName: string;
-  dorsal: number;
-  documentNumber: string;
-  qrToken: string;
-  potionName: string;
-  locationName: string;
-  candiesAwarded: number;
-  scannedAt: string;
-}
-
-export interface LiveActivityEvent {
-  id: string;
-  dorsal: number;
-  runnerName: string;
-  potionName: string;
-  locationName: string;
-  candies: number;
-  timestamp: string;
 }

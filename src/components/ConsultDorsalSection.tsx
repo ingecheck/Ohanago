@@ -36,16 +36,9 @@ export const ConsultDorsalSection: React.FC<ConsultDorsalSectionProps> = ({ regi
     <section id="consultar-inscripcion" className="pt-4 pb-3 px-4 max-w-4xl mx-auto scroll-mt-20">
       <div id="consultar-dorsal" />
       <div className="text-center mb-4">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-400/10 border border-cyan-400/30 text-cyan-400 text-xs font-black uppercase tracking-wider mb-2">
-          <Search className="w-3.5 h-3.5" />
-          Consulta en Línea
-        </div>
         <h2 className="font-bebas text-4xl sm:text-5xl text-white tracking-wider uppercase">
           ¿Ya te inscribiste? <span className="text-cyan-400">Consulta tu Pase Oficial</span>
         </h2>
-        <p className="text-neutral-400 text-sm md:text-base mt-1">
-          Ingresa tu número de DNI o código de registro para ver tu pase digital de participante.
-        </p>
       </div>
 
       {/* Search Input Box */}

@@ -69,7 +69,6 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
               <Clock className="w-4 h-4 text-lime-400 shrink-0" />
               <div className="leading-tight">
                 <span className="font-bold text-white block">Horario de atención: 24 horas</span>
-                <span className="text-[10px] text-neutral-400">Atención y consultas online 24/7</span>
               </div>
             </li>
 

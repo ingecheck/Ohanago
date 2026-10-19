@@ -873,7 +873,7 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
   },
 ];
 
-const STORAGE_KEY = 'ohana_go_5k_tarapoto_registrations_v5';
+const STORAGE_KEY = 'ohana_go_5k_tarapoto_registrations_v6';
 
 export const getStoredRegistrations = (): RunnerRegistration[] => {
   try {
@@ -903,9 +903,9 @@ export const saveRegistrations = (registrations: RunnerRegistration[]): void => 
   }
 };
 
-export const addRegistration = (
+export const addRegistration = async (
   newRunner: Omit<RunnerRegistration, 'id' | 'registrationNumber' | 'createdAt'>
-): RunnerRegistration => {
+): Promise<RunnerRegistration> => {
   const current = getStoredRegistrations();
   const nextNum =
     current.length > 0
@@ -918,20 +918,30 @@ export const addRegistration = (
     id: newId,
     registrationNumber: nextNum,
     bibNumber: nextNum,
+    modality: newRunner.modality || 'Presencial',
+    department: newRunner.department || 'San Martín',
+    city: newRunner.city || 'Tarapoto',
+    district: newRunner.district || 'Tarapoto',
     confirmedAtStart: false,
-    totalCandies: 0,
-    potionsCollected: [],
     createdAt: new Date().toISOString(),
   };
 
   const updated = [completedRecord, ...current];
   saveRegistrations(updated);
 
-  fetch('/api/registrations', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(completedRecord),
-  }).catch(() => {});
+  try {
+    const res = await fetch('/api/registrations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(completedRecord),
+    });
+    if (res.ok) {
+      const serverSaved = await res.json();
+      return serverSaved;
+    }
+  } catch (e) {
+    console.warn('POST /api/registrations fallback to local:', e);
+  }
 
   return completedRecord;
 };
@@ -940,6 +950,7 @@ export const exportToCSV = (registrations: RunnerRegistration[]): void => {
   const headers = [
     'N° Dorsal',
     'ID Registro',
+    'Modalidad',
     'Nombres',
     'Apellidos',
     'Tipo Doc',
@@ -948,26 +959,26 @@ export const exportToCSV = (registrations: RunnerRegistration[]): void => {
     'Género',
     'WhatsApp',
     'Email',
-    'Ciudad',
+    'Departamento',
+    'Ciudad / Provincia',
     'Distrito',
-    'Club',
+    'Dirección Envío (Virtual)',
+    'Club / Team',
     'Disfraz',
     'Nombre Disfraz',
     'Contacto Emergencia',
     'Teléfono Emergencia',
-    'Tipo Sangre',
     'Método Pago',
     'Referencia Pago',
     'Estado Pago',
-    'Asistencia Partida',
-    'Total Dulces Azar',
-    'Pociones Recolectadas',
+    'Asistencia / Evidencia 5K',
     'Fecha Registro',
   ];
 
   const rows = registrations.map((r) => [
     r.registrationNumber || r.bibNumber || 1,
     r.id,
+    r.modality || 'Presencial',
     `"${r.firstName.replace(/"/g, '""')}"`,
     `"${r.lastName.replace(/"/g, '""')}"`,
     r.documentType,
@@ -976,20 +987,25 @@ export const exportToCSV = (registrations: RunnerRegistration[]): void => {
     r.gender,
     `"${r.whatsapp}"`,
     `"${r.email}"`,
-    `"${r.city}"`,
-    `"${r.district}"`,
-    `"${r.runningClub}"`,
+    `"${r.department || 'San Martín'}"`,
+    `"${r.city || 'Tarapoto'}"`,
+    `"${r.district || 'Tarapoto'}"`,
+    `"${(r.shippingAddress || '').replace(/"/g, '""')}"`,
+    `"${r.runningClub || 'Independiente'}"`,
     r.willWearCostume ? 'SI' : 'NO',
     `"${(r.costumeName || '').replace(/"/g, '""')}"`,
     `"${r.emergencyContactName.replace(/"/g, '""')}"`,
     `"${r.emergencyContactPhone}"`,
-    `"${r.bloodType || 'No especifica'}"`,
     `"${r.paymentMethod}"`,
     `"${r.paymentReference}"`,
     `"${r.paymentStatus}"`,
-    r.confirmedAtStart ? 'CONFIRMADO' : 'PENDIENTE',
-    r.totalCandies || 0,
-    `"${(r.potionsCollected || []).length}/5"`,
+    r.modality === 'Virtual'
+      ? r.virtualEvidence?.proofImage
+        ? `VIRTUAL (Tiempo: ${r.virtualEvidence.timeRecorded || 'N/A'})`
+        : 'VIRTUAL (Pendiente Evidencia)'
+      : r.confirmedAtStart
+      ? 'CONFIRMADO EN PARTIDA'
+      : 'PENDIENTE',
     `"${new Date(r.createdAt).toLocaleString('es-PE')}"`,
   ]);
 

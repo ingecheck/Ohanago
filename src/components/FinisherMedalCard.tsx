@@ -40,16 +40,19 @@ export const FinisherMedalCard: React.FC = () => {
 
     fetchMedal();
 
-    // 2. Real-time updates when admin saves or deletes
-    const handleUpdate = () => {
-      fetchMedal();
-    };
+    // 2. Real-time updates: poll every 3.5 seconds and on window focus for all devices/browsers
+    const pollInterval = setInterval(fetchMedal, 3500);
+    const handleUpdate = () => fetchMedal();
 
     window.addEventListener('ohana_medal_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
+    window.addEventListener('focus', handleUpdate);
+
     return () => {
+      clearInterval(pollInterval);
       window.removeEventListener('ohana_medal_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('focus', handleUpdate);
     };
   }, []);
 

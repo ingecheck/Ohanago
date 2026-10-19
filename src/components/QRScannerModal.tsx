@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { X, Camera, AlertCircle, Sparkles, RefreshCw, CheckCircle2 } from 'lucide-react';
-import { MASTER_START_QR_TOKEN, OFFICIAL_POTION_LOCATIONS } from '../data/potionConfig';
+export const MASTER_START_QR_TOKEN = 'OHANA-START-LINE-TARAPOTO-2026';
 
 interface QRScannerModalProps {
   title: string;
@@ -185,30 +185,11 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
             <button
               type="button"
               onClick={() => handleCodeFound(MASTER_START_QR_TOKEN)}
-              className="w-full mb-2 p-2.5 rounded-xl bg-lime-400/10 hover:bg-lime-400/20 border border-lime-400/40 text-lime-400 text-left flex items-center justify-between text-xs font-bold transition cursor-pointer"
+              className="w-full p-2.5 rounded-xl bg-lime-400/10 hover:bg-lime-400/20 border border-lime-400/40 text-lime-400 text-left flex items-center justify-between text-xs font-bold transition cursor-pointer"
             >
-              <span>🏁 QR Maestro de Partida (Plaza de Armas)</span>
+              <span>🏁 Simular Escaneo: QR Maestro de Partida (Plaza de Armas)</span>
               <span className="text-[10px] bg-lime-400 text-black px-1.5 py-0.5 rounded font-black">Probar</span>
             </button>
-          ) : null}
-
-          {expectedType === 'potion' || expectedType === 'any' ? (
-            <div className="space-y-1.5">
-              <span className="text-[10px] text-neutral-500 font-semibold block">Simular Escaneo de Pociones (1 al 5):</span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                {OFFICIAL_POTION_LOCATIONS.map((loc, idx) => (
-                  <button
-                    key={loc.id}
-                    type="button"
-                    onClick={() => handleCodeFound(loc.qrToken)}
-                    className="p-2 rounded-lg bg-neutral-950 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 text-left text-[11px] truncate transition cursor-pointer flex items-center justify-between"
-                  >
-                    <span className="truncate">QR {idx + 1}: {loc.name}</span>
-                    <Sparkles className="w-3 h-3 text-lime-400 shrink-0 ml-1" />
-                  </button>
-                ))}
-              </div>
-            </div>
           ) : null}
         </div>
       </div>

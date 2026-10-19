@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RunnerRegistration, DocumentType, Gender, PaymentMethod } from '../types/race';
+import { RunnerRegistration, DocumentType, Gender, PaymentMethod, RaceModality } from '../types/race';
 import { 
   User, 
   CreditCard, 
@@ -9,12 +9,13 @@ import {
   Copy, 
   Check, 
   Sparkles, 
-  HeartHandshake, 
   ShieldCheck, 
   ArrowRight, 
   ArrowLeft,
   X,
-  Phone
+  MapPin,
+  Globe,
+  Truck
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -22,11 +23,33 @@ interface RegistrationFormProps {
   onRegistrationSuccess: (registration: RunnerRegistration) => void;
 }
 
+const DEPARTMENTS_PERU = [
+  'San Martín',
+  'Lima',
+  'Loreto',
+  'Ucayali',
+  'Amazonas',
+  'La Libertad',
+  'Lambayeque',
+  'Piura',
+  'Cajamarca',
+  'Arequipa',
+  'Cusco',
+  'Junín',
+  'Áncash',
+  'Ica',
+  'Huánuco',
+  'Puno',
+  'Tacna',
+  'Otro Departamento / Extranjero'
+];
+
 export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrationSuccess }) => {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
 
   // Form State
   const [formData, setFormData] = useState({
+    modality: 'Presencial' as RaceModality,
     firstName: '',
     lastName: '',
     documentType: 'DNI' as DocumentType,
@@ -35,8 +58,10 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
     whatsapp: '',
     age: '',
     gender: 'Masculino' as Gender,
+    department: 'San Martín',
     city: 'Tarapoto',
-    district: 'Tarapoto Cercado',
+    district: 'Tarapoto',
+    shippingAddress: '',
     runningClub: '',
     emergencyContactName: '',
     emergencyContactPhone: '',
@@ -87,19 +112,25 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
     if (!formData.documentNumber.trim()) {
       newErrors.documentNumber = 'Ingresa tu documento';
     } else if (formData.documentType === 'DNI' && !/^\d{8}$/.test(formData.documentNumber.trim())) {
-      newErrors.documentNumber = 'El DNI debe tener 8 dígitos numéricos';
+      newErrors.documentNumber = 'El DNI debe tener 8 dígitos';
     }
     if (!formData.whatsapp.trim()) {
       newErrors.whatsapp = 'Ingresa tu celular WhatsApp';
     } else if (!/^\d{9}$/.test(formData.whatsapp.replace(/\D/g, ''))) {
-      newErrors.whatsapp = 'Debe ser un número válido de 9 dígitos';
+      newErrors.whatsapp = 'Debe tener 9 dígitos';
     }
     if (!formData.email.trim() || !/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Ingresa un correo electrónico válido';
     }
     const ageNum = parseInt(formData.age, 10);
     if (!formData.age || isNaN(ageNum) || ageNum < 12 || ageNum > 90) {
-      newErrors.age = 'Ingresa una edad válida (12 a 90 años)';
+      newErrors.age = 'Edad entre 12 y 90 años';
+    }
+    if (!formData.department.trim()) newErrors.department = 'Indica el departamento';
+    if (!formData.city.trim()) newErrors.city = 'Indica tu ciudad o provincia';
+    if (!formData.district.trim()) newErrors.district = 'Indica tu distrito';
+    if (formData.modality === 'Virtual' && !formData.shippingAddress.trim()) {
+      newErrors.shippingAddress = 'Ingresa la dirección o agencia para enviar tu medalla y kit';
     }
 
     setErrors(newErrors);
@@ -115,7 +146,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
       newErrors.emergencyContactPhone = 'Teléfono del contacto de emergencia';
     }
     if (formData.willWearCostume && !formData.costumeName.trim()) {
-      newErrors.costumeName = 'Cuéntanos brevemente tu disfraz para el concurso';
+      newErrors.costumeName = 'Indica tu temática de disfraz';
     }
 
     setErrors(newErrors);
@@ -125,10 +156,10 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
   const validateStep3 = () => {
     const newErrors: { [key: string]: string } = {};
     if (formData.paymentMethod !== 'Efectivo / Presencial' && !formData.paymentReference.trim()) {
-      newErrors.paymentReference = 'Ingresa el número de operación o referencia del pago';
+      newErrors.paymentReference = 'Ingresa el número de operación o referencia';
     }
     if (!formData.disclaimerAccepted) {
-      newErrors.disclaimerAccepted = 'Debes aceptar los términos y deslinde de salud para participar';
+      newErrors.disclaimerAccepted = 'Debes aceptar los términos y deslinde de salud';
     }
 
     setErrors(newErrors);
@@ -151,84 +182,76 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateStep3()) return;
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      // Trigger confetti celebration
-      try {
-        confetti({
-          particleCount: 120,
-          spread: 80,
-          origin: { y: 0.6 },
-          colors: ['#a3e635', '#f97316', '#a855f7', '#ffffff']
-        });
-      } catch (err) {
-        console.error(err);
-      }
-
-      const registrationData: Omit<RunnerRegistration, 'id' | 'registrationNumber' | 'bibNumber' | 'createdAt'> = {
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
-        documentType: formData.documentType,
-        documentNumber: formData.documentNumber.trim(),
-        email: formData.email.trim().toLowerCase(),
-        whatsapp: formData.whatsapp.trim(),
-        age: parseInt(formData.age, 10),
-        gender: formData.gender,
-        city: formData.city.trim(),
-        district: formData.district.trim(),
-        runningClub: formData.runningClub.trim() || 'Independiente',
-        emergencyContactName: formData.emergencyContactName.trim(),
-        emergencyContactPhone: formData.emergencyContactPhone.trim(),
-        bloodType: formData.bloodType.trim(),
-        medicalConditions: formData.medicalConditions.trim(),
-        willWearCostume: formData.willWearCostume,
-        costumeName: formData.costumeName.trim(),
-        paymentMethod: formData.paymentMethod,
-        paymentReference: formData.paymentReference.trim() || 'PAGO-PRESENCIAL',
-        paymentProofImage: formData.paymentProofImage,
-        paymentStatus: formData.paymentMethod === 'Efectivo / Presencial' ? 'Pendiente de Verificación' : 'Verificado',
-        disclaimerAccepted: formData.disclaimerAccepted,
-      };
-
-      // Import addRegistration dynamically or pass to parent
-      import('../data/initialRegistrations').then(({ addRegistration }) => {
-        const saved = addRegistration(registrationData);
-        setIsSubmitting(false);
-        onRegistrationSuccess(saved);
+    try {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#a3e635', '#f97316', '#a855f7', '#ffffff']
       });
-    }, 800);
+    } catch (err) {}
+
+    const registrationData: Omit<RunnerRegistration, 'id' | 'registrationNumber' | 'createdAt'> = {
+      modality: formData.modality,
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+      documentType: formData.documentType,
+      documentNumber: formData.documentNumber.trim(),
+      email: formData.email.trim().toLowerCase(),
+      whatsapp: formData.whatsapp.trim(),
+      age: parseInt(formData.age, 10),
+      gender: formData.gender,
+      department: formData.department.trim(),
+      city: formData.city.trim(),
+      district: formData.district.trim(),
+      shippingAddress: formData.shippingAddress.trim(),
+      runningClub: formData.runningClub.trim() || 'Independiente',
+      emergencyContactName: formData.emergencyContactName.trim(),
+      emergencyContactPhone: formData.emergencyContactPhone.trim(),
+      bloodType: formData.bloodType.trim(),
+      medicalConditions: formData.medicalConditions.trim(),
+      willWearCostume: formData.willWearCostume,
+      costumeName: formData.costumeName.trim(),
+      paymentMethod: formData.paymentMethod,
+      paymentReference: formData.paymentReference.trim() || 'PAGO-PRESENCIAL',
+      paymentProofImage: formData.paymentProofImage,
+      paymentStatus: formData.paymentMethod === 'Efectivo / Presencial' ? 'Pendiente de Verificación' : 'Verificado',
+      disclaimerAccepted: formData.disclaimerAccepted,
+    };
+
+    const { addRegistration } = await import('../data/initialRegistrations');
+    const saved = await addRegistration(registrationData);
+    setIsSubmitting(false);
+    onRegistrationSuccess(saved);
   };
 
   return (
-    <section id="formulario-registro" className="pt-4 pb-3 px-4 max-w-4xl mx-auto">
+    <section id="formulario-registro" className="pt-4 pb-6 px-4 max-w-4xl mx-auto">
       {/* Title */}
-      <div className="text-center mb-5">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-400/10 border border-lime-400/30 text-lime-400 text-xs font-black uppercase tracking-wider mb-2">
-          <Sparkles className="w-3.5 h-3.5" />
-          Inscripciones Oficiales Abiertas
-        </div>
+      <div className="text-center mb-6">
         <h2 className="font-bebas text-4xl sm:text-5xl md:text-6xl text-white tracking-wider uppercase">
           Formulario de <span className="text-lime-400 text-glow-lime">Inscripción</span>
         </h2>
         <p className="text-neutral-400 text-sm md:text-base mt-1">
-          Completa tus datos en 3 sencillos pasos y obtén tu <strong>Pase Oficial de Inscripción</strong> al instante.
+          Completa tus datos en 3 sencillos pasos y obtén tu <strong>Pase Oficial de Participante</strong> al instante.
         </p>
       </div>
 
       {/* Steps Breadcrumb */}
-      <div className="flex items-center justify-between mb-5 px-2 max-w-xl mx-auto">
+      <div className="flex items-center justify-between mb-6 px-2 max-w-xl mx-auto">
         <div className={`flex flex-col items-center gap-1.5 ${currentStep >= 1 ? 'text-lime-400' : 'text-neutral-600'}`}>
           <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bebas text-xl border transition-all ${
             currentStep >= 1 ? 'bg-lime-400 text-black border-lime-400 shadow-[0_0_15px_rgba(163,230,53,0.4)]' : 'bg-neutral-900 text-neutral-500 border-neutral-800'
           }`}>
             1
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-wider">Datos Runner</span>
+          <span className="text-[11px] font-bold uppercase tracking-wider">Datos & Modalidad</span>
         </div>
 
         <div className={`h-1 flex-1 mx-3 rounded-full transition-all ${currentStep >= 2 ? 'bg-lime-400' : 'bg-neutral-800'}`} />
@@ -258,10 +281,78 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
       <div className="bg-neutral-900/95 border border-neutral-800 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-xl relative">
         <form onSubmit={handleSubmit}>
           
-          {/* STEP 1: DATOS PERSONALES */}
+          {/* STEP 1: MODALIDAD & DATOS PERSONALES */}
           {currentStep === 1 && (
             <div className="space-y-6">
-              <div className="flex items-center gap-2 border-b border-neutral-800 pb-3">
+              
+              {/* MODALITY SELECTOR: Presencial vs Virtual */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-neutral-300 mb-2">
+                  Selecciona tu Modalidad de Participación *
+                </label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {/* Presencial Option */}
+                  <div
+                    onClick={() => setFormData({ ...formData, modality: 'Presencial' })}
+                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                      formData.modality === 'Presencial'
+                        ? 'bg-gradient-to-br from-lime-950/60 to-neutral-900 border-lime-400 shadow-[0_0_20px_rgba(163,230,53,0.2)]'
+                        : 'bg-neutral-950/60 border-neutral-800 hover:border-neutral-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <MapPin className={`w-5 h-5 ${formData.modality === 'Presencial' ? 'text-lime-400' : 'text-neutral-400'}`} />
+                        <span className="font-bebas text-xl text-white tracking-wide uppercase">
+                          Presencial en Tarapoto
+                        </span>
+                      </div>
+                      <input
+                        type="radio"
+                        name="modality"
+                        checked={formData.modality === 'Presencial'}
+                        onChange={() => setFormData({ ...formData, modality: 'Presencial' })}
+                        className="accent-lime-400 w-4 h-4"
+                      />
+                    </div>
+                    <p className="text-xs text-neutral-300 leading-relaxed">
+                      Largada en vivo el <strong>31 de Octubre a las 7:00 PM</strong> en la Plaza de Armas de Tarapoto hasta Entre Jarras. Recorrido nocturno 5K, hidratación, neón y entrega de Medalla Finisher al cruzar la meta.
+                    </p>
+                  </div>
+
+                  {/* Virtual Option */}
+                  <div
+                    onClick={() => setFormData({ ...formData, modality: 'Virtual' })}
+                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                      formData.modality === 'Virtual'
+                        ? 'bg-gradient-to-br from-purple-950/60 to-neutral-900 border-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.2)]'
+                        : 'bg-neutral-950/60 border-neutral-800 hover:border-neutral-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Globe className={`w-5 h-5 ${formData.modality === 'Virtual' ? 'text-purple-400' : 'text-neutral-400'}`} />
+                        <span className="font-bebas text-xl text-white tracking-wide uppercase">
+                          Virtual (Nacional / Internacional)
+                        </span>
+                      </div>
+                      <input
+                        type="radio"
+                        name="modality"
+                        checked={formData.modality === 'Virtual'}
+                        onChange={() => setFormData({ ...formData, modality: 'Virtual' })}
+                        className="accent-purple-400 w-4 h-4"
+                      />
+                    </div>
+                    <p className="text-xs text-neutral-300 leading-relaxed">
+                      Corre tus 5K desde cualquier ciudad del <strong>28 de Oct al 2 de Nov</strong> con tu app favorita (Strava, Nike, Garmin). Sube tu evidencia en el portal y te enviamos tu Medalla Finisher física y kit oficial a domicilio.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step Title Header */}
+              <div className="flex items-center gap-2 border-b border-neutral-800 pb-3 pt-2">
                 <User className="w-5 h-5 text-lime-400" />
                 <h3 className="font-bebas text-2xl text-white tracking-wide uppercase">
                   Paso 1: Información del Corredor / Corredora
@@ -293,7 +384,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
                   <input
                     type="text"
                     maxLength={formData.documentType === 'DNI' ? 8 : 15}
-                    placeholder={formData.documentType === 'DNI' ? '8 dígitos (Ej: 72849102)' : 'Número de documento'}
                     value={formData.documentNumber}
                     onChange={(e) => setFormData({ ...formData, documentNumber: e.target.value.replace(/\s/g, '') })}
                     className={`w-full bg-neutral-950 border rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition ${
@@ -314,7 +404,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
                   </label>
                   <input
                     type="text"
-                    placeholder="Tus nombres completos"
                     value={formData.firstName}
                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                     className={`w-full bg-neutral-950 border rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition ${
@@ -335,7 +424,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
                   </label>
                   <input
                     type="text"
-                    placeholder="Tus apellidos completos"
                     value={formData.lastName}
                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                     className={`w-full bg-neutral-950 border rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition ${
@@ -351,11 +439,8 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
 
                 {/* WhatsApp */}
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5 flex items-center justify-between">
-                    <span>Celular WhatsApp (Perú) *</span>
-                    <span className="text-[10px] text-lime-400 flex items-center gap-1">
-                      <Phone className="w-3 h-3" /> Envío de pase oficial
-                    </span>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
+                    Celular WhatsApp *
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-3.5 text-xs font-bold text-neutral-500 select-none">
@@ -364,7 +449,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
                     <input
                       type="tel"
                       maxLength={9}
-                      placeholder="9XXXXXXXX"
                       value={formData.whatsapp}
                       onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value.replace(/\D/g, '') })}
                       className={`w-full bg-neutral-950 border pl-12 pr-4 py-3 rounded-xl text-white text-sm focus:outline-none transition ${
@@ -386,7 +470,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
                   </label>
                   <input
                     type="email"
-                    placeholder="tu.correo@ejemplo.com"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className={`w-full bg-neutral-950 border rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition ${
@@ -409,7 +492,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
                     type="number"
                     min={12}
                     max={95}
-                    placeholder="Ej: 26"
                     value={formData.age}
                     onChange={(e) => setFormData({ ...formData, age: e.target.value })}
                     className={`w-full bg-neutral-950 border rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition ${
@@ -437,35 +519,101 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
                     <option value="Otro">Prefiero no especificar</option>
                   </select>
                 </div>
+              </div>
 
-                {/* Ciudad / Distrito */}
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
-                    Distrito / Ciudad *
-                  </label>
-                  <select
-                    value={formData.district}
-                    onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-lime-400 transition"
-                  >
-                    <option value="Tarapoto Cercado">Tarapoto Cercado</option>
-                    <option value="Morales">Morales</option>
-                    <option value="Banda de Shilcayo">Banda de Shilcayo</option>
-                    <option value="Lamas">Lamas</option>
-                    <option value="Juanjuí / Bellavista">Juanjuí / Bellavista</option>
-                    <option value="Moyobamba">Moyobamba</option>
-                    <option value="Otra Ciudad">Otra Ciudad (Turista / Visitante)</option>
-                  </select>
+              {/* UBICACIÓN: DEPARTAMENTO, CIUDAD Y DISTRITO */}
+              <div className="pt-2 border-t border-neutral-800/80">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-300 mb-3 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-lime-400" />
+                  Ubicación del Participante
+                </h4>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Departamento */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
+                      Departamento *
+                    </label>
+                    <select
+                      value={formData.department}
+                      onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                      className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-lime-400 transition"
+                    >
+                      {DEPARTMENTS_PERU.map((dep) => (
+                        <option key={dep} value={dep}>{dep}</option>
+                      ))}
+                    </select>
+                    {errors.department && (
+                      <p className="text-red-400 text-xs mt-1">{errors.department}</p>
+                    )}
+                  </div>
+
+                  {/* Ciudad / Provincia */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
+                      Ciudad / Provincia *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      className={`w-full bg-neutral-950 border rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition ${
+                        errors.city ? 'border-red-500' : 'border-neutral-800 focus:border-lime-400'
+                      }`}
+                    />
+                    {errors.city && (
+                      <p className="text-red-400 text-xs mt-1">{errors.city}</p>
+                    )}
+                  </div>
+
+                  {/* Distrito */}
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
+                      Distrito *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.district}
+                      onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                      className={`w-full bg-neutral-950 border rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition ${
+                        errors.district ? 'border-red-500' : 'border-neutral-800 focus:border-lime-400'
+                      }`}
+                    />
+                    {errors.district && (
+                      <p className="text-red-400 text-xs mt-1">{errors.district}</p>
+                    )}
+                  </div>
                 </div>
 
+                {/* Si es Modalidad Virtual: Dirección para envío de medalla */}
+                {formData.modality === 'Virtual' && (
+                  <div className="mt-4 p-4 rounded-2xl bg-purple-950/40 border border-purple-500/40">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1.5 flex items-center gap-1.5">
+                      <Truck className="w-4 h-4 text-purple-400" />
+                      Dirección de Envío o Agencia de Destino (Para Medalla Física y Kit) *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.shippingAddress}
+                      onChange={(e) => setFormData({ ...formData, shippingAddress: e.target.value })}
+                      placeholder="Ej: Av. Principal 123 o Agencia Olva Courier / Shalom de tu ciudad"
+                      className={`w-full bg-neutral-950 border rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition ${
+                        errors.shippingAddress ? 'border-red-500' : 'border-purple-500/50 focus:border-purple-400'
+                      }`}
+                    />
+                    {errors.shippingAddress && (
+                      <p className="text-red-400 text-xs mt-1">{errors.shippingAddress}</p>
+                    )}
+                  </div>
+                )}
+
                 {/* Running Club */}
-                <div>
+                <div className="mt-4">
                   <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
-                    ¿Perteneces a un Running Club o Team? (Opcional)
+                    Running Club o Team (Opcional)
                   </label>
                   <input
                     type="text"
-                    placeholder="Ej: Ohana Go, Selva Runners, o déjalo Libre"
                     value={formData.runningClub}
                     onChange={(e) => setFormData({ ...formData, runningClub: e.target.value })}
                     className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-lime-400 transition"
@@ -506,7 +654,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
                       ¿Participarás en el Concurso de Disfraz de Halloween?
                     </h4>
                     <p className="text-xs text-neutral-400 mt-0.5">
-                      ¡Habrá premios en efectivo y regalos de aliados estratégicos para los mejores disfraces en la meta de Entre Jarras!
+                      ¡Habrá premios en efectivo y regalos de aliados estratégicos para los mejores disfraces!
                     </p>
                   </div>
                   <input
@@ -521,11 +669,10 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
                 {formData.willWearCostume && (
                   <div className="mt-3 pt-3 border-t border-neutral-800">
                     <label className="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1">
-                      ¿Cuál será tu temática o idea de disfraz? *
+                      Temática o idea de tu disfraz *
                     </label>
                     <input
                       type="text"
-                      placeholder="Ej: Calavera Neón, Bruja Veloz, Gladiador, Vampiro..."
                       value={formData.costumeName}
                       onChange={(e) => setFormData({ ...formData, costumeName: e.target.value })}
                       className={`w-full bg-neutral-950 border rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none transition ${
@@ -547,7 +694,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
                   </label>
                   <input
                     type="text"
-                    placeholder="Ej: María Pérez (Familiar)"
                     value={formData.emergencyContactName}
                     onChange={(e) => setFormData({ ...formData, emergencyContactName: e.target.value })}
                     className={`w-full bg-neutral-950 border rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition ${
@@ -567,7 +713,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
                   </label>
                   <input
                     type="tel"
-                    placeholder="9XXXXXXXX"
+                    maxLength={9}
                     value={formData.emergencyContactPhone}
                     onChange={(e) => setFormData({ ...formData, emergencyContactPhone: e.target.value })}
                     className={`w-full bg-neutral-950 border rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition ${
@@ -590,7 +736,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
                     onChange={(e) => setFormData({ ...formData, bloodType: e.target.value })}
                     className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-lime-400 transition"
                   >
-                    <option value="">No conozco / Prefiero omitir</option>
+                    <option value="">No conozco / Omitir</option>
                     <option value="O+">O Positivo (O+)</option>
                     <option value="O-">O Negativo (O-)</option>
                     <option value="A+">A Positivo (A+)</option>
@@ -602,11 +748,10 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
 
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
-                    Alergias o Condiciones Médicas (Opcional)
+                    Condiciones Médicas o Alergias (Opcional)
                   </label>
                   <input
                     type="text"
-                    placeholder="Ej: Asma leve, alergia a penicilina, ninguna..."
                     value={formData.medicalConditions}
                     onChange={(e) => setFormData({ ...formData, medicalConditions: e.target.value })}
                     className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-lime-400 transition"
@@ -648,241 +793,203 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
               </div>
 
               {/* Price summary ribbon */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-orange-500/20 via-neutral-900 to-lime-500/10 border border-orange-500/40 flex items-center justify-between">
+              <div className="p-4 rounded-2xl bg-neutral-950 border border-neutral-800 flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-neutral-400">Total a Pagar</span>
-                  <div className="font-bebas text-3xl sm:text-4xl text-white">
-                    S/ <span className="text-lime-400 text-glow-lime">50.00</span>
+                  <span className="text-xs text-neutral-400 uppercase font-semibold block">Total a Pagar</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-bebas text-4xl text-lime-400">S/ 50.00</span>
+                    <span className="text-xs text-neutral-400 font-medium">PEN</span>
                   </div>
-                  <span className="text-xs text-neutral-300">Incluye Medalla Finisher + Hidratación + Neón + Sorteos</span>
-                </div>
-                <div className="text-right">
-                  <span className="px-3 py-1 rounded-full text-xs font-black uppercase bg-lime-400 text-black">
-                    Cupo 5K Asegurado
+                  <span className="text-[11px] text-neutral-400">
+                    Modalidad: <strong>{formData.modality}</strong> • Incluye Medalla Finisher física y kit
                   </span>
+                </div>
+
+                <div className="flex items-center gap-2 bg-lime-400/10 border border-lime-400/30 px-3 py-1.5 rounded-xl text-xs text-lime-300 font-bold uppercase">
+                  <CheckCircle2 className="w-4 h-4 text-lime-400" />
+                  Pase 100% Oficial
                 </div>
               </div>
 
-              {/* Payment Method Selector */}
+              {/* Métodos de Pago */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">
-                  Selecciona tu Forma de Pago *
+                  Selecciona la Forma de Pago *
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {(['Yape', 'Plin', 'Transferencia BCP', 'Efectivo / Presencial'] as PaymentMethod[]).map((method) => (
+                  {[
+                    { id: 'Yape', name: 'Yape', icon: '🟣' },
+                    { id: 'Plin', name: 'Plin', icon: '🔵' },
+                    { id: 'Transferencia BCP', name: 'BCP', icon: '🟠' },
+                    { id: 'Efectivo / Presencial', name: 'Presencial', icon: '💵' },
+                  ].map((m) => (
                     <button
-                      key={method}
+                      key={m.id}
                       type="button"
-                      onClick={() => setFormData({ ...formData, paymentMethod: method })}
-                      className={`p-3 rounded-2xl border text-center transition flex flex-col items-center justify-center gap-1 cursor-pointer ${
-                        formData.paymentMethod === method
-                          ? 'bg-neutral-800 border-lime-400 text-lime-400 font-bold shadow-[0_0_15px_rgba(163,230,53,0.2)]'
-                          : 'bg-neutral-950 border-neutral-800 text-neutral-300 hover:border-neutral-700'
+                      onClick={() => setFormData({ ...formData, paymentMethod: m.id as PaymentMethod })}
+                      className={`p-3 rounded-xl border text-center transition cursor-pointer flex flex-col items-center gap-1 ${
+                        formData.paymentMethod === m.id
+                          ? 'bg-lime-400/10 border-lime-400 text-lime-300 shadow-md shadow-lime-400/10 font-bold'
+                          : 'bg-neutral-950 border-neutral-800 text-neutral-400 hover:border-neutral-700'
                       }`}
                     >
-                      <span className="font-bebas text-lg leading-none">{method}</span>
-                      <span className="text-[10px] uppercase opacity-75">
-                        {method === 'Yape' ? 'Inmediato' : method === 'Plin' ? 'Cero Comisión' : method === 'Transferencia BCP' ? 'Banco BCP' : 'En la Entrega'}
-                      </span>
+                      <span className="text-lg">{m.icon}</span>
+                      <span className="text-xs">{m.name}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Payment instructions based on selected method */}
-              <div className="p-5 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-4">
-                {formData.paymentMethod === 'Yape' && (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black uppercase text-purple-400 tracking-wider">
-                        Instrucciones de Yape
-                      </span>
-                      <span className="text-xs text-neutral-400">Titular: OHANA GO RUNNING / TARAPOTO</span>
+              {/* Cuentas de Pago */}
+              {formData.paymentMethod === 'Yape' && (
+                <div className="p-4 rounded-2xl bg-purple-950/40 border border-purple-500/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs text-purple-300 uppercase font-bold block">Yape Oficial</span>
+                      <span className="font-bebas text-2xl text-white tracking-wider">942 910 119</span>
+                      <span className="text-xs text-neutral-400 block">Titular: OHANA GO / Organización Oficial</span>
                     </div>
-
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-3 bg-neutral-900 rounded-xl border border-neutral-800">
-                      <div>
-                        <span className="text-xs text-neutral-400 block">Número de Yape:</span>
-                        <span className="font-mono text-xl text-white font-bold tracking-wider">
-                          942 851 234
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard('942851234', 'yape')}
-                        className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-lime-400 text-xs font-bold rounded-lg border border-neutral-700 flex items-center gap-1.5 transition cursor-pointer"
-                      >
-                        {copiedKey === 'yape' ? <Check className="w-3.5 h-3.5 text-lime-400" /> : <Copy className="w-3.5 h-3.5" />}
-                        {copiedKey === 'yape' ? '¡Copiado!' : 'Copiar Número'}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard('942910119', 'yape')}
+                      className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                    >
+                      {copiedKey === 'yape' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      Copiar
+                    </button>
                   </div>
-                )}
+                </div>
+              )}
 
-                {formData.paymentMethod === 'Plin' && (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black uppercase text-cyan-400 tracking-wider">
-                        Instrucciones de Plin
-                      </span>
-                      <span className="text-xs text-neutral-400">Titular: OHANA GO / TARAPOTO</span>
+              {formData.paymentMethod === 'Plin' && (
+                <div className="p-4 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs text-cyan-300 uppercase font-bold block">Plin Oficial</span>
+                      <span className="font-bebas text-2xl text-white tracking-wider">942 910 119</span>
+                      <span className="text-xs text-neutral-400 block">Titular: OHANA GO / Organización Oficial</span>
                     </div>
-
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-3 bg-neutral-900 rounded-xl border border-neutral-800">
-                      <div>
-                        <span className="text-xs text-neutral-400 block">Número de Plin:</span>
-                        <span className="font-mono text-xl text-white font-bold tracking-wider">
-                          942 851 234
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard('942851234', 'plin')}
-                        className="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-cyan-400 text-xs font-bold rounded-lg border border-neutral-700 flex items-center gap-1.5 transition cursor-pointer"
-                      >
-                        {copiedKey === 'plin' ? <Check className="w-3.5 h-3.5 text-cyan-400" /> : <Copy className="w-3.5 h-3.5" />}
-                        {copiedKey === 'plin' ? '¡Copiado!' : 'Copiar Número'}
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard('942910119', 'plin')}
+                      className="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                    >
+                      {copiedKey === 'plin' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      Copiar
+                    </button>
                   </div>
-                )}
+                </div>
+              )}
 
-                {formData.paymentMethod === 'Transferencia BCP' && (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-black uppercase text-orange-400 tracking-wider">
-                        Cuenta Ahorros Soles BCP
-                      </span>
-                      <span className="text-xs text-neutral-400">OHANA GO TARAPOTO</span>
+              {formData.paymentMethod === 'Transferencia BCP' && (
+                <div className="p-4 rounded-2xl bg-orange-950/40 border border-orange-500/30 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs text-orange-300 uppercase font-bold block">Cuenta Corriente BCP</span>
+                      <span className="font-bebas text-xl text-white tracking-wider">550-98214301-0-12</span>
+                      <span className="text-xs text-neutral-400 block">CCI: 002-550-0098214301012-88</span>
                     </div>
-
-                    <div className="p-3 bg-neutral-900 rounded-xl border border-neutral-800 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <span className="text-[10px] text-neutral-400 uppercase block">N° Cuenta BCP:</span>
-                          <span className="font-mono text-sm text-white font-bold">550-98214300-0-12</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard('55098214300012', 'bcp-cta')}
-                          className="px-2.5 py-1 bg-neutral-800 text-xs text-orange-400 rounded border border-neutral-700 flex items-center gap-1 cursor-pointer"
-                        >
-                          {copiedKey === 'bcp-cta' ? '¡Copiado!' : 'Copiar'}
-                        </button>
-                      </div>
-
-                      <div className="flex items-center justify-between border-t border-neutral-800 pt-2">
-                        <div>
-                          <span className="text-[10px] text-neutral-400 uppercase block">CCI (Interbancario):</span>
-                          <span className="font-mono text-xs text-neutral-300">002-550-00982143000012-20</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard('0025500098214300001220', 'bcp-cci')}
-                          className="px-2.5 py-1 bg-neutral-800 text-xs text-orange-400 rounded border border-neutral-700 flex items-center gap-1 cursor-pointer"
-                        >
-                          {copiedKey === 'bcp-cci' ? '¡Copiado!' : 'Copiar'}
-                        </button>
-                      </div>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard('55098214301012', 'bcp')}
+                      className="px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                    >
+                      {copiedKey === 'bcp' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      Copiar
+                    </button>
                   </div>
-                )}
+                </div>
+              )}
 
-                {formData.paymentMethod === 'Efectivo / Presencial' && (
-                  <div className="p-3 bg-neutral-900 rounded-xl border border-neutral-800">
-                    <p className="text-xs text-neutral-300 leading-relaxed">
-                      💡 <strong>Pago Presencial:</strong> Tu inscripción quedará pre-registrada. Podrás abonar tus <strong>S/ 50</strong> en efectivo al presentarte antes de la largada en Plaza de Armas o en Entre Jarras.
+              {formData.paymentMethod === 'Efectivo / Presencial' && (
+                <div className="p-4 rounded-2xl bg-neutral-950 border border-neutral-800">
+                  <p className="text-xs text-neutral-300 leading-relaxed">
+                    Podrás cancelar en efectivo en el punto oficial de concentración o con los coordinadores autorizados en Tarapoto. Tu registro quedará en estado <strong>Pendiente de Verificación</strong> hasta confirmar la entrega del dinero.
+                  </p>
+                </div>
+              )}
+
+              {/* Número de Operación */}
+              {formData.paymentMethod !== 'Efectivo / Presencial' && (
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
+                    Número de Operación o Código de Aprobación *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.paymentReference}
+                    onChange={(e) => setFormData({ ...formData, paymentReference: e.target.value })}
+                    className={`w-full bg-neutral-950 border rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition ${
+                      errors.paymentReference ? 'border-red-500' : 'border-neutral-800 focus:border-lime-400'
+                    }`}
+                  />
+                  {errors.paymentReference && (
+                    <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3.5 h-3.5" /> {errors.paymentReference}
                     </p>
-                  </div>
-                )}
+                  )}
+                </div>
+              )}
 
-                {/* Código de Operación */}
-                {formData.paymentMethod !== 'Efectivo / Presencial' && (
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
-                      Número de Operación / Código de Referencia *
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Ej: 819203 o YAP-092817"
-                      value={formData.paymentReference}
-                      onChange={(e) => setFormData({ ...formData, paymentReference: e.target.value })}
-                      className={`w-full bg-neutral-900 border rounded-xl px-4 py-3 text-white text-sm focus:outline-none transition ${
-                        errors.paymentReference ? 'border-red-500' : 'border-neutral-800 focus:border-lime-400'
-                      }`}
-                    />
-                    {errors.paymentReference && (
-                      <p className="text-red-400 text-xs mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-3.5 h-3.5" /> {errors.paymentReference}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {/* Subida de Voucher de Pago */}
-                {formData.paymentMethod !== 'Efectivo / Presencial' && (
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
-                      Adjuntar Captura del Comprobante (Opcional pero acelera la validación)
-                    </label>
-
-                    {formData.paymentProofImage ? (
-                      <div className="relative p-2 bg-neutral-900 rounded-2xl border border-neutral-800 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={formData.paymentProofImage}
-                            alt="Comprobante"
-                            className="w-16 h-16 object-cover rounded-xl border border-neutral-700"
-                          />
-                          <div>
-                            <span className="text-xs font-bold text-lime-400 flex items-center gap-1">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Voucher cargado
-                            </span>
-                            <span className="text-[10px] text-neutral-400 block mt-0.5">Listo para revisión</span>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setFormData({ ...formData, paymentProofImage: '' })}
-                          className="p-2 bg-neutral-800 hover:bg-red-900/60 text-neutral-400 hover:text-red-300 rounded-xl transition cursor-pointer"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
+              {/* Subir comprobante */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
+                  Foto o Captura del Comprobante (Opcional)
+                </label>
+                <div className="border border-dashed border-neutral-700 hover:border-lime-400 rounded-2xl p-4 text-center bg-neutral-950/60 transition cursor-pointer relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  />
+                  {formData.paymentProofImage ? (
+                    <div className="flex items-center justify-center gap-3">
+                      <img
+                        src={formData.paymentProofImage}
+                        alt="Comprobante"
+                        className="w-14 h-14 object-cover rounded-xl border border-lime-400"
+                      />
+                      <div className="text-left">
+                        <span className="text-xs text-lime-400 font-bold block">Comprobante adjuntado</span>
+                        <span className="text-[10px] text-neutral-400">Haz clic para cambiar imagen</span>
                       </div>
-                    ) : (
-                      <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-neutral-800 hover:border-lime-400/60 rounded-2xl bg-neutral-900/60 cursor-pointer transition">
-                        <Upload className="w-8 h-8 text-neutral-500 mb-2" />
-                        <span className="text-xs font-bold text-neutral-300">
-                          Haz clic para subir captura de pantalla de tu pago
-                        </span>
-                        <span className="text-[10px] text-neutral-500 mt-1">PNG, JPG hasta 5MB</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          className="hidden"
-                        />
-                      </label>
-                    )}
-                  </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFormData({ ...formData, paymentProofImage: '' });
+                        }}
+                        className="p-1 rounded-full bg-neutral-800 hover:bg-neutral-700 text-neutral-300 ml-auto"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1.5">
+                      <Upload className="w-5 h-5 text-neutral-400" />
+                      <span className="text-xs text-neutral-300 font-semibold">Subir captura o foto del voucher</span>
+                      <span className="text-[10px] text-neutral-500">JPG, PNG hasta 5MB</span>
+                    </div>
+                  )}
+                </div>
+                {errors.paymentProofImage && (
+                  <p className="text-red-400 text-xs mt-1">{errors.paymentProofImage}</p>
                 )}
               </div>
 
-              {/* Deslinde de Responsabilidad & Términos */}
+              {/* Deslinde de responsabilidad */}
               <div className="p-4 rounded-2xl bg-neutral-950/80 border border-neutral-800">
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formData.disclaimerAccepted}
                     onChange={(e) => setFormData({ ...formData, disclaimerAccepted: e.target.checked })}
-                    className="w-5 h-5 rounded border-neutral-700 text-lime-400 focus:ring-lime-400 accent-lime-400 cursor-pointer mt-0.5"
+                    className="w-5 h-5 rounded border-neutral-700 text-lime-400 focus:ring-lime-400 accent-lime-400 cursor-pointer mt-0.5 shrink-0"
                   />
-                  <div className="text-xs text-neutral-400 leading-relaxed">
-                    <span className="text-white font-semibold block mb-0.5">
-                      Declaración de Buena Salud y Deslinde Deportivo *
-                    </span>
-                    Declaro estar en condiciones físicas óptimas para participar en la corrida nocturna 5K, asumo mi propia responsabilidad y acepto el reglamento de seguridad de Ohana Go 2026.
-                  </div>
+                  <span className="text-xs text-neutral-300 leading-relaxed">
+                    Declaro encontrarme en óptimas condiciones físicas y de salud para participar en la distancia de 5 Kilómetros de la carrera <strong>OHANA GO 5K Por Halloween</strong>. Eximo a los organizadores y aliados de cualquier incidente derivado de condiciones médicas preexistentes no notificadas.
+                  </span>
                 </label>
                 {errors.disclaimerAccepted && (
                   <p className="text-red-400 text-xs mt-2 flex items-center gap-1">
@@ -891,13 +998,12 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
                 )}
               </div>
 
-              {/* Botones de Envío */}
-              <div className="pt-4 flex items-center justify-between">
+              {/* Botones de acción */}
+              <div className="pt-4 flex items-center justify-between gap-4">
                 <button
                   type="button"
                   onClick={prevStep}
-                  disabled={isSubmitting}
-                  className="px-6 py-3 bg-neutral-800 hover:bg-neutral-700 text-white font-bebas text-lg uppercase tracking-wider rounded-xl transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="px-6 py-3.5 bg-neutral-800 hover:bg-neutral-700 text-white font-bebas text-lg uppercase tracking-wider rounded-xl transition flex items-center gap-2 cursor-pointer"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   Volver al Paso 2
@@ -906,14 +1012,14 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-8 py-4 bg-gradient-to-r from-lime-400 via-lime-500 to-lime-400 hover:from-lime-300 hover:to-lime-400 text-black font-bebas text-2xl uppercase tracking-wider rounded-xl transition shadow-xl shadow-lime-400/30 flex items-center gap-2 cursor-pointer glow-neon-lime disabled:opacity-50"
+                  className="px-8 py-3.5 bg-gradient-to-r from-lime-400 to-lime-300 hover:from-lime-300 hover:to-lime-200 text-black font-bebas text-2xl uppercase tracking-wider rounded-xl transition shadow-xl shadow-lime-400/25 flex items-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   {isSubmitting ? (
-                    <>Generando Pase Oficial...</>
+                    'Registrando...'
                   ) : (
                     <>
-                      <HeartHandshake className="w-6 h-6" />
-                      ¡Confirmar Inscripción & Obtener Pase Oficial!
+                      Confirmar Inscripción
+                      <CheckCircle2 className="w-5 h-5" />
                     </>
                   )}
                 </button>

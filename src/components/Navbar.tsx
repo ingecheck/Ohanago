@@ -57,7 +57,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => handleNavClick('kit-evento')}
             className="hover:text-lime-400 transition cursor-pointer"
           >
-            Medalla & Beneficios
+            Medalla & Kit
           </button>
           <button
             onClick={() => handleNavClick('ruta-5k')}
@@ -80,7 +80,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={onOpenCompetitorLogin}
             className="px-3 py-2 rounded-xl bg-gradient-to-r from-purple-900/80 to-neutral-900 hover:from-purple-800 hover:to-neutral-800 border border-purple-500/40 text-purple-200 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm hover:scale-[1.02]"
-            title="Acceso al Portal del Competidor y Minijuego Caldero"
+            title="Acceso al Portal del Competidor"
           >
             <Sparkles className="w-3.5 h-3.5 text-lime-400" />
             <span>{loggedInCompetitorName ? `Mi Cuenta (${loggedInCompetitorName})` : 'Portal Competidor'}</span>
