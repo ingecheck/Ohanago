@@ -51,16 +51,11 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
                   <Instagram className="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-bold text-white group-hover:text-pink-300 transition">
-                      @ohanago.peru
-                    </span>
-                    <span className="text-[9px] font-black uppercase px-1.5 py-0.5 bg-pink-500/20 text-pink-300 rounded border border-pink-500/30">
-                      Instagram
-                    </span>
-                  </div>
+                  <span className="text-sm font-bold text-white group-hover:text-pink-300 transition block">
+                    @ohanago.peru
+                  </span>
                   <span className="text-[11px] text-neutral-400 block group-hover:text-neutral-300">
-                    Instagram Oficial de Ohana Go
+                    Canal Oficial de Ohana Go
                   </span>
                 </div>
               </div>
@@ -85,10 +80,10 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
           </ul>
         </div>
 
-        {/* Auspiciadores & Locales */}
+        {/* Aliados Estratégicos */}
         <div className="space-y-2">
           <h4 className="font-bebas text-lg text-white uppercase tracking-wider">
-            Auspiciadores & Puntos
+            Aliados Estratégicos
           </h4>
           <ul className="text-xs space-y-1.5 text-neutral-400">
             <li>• <strong>Entre Jarras</strong> (Punto de llegada & Sorteos)</li>

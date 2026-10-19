@@ -506,7 +506,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
                       ¿Participarás en el Concurso de Disfraz de Halloween?
                     </h4>
                     <p className="text-xs text-neutral-400 mt-0.5">
-                      ¡Habrá premios en efectivo y regalos de auspiciadores para los mejores disfraces en la meta de Entre Jarras!
+                      ¡Habrá premios en efectivo y regalos de aliados estratégicos para los mejores disfraces en la meta de Entre Jarras!
                     </p>
                   </div>
                   <input

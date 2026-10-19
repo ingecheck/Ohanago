@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
-import { Menu, X, Shield, Search, Flame, Instagram } from 'lucide-react';
+import { Menu, X, Shield, Search, Flame, Instagram, Sparkles, User } from 'lucide-react';
 
 interface NavbarProps {
   onOpenAdmin: () => void;
+  onOpenCompetitorLogin: () => void;
   onGoToSection: (sectionId: string) => void;
+  loggedInCompetitorName?: string | null;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onGoToSection }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  onOpenAdmin,
+  onOpenCompetitorLogin,
+  onGoToSection,
+  loggedInCompetitorName,
+}) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleNavClick = (id: string) => {
@@ -39,7 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onGoToSection }) =>
         </div>
 
         {/* Desktop Navigation Links */}
-        <div className="hidden md:flex items-center gap-6 text-xs font-bold uppercase tracking-wider text-neutral-300">
+        <div className="hidden lg:flex items-center gap-5 text-xs font-bold uppercase tracking-wider text-neutral-300">
           <button
             onClick={() => handleNavClick('formulario-registro')}
             className="hover:text-lime-400 transition cursor-pointer"
@@ -68,7 +75,17 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onGoToSection }) =>
         </div>
 
         {/* Right Action Buttons */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-2.5">
+          {/* Competitor Portal button */}
+          <button
+            onClick={onOpenCompetitorLogin}
+            className="px-3 py-2 rounded-xl bg-gradient-to-r from-purple-900/80 to-neutral-900 hover:from-purple-800 hover:to-neutral-800 border border-purple-500/40 text-purple-200 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm hover:scale-[1.02]"
+            title="Acceso al Portal del Competidor y Minijuego Caldero"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-lime-400" />
+            <span>{loggedInCompetitorName ? `Mi Cuenta (${loggedInCompetitorName})` : 'Portal Competidor'}</span>
+          </button>
+
           {/* Instagram Link Button */}
           <a
             href="https://www.instagram.com/ohanago.peru/"
@@ -84,7 +101,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onGoToSection }) =>
           {/* Register CTA */}
           <button
             onClick={() => handleNavClick('formulario-registro')}
-            className="px-6 py-2.5 bg-lime-400 hover:bg-lime-300 text-black font-bebas text-lg tracking-wider uppercase rounded-xl transition shadow-lg shadow-lime-400/20 cursor-pointer"
+            className="px-5 py-2.5 bg-lime-400 hover:bg-lime-300 text-black font-bebas text-lg tracking-wider uppercase rounded-xl transition shadow-lg shadow-lime-400/20 cursor-pointer"
           >
             Inscribirme
           </button>
@@ -92,6 +109,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onGoToSection }) =>
 
         {/* Mobile menu trigger */}
         <div className="flex md:hidden items-center gap-2">
+          <button
+            onClick={onOpenCompetitorLogin}
+            className="p-2 rounded-lg bg-purple-950/80 border border-purple-500/40 text-purple-200"
+            title="Portal Competidor"
+          >
+            <Sparkles className="w-4 h-4 text-lime-400" />
+          </button>
+
           <a
             href="https://www.instagram.com/ohanago.peru/"
             target="_blank"
@@ -104,9 +129,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onGoToSection }) =>
 
           <button
             onClick={() => handleNavClick('formulario-registro')}
-            className="px-3.5 py-1.5 bg-lime-400 text-black font-bebas text-base uppercase rounded-lg tracking-wider"
+            className="px-3 py-1.5 bg-lime-400 text-black font-bebas text-sm uppercase rounded-lg tracking-wider"
           >
-            Inscribirme
+            Inscripción
           </button>
 
           <button
@@ -122,6 +147,22 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onGoToSection }) =>
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-neutral-950 border-b border-neutral-800 px-4 py-5 space-y-3">
+          <button
+            onClick={() => {
+              onOpenCompetitorLogin();
+              setMobileMenuOpen(false);
+            }}
+            className="w-full p-2.5 rounded-xl bg-purple-950/60 border border-purple-500/40 text-left text-sm font-bold uppercase tracking-wider text-purple-200 flex items-center justify-between"
+          >
+            <span className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-lime-400" />
+              Portal Competidor / Caldero de Pociones
+            </span>
+            <span className="text-[10px] bg-lime-400 text-black px-1.5 py-0.5 rounded font-black">
+              Entrar
+            </span>
+          </button>
+
           <button
             onClick={() => handleNavClick('formulario-registro')}
             className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-lime-400 border-b border-neutral-900"
@@ -146,6 +187,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onGoToSection }) =>
           >
             <Search className="w-4 h-4" /> Consultar Mi Pase
           </button>
+
           <a
             href="https://www.instagram.com/ohanago.peru/"
             target="_blank"
@@ -157,6 +199,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAdmin, onGoToSection }) =>
             </span>
             <span className="text-[10px] text-pink-300 uppercase">Seguir</span>
           </a>
+
+          <button
+            onClick={() => {
+              onOpenAdmin();
+              setMobileMenuOpen(false);
+            }}
+            className="w-full text-left py-2 text-xs text-neutral-500 flex items-center gap-1.5 pt-2 border-t border-neutral-900"
+          >
+            <Shield className="w-3.5 h-3.5" /> Acceso Organizador
+          </button>
         </div>
       )}
     </nav>

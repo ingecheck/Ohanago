@@ -21,8 +21,11 @@ export const ConsultDorsalSection: React.FC<ConsultDorsalSectionProps> = ({ regi
     const result = registrations.find(
       (r) =>
         r.documentNumber.toLowerCase() === clean ||
+        String(r.registrationNumber) === clean ||
         String(r.bibNumber) === clean ||
         r.id.toLowerCase() === clean ||
+        (r.email && r.email.toLowerCase() === clean) ||
+        (r.whatsapp && r.whatsapp.replace(/\D/g, '') === clean.replace(/\D/g, '')) ||
         `${r.firstName} ${r.lastName}`.toLowerCase().includes(clean)
     );
 

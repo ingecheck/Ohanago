@@ -31,6 +31,12 @@ export interface RunnerRegistration {
   paymentStatus: PaymentStatus;
   createdAt: string;
   disclaimerAccepted: boolean;
+  // Race day check-in verification
+  confirmedAtStart?: boolean;
+  startCheckinTime?: string;
+  // Mini-game candy points & collected potions
+  totalCandies?: number;
+  potionsCollected?: string[]; // array of qr tokens or IDs
 }
 
 export interface EventInfo {
@@ -45,4 +51,40 @@ export interface EventInfo {
   finishLocation: string;
   city: string;
   maxCap: number;
+}
+
+export interface PotionLocation {
+  id: string;
+  qrToken: string;
+  name: string;
+  potionName: string;
+  zone: string;
+  description: string;
+  color: string;
+  bgGlow: string;
+  minCandies: number;
+  maxCandies: number;
+}
+
+export interface PotionScanRecord {
+  id: string;
+  runnerId: string;
+  runnerName: string;
+  dorsal: number;
+  documentNumber: string;
+  qrToken: string;
+  potionName: string;
+  locationName: string;
+  candiesAwarded: number;
+  scannedAt: string;
+}
+
+export interface LiveActivityEvent {
+  id: string;
+  dorsal: number;
+  runnerName: string;
+  potionName: string;
+  locationName: string;
+  candies: number;
+  timestamp: string;
 }

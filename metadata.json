@@ -1,6 +1,6 @@
 {
   "name": "OHANA GO 5K Halloween Tarapoto",
-  "description": "Formulario oficial de inscripción para la carrera nocturna OHANA GO 5K Por Halloween en Tarapoto. Registro oficial, medalla finisher metálica y pase digital de participante.",
+  "description": "Plataforma oficial de inscripción y evento para la carrera nocturna OHANA GO 5K Por Halloween en Tarapoto. Registro oficial, medalla finisher 5K, pase digital, check-in QR de partida, portal del competidor y minijuego Caldero de Pociones.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -16,14 +16,28 @@ import { ConsultDorsalSection } from './components/ConsultDorsalSection';
 import { RegistrationSuccessModal } from './components/RegistrationSuccessModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AdminLoginModal } from './components/AdminLoginModal';
+import { CompetitorPortalModal } from './components/CompetitorPortalModal';
 import { Footer } from './components/Footer';
-import { HelpCircle, ChevronDown, ChevronUp, Bell } from 'lucide-react';
+import { HelpCircle, ChevronDown, ChevronUp, Bell, Sparkles } from 'lucide-react';
 
 export default function App() {
   const [registrations, setRegistrations] = useState<RunnerRegistration[]>([]);
   const [recentlyRegistered, setRecentlyRegistered] = useState<RunnerRegistration | null>(null);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
+  const [loginModalTab, setLoginModalTab] = useState<'admin' | 'competitor'>('admin');
+  
+  // Active competitor session
+  const [activeCompetitor, setActiveCompetitor] = useState<RunnerRegistration | null>(() => {
+    try {
+      const saved = localStorage.getItem('ohana_active_competitor');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+  const [isCompetitorPortalOpen, setIsCompetitorPortalOpen] = useState(false);
+
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   useEffect(() => {
@@ -41,6 +55,15 @@ export default function App() {
         if (Array.isArray(serverData) && serverData.length > 0) {
           setRegistrations(serverData);
           localStorage.setItem('ohana_go_5k_tarapoto_registrations_v4', JSON.stringify(serverData));
+
+          // If active competitor is saved, sync their latest state
+          if (activeCompetitor) {
+            const found = serverData.find((r) => r.id === activeCompetitor.id);
+            if (found) {
+              setActiveCompetitor(found);
+              localStorage.setItem('ohana_active_competitor', JSON.stringify(found));
+            }
+          }
         } else if (data && data.length > 0) {
           fetch('/api/registrations', {
             method: 'PUT',
@@ -67,12 +90,25 @@ export default function App() {
     setRegistrations((prev) => [newReg, ...prev]);
     // Abre el dorsal oficial digital
     setRecentlyRegistered(newReg);
+    // Establece como competidor activo para acceso instantáneo
+    setActiveCompetitor(newReg);
+    localStorage.setItem('ohana_active_competitor', JSON.stringify(newReg));
   };
 
   const handleAdminAccess = () => {
     if (isAdminAuthenticated()) {
       setIsAdminOpen(true);
     } else {
+      setLoginModalTab('admin');
+      setIsAdminLoginOpen(true);
+    }
+  };
+
+  const handleCompetitorAccess = () => {
+    if (activeCompetitor) {
+      setIsCompetitorPortalOpen(true);
+    } else {
+      setLoginModalTab('competitor');
       setIsAdminLoginOpen(true);
     }
   };
@@ -91,7 +127,7 @@ export default function App() {
   const faqs = [
     {
       q: '¿Qué incluye exactamente mi inscripción?',
-      a: 'Tu pase incluye la Medalla Finisher oficial con relieve metálico (solo para los que crucen la meta), hidratación con agua mineral Nativa en ruta y meta, un artículo luminoso Neón para la noche, y derecho a participar en sorteos en la llegada en Entre Jarras.',
+      a: 'Tu pase incluye la Medalla Finisher 5K oficial (para los que completen el recorrido en Entre Jarras), hidratación con agua mineral Nativa en ruta y meta, un artículo luminoso Neón para la noche, derecho a participar en sorteos y en el minijuego post-carrera del Caldero de Pociones.',
     },
     {
       q: '¿Es obligatorio ir con disfraz de Halloween?',
@@ -106,25 +142,31 @@ export default function App() {
       a: 'El artículo neón se entrega en la Plaza de Armas de Tarapoto antes de la largada mostrando tu DNI o tu Pase Digital. La Medalla Finisher 5K se entrega en la meta en Entre Jarras a todos los corredores al completar los 5 kilómetros.',
     },
     {
+      q: '¿Cómo funciona el minijuego Caldero de Pociones?',
+      a: 'Al cruzar la meta en Entre Jarras, ingresas a la zona de recuperación. Allí encontrarás 5 códigos QR distribuidos en puntos clave (Hidratación, Fotos, Guardarropa, Aliados Estratégicos y Meta). Escanéalos desde tu celular para acumular dulces de azar y competir por un premio especial de OHANA GO.',
+    },
+    {
       q: '¿Cómo valido mi pago por Yape, Plin o Transferencia?',
-      a: 'Ingresa tu número de operación y sube la captura de pantalla en el paso 3 del formulario. El sistema confirmará tu inscripción y los organizadores verificarán el pago en el panel de control.',
+      a: 'Ingresa tu número de operación y sube la captura de pantalla en el formulario de inscripción. El sistema confirmará tu pase y los organizadores verificarán el pago en el panel.',
     },
   ];
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans selection:bg-lime-400 selection:text-black">
-      {/* Top Notification Announcement Bar */}
+      {/* Top Announcement Bar */}
       <div className="bg-gradient-to-r from-orange-600 via-amber-500 to-lime-500 text-black py-2 px-4 text-center font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2">
         <Bell className="w-3.5 h-3.5 shrink-0" />
         <span>
-          ¡Inscripciones Abiertas para la 5K en Tarapoto! Asegura tu Medalla Finisher 5K y pase oficial
+          ¡Inscripciones Abiertas! Carrera 5K Tarapoto • 31 Octubre • Medalla Finisher 5K Oficial
         </span>
       </div>
 
       {/* Main Navbar */}
       <Navbar
         onOpenAdmin={handleAdminAccess}
+        onOpenCompetitorLogin={handleCompetitorAccess}
         onGoToSection={scrollToSection}
+        loggedInCompetitorName={activeCompetitor ? activeCompetitor.firstName : null}
       />
 
       {/* Hero Section */}
@@ -202,14 +244,41 @@ export default function App() {
         onClose={() => setRecentlyRegistered(null)}
       />
 
-      {/* Admin Login Modal with Username & Password */}
+      {/* Login Modal with Clean Admin and Competitor Tabs */}
       {isAdminLoginOpen && (
         <AdminLoginModal
+          initialTab={loginModalTab}
           onSuccess={() => {
             setIsAdminLoginOpen(false);
             setIsAdminOpen(true);
           }}
+          onCompetitorSuccess={(runner) => {
+            setActiveCompetitor(runner);
+            localStorage.setItem('ohana_active_competitor', JSON.stringify(runner));
+            setIsAdminLoginOpen(false);
+            setIsCompetitorPortalOpen(true);
+          }}
           onClose={() => setIsAdminLoginOpen(false)}
+        />
+      )}
+
+      {/* Competitor Portal Modal (Caldero de Pociones, Start QR, Dorsal) */}
+      {isCompetitorPortalOpen && activeCompetitor && (
+        <CompetitorPortalModal
+          runner={activeCompetitor}
+          onUpdateRunner={(updated) => {
+            setActiveCompetitor(updated);
+            localStorage.setItem('ohana_active_competitor', JSON.stringify(updated));
+            setRegistrations((prev) =>
+              prev.map((r) => (r.id === updated.id ? updated : r))
+            );
+          }}
+          onClose={() => setIsCompetitorPortalOpen(false)}
+          onLogout={() => {
+            setActiveCompetitor(null);
+            localStorage.removeItem('ohana_active_competitor');
+            setIsCompetitorPortalOpen(false);
+          }}
         />
       )}
 

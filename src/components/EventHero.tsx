@@ -55,25 +55,16 @@ export const EventHero: React.FC<EventHeroProps> = ({
       </div>
 
       <div className="relative max-w-6xl mx-auto px-4 text-center">
-        {/* Top Prominent 5K Callout & Badges */}
-        <div className="flex flex-col items-center justify-center gap-2 mb-4">
-          <div className="inline-flex items-center gap-2.5 px-6 py-1.5 rounded-2xl bg-gradient-to-r from-lime-400 via-lime-300 to-lime-400 text-black shadow-lg shadow-lime-400/25 border border-lime-300">
-            <Flame className="w-5 h-5 text-black shrink-0" />
-            <span className="font-bebas text-2xl sm:text-3xl tracking-wider font-black">
-              5K OFICIAL TARAPOTO
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/30">
-              <Sparkles className="w-3.5 h-3.5 text-orange-400" />
-              Carrera Nocturna de Halloween
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-neutral-300 bg-neutral-900 border border-neutral-800">
-              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-              {registeredCount > 0 ? `${registeredCount} inscritos` : 'Inscripciones Oficiales Abiertas'}
-            </span>
-          </div>
+        {/* Badges */}
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-4">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-orange-500/10 text-orange-400 border border-orange-500/30">
+            <Sparkles className="w-3.5 h-3.5 text-orange-400" />
+            Carrera Nocturna de Halloween
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold text-neutral-300 bg-neutral-900 border border-neutral-800">
+            <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+            {registeredCount > 0 ? `${registeredCount} inscritos` : 'Inscripciones Oficiales Abiertas'}
+          </span>
         </div>
 
         {/* Giant Main Title */}
@@ -148,10 +139,10 @@ export const EventHero: React.FC<EventHeroProps> = ({
           </div>
         </div>
 
-        {/* Live Countdown Timer */}
         <div className="max-w-xl mx-auto my-6 p-4 rounded-3xl bg-neutral-950/80 border border-neutral-800/90 shadow-xl">
-          <span className="text-[10px] uppercase font-black tracking-widest text-lime-400 block mb-2">
-            Tiempo Restante para la Largada
+          <span className="text-xs sm:text-sm uppercase font-black tracking-widest text-lime-400 block mb-2.5 flex items-center justify-center gap-2">
+            <Clock className="w-4 h-4 text-lime-400" />
+            TIEMPO RESTANTE PARA LA CARRERA
           </span>
           <div className="grid grid-cols-4 gap-2 text-center">
             <div className="bg-neutral-900/90 rounded-2xl p-2 border border-neutral-800">
