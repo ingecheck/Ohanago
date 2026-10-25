@@ -100,10 +100,11 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex md:hidden items-center gap-2">
           <button
             onClick={onOpenCompetitorLogin}
-            className="p-2 rounded-lg bg-purple-950/80 border border-purple-500/40 text-purple-200"
+            className="px-2.5 py-1.5 rounded-xl bg-purple-950/80 border border-purple-500/40 text-purple-200 text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition"
             title="Mi Espacio 🎒"
           >
-            <Sparkles className="w-4 h-4 text-lime-400" />
+            <Sparkles className="w-3.5 h-3.5 text-lime-400 shrink-0" />
+            <span className="tracking-wide">Mi Espacio 🎒</span>
           </button>
 
           <a

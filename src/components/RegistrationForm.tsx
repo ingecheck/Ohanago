@@ -628,7 +628,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onRegistrati
                   onClick={nextStep}
                   className="px-8 py-3.5 bg-lime-400 hover:bg-lime-300 text-black font-bebas text-xl uppercase tracking-wider rounded-xl transition shadow-lg shadow-lime-400/20 flex items-center gap-2 cursor-pointer"
                 >
-                  Continuar al Paso 2
+                  Continuar Inscripción
                   <ArrowRight className="w-5 h-5" />
                 </button>
               </div>
