@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, Flag, Sparkles, ShieldCheck, Flame, Trophy, Gift } from 'lucide-react';
+import { Calendar, Clock, MapPin, Flag, Sparkles, ShieldCheck, Flame } from 'lucide-react';
 
 interface EventHeroProps {
   onRegisterClick?: () => void;
@@ -84,18 +84,6 @@ export const EventHero: React.FC<EventHeroProps> = ({
           </p>
         </div>
 
-        {/* Clean, sober event pill info (no exaggerated screaming price banner) */}
-        <div className="my-5 flex flex-wrap items-center justify-center gap-3">
-          <span className="px-4 py-2 rounded-xl bg-neutral-900/90 border border-neutral-700 text-xs font-semibold text-neutral-300 flex items-center gap-1.5">
-            <Trophy className="w-4 h-4 text-amber-400" />
-            Medalla Finisher 5K
-          </span>
-          <span className="px-4 py-2 rounded-xl bg-neutral-900/90 border border-neutral-700 text-xs font-semibold text-neutral-300 flex items-center gap-1.5">
-            <Gift className="w-4 h-4 text-purple-400" />
-            Sorteos en la Llegada
-          </span>
-        </div>
-
         {/* Event Key Facts Bar */}
         <div className="max-w-4xl mx-auto my-6 grid grid-cols-2 md:grid-cols-4 gap-3 text-left">
           <div className="bg-neutral-900/80 border border-neutral-800 rounded-2xl p-3.5 backdrop-blur-md">
@@ -135,27 +123,50 @@ export const EventHero: React.FC<EventHeroProps> = ({
           </div>
         </div>
 
-        <div className="max-w-xl mx-auto my-6 p-4 rounded-3xl bg-neutral-950/80 border border-neutral-800/90 shadow-xl">
-          <span className="text-xs sm:text-sm uppercase font-black tracking-widest text-lime-400 block mb-2.5 flex items-center justify-center gap-2">
-            <Clock className="w-4 h-4 text-lime-400" />
-            TIEMPO RESTANTE PARA LA CARRERA
-          </span>
-          <div className="grid grid-cols-4 gap-2 text-center">
-            <div className="bg-neutral-900/90 rounded-2xl p-2 border border-neutral-800">
-              <span className="font-bebas text-2xl sm:text-3xl text-white block">{timeLeft.days}</span>
-              <span className="text-[9px] uppercase font-bold text-neutral-500">Días</span>
+        {/* Enhanced Visual Countdown Timer */}
+        <div className="max-w-2xl mx-auto my-7 p-5 sm:p-6 rounded-3xl bg-gradient-to-b from-neutral-900/90 via-black to-neutral-950 border border-lime-400/30 shadow-[0_0_35px_rgba(163,230,53,0.12)] relative overflow-hidden">
+          {/* Subtle glow accent */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-16 bg-lime-400/10 blur-2xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col items-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-950/60 border border-lime-500/30 text-lime-400 text-[11px] font-bold tracking-widest uppercase mb-4">
+              <span className="w-2 h-2 rounded-full bg-lime-400 animate-ping" />
+              Tiempo Restante para la Largada • 31 Octubre
             </div>
-            <div className="bg-neutral-900/90 rounded-2xl p-2 border border-neutral-800">
-              <span className="font-bebas text-2xl sm:text-3xl text-white block">{timeLeft.hours}</span>
-              <span className="text-[9px] uppercase font-bold text-neutral-500">Horas</span>
-            </div>
-            <div className="bg-neutral-900/90 rounded-2xl p-2 border border-neutral-800">
-              <span className="font-bebas text-2xl sm:text-3xl text-white block">{timeLeft.minutes}</span>
-              <span className="text-[9px] uppercase font-bold text-neutral-500">Minutos</span>
-            </div>
-            <div className="bg-neutral-900/90 rounded-2xl p-2 border border-neutral-800">
-              <span className="font-bebas text-2xl sm:text-3xl text-lime-400 block">{timeLeft.seconds}</span>
-              <span className="text-[9px] uppercase font-bold text-neutral-500">Segundos</span>
+
+            <div className="grid grid-cols-4 gap-2.5 sm:gap-4 w-full text-center">
+              <div className="bg-neutral-900/90 rounded-2xl p-3 sm:p-4 border border-neutral-800 shadow-inner">
+                <span className="font-bebas text-3xl sm:text-5xl text-white block tracking-wider leading-none">
+                  {timeLeft.days}
+                </span>
+                <span className="text-[10px] sm:text-xs uppercase font-bold text-neutral-400 tracking-wider mt-1 block">
+                  Días
+                </span>
+              </div>
+              <div className="bg-neutral-900/90 rounded-2xl p-3 sm:p-4 border border-neutral-800 shadow-inner">
+                <span className="font-bebas text-3xl sm:text-5xl text-white block tracking-wider leading-none">
+                  {timeLeft.hours}
+                </span>
+                <span className="text-[10px] sm:text-xs uppercase font-bold text-neutral-400 tracking-wider mt-1 block">
+                  Horas
+                </span>
+              </div>
+              <div className="bg-neutral-900/90 rounded-2xl p-3 sm:p-4 border border-neutral-800 shadow-inner">
+                <span className="font-bebas text-3xl sm:text-5xl text-white block tracking-wider leading-none">
+                  {timeLeft.minutes}
+                </span>
+                <span className="text-[10px] sm:text-xs uppercase font-bold text-neutral-400 tracking-wider mt-1 block">
+                  Minutos
+                </span>
+              </div>
+              <div className="bg-lime-950/40 rounded-2xl p-3 sm:p-4 border border-lime-400/40 shadow-[0_0_20px_rgba(163,230,53,0.15)]">
+                <span className="font-bebas text-3xl sm:text-5xl text-lime-400 block tracking-wider leading-none">
+                  {timeLeft.seconds}
+                </span>
+                <span className="text-[10px] sm:text-xs uppercase font-bold text-lime-400 tracking-wider mt-1 block">
+                  Segundos
+                </span>
+              </div>
             </div>
           </div>
         </div>

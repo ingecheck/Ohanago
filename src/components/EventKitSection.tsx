@@ -62,13 +62,8 @@ export const EventKitSection: React.FC<EventKitSectionProps> = () => {
         </p>
       </div>
 
-      {/* 1. Finisher Medal Card FIRST right after title */}
-      <div className="max-w-md mx-auto mb-10">
-        <FinisherMedalCard />
-      </div>
-
-      {/* 2. Benefits Rectangles below the medal */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-5xl mx-auto">
+      {/* 1. Benefits Rectangles FIRST */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-5xl mx-auto mb-8">
         {kitItems.map((item, index) => {
           const IconComponent = item.icon;
           return (
@@ -107,6 +102,11 @@ export const EventKitSection: React.FC<EventKitSectionProps> = () => {
             </div>
           );
         })}
+      </div>
+
+      {/* 2. Finisher Medal Card BELOW all the benefits */}
+      <div className="max-w-md mx-auto">
+        <FinisherMedalCard />
       </div>
     </section>
   );

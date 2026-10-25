@@ -155,29 +155,30 @@ app.put('/api/registrations', (req, res) => {
   res.status(400).json({ error: 'Expected array of registrations' });
 });
 
-// 3. Competitor Auth: Login by DNI or Dorsal or ID
+// 3. Competitor Auth: Login strictly by DNI
 app.post('/api/competitor/login', (req, res) => {
-  const { query } = req.body;
-  if (!query) {
-    return res.status(400).json({ error: 'Ingresa tu DNI o número de dorsal.' });
+  const { dni, query } = req.body;
+  const rawInput = String(dni || query || '').trim();
+  if (!rawInput) {
+    return res.status(400).json({ error: 'Ingresa tu número de DNI.' });
   }
-  const clean = String(query).trim().toLowerCase();
+  const clean = rawInput.toLowerCase().replace(/[\s\.\-#]/g, '');
+  const cleanDigits = rawInput.replace(/\D/g, '');
   const registrations = readJSON<any[]>(REGISTRATIONS_FILE, []);
   
   const runner = registrations.find((r) => {
+    const rDni = String(r.documentNumber || '').toLowerCase().replace(/[\s\.\-#]/g, '');
+    const rDigits = String(r.documentNumber || '').replace(/\D/g, '');
+
     return (
-      String(r.documentNumber).toLowerCase() === clean ||
-      String(r.registrationNumber) === clean ||
-      String(r.bibNumber) === clean ||
-      String(r.id).toLowerCase() === clean ||
-      (r.email && String(r.email).toLowerCase() === clean) ||
-      (r.whatsapp && String(r.whatsapp).replace(/\D/g, '') === clean.replace(/\D/g, '')) ||
-      `${r.firstName} ${r.lastName}`.toLowerCase().includes(clean)
+      (clean && rDni === clean) ||
+      (cleanDigits && rDigits === cleanDigits) ||
+      (cleanDigits && cleanDigits.length >= 7 && rDigits.endsWith(cleanDigits))
     );
   });
 
   if (!runner) {
-    return res.status(404).json({ error: 'No se encontró un competidor registrado con ese documento o dorsal.' });
+    return res.status(404).json({ error: 'No se encontró un competidor registrado con ese número de DNI. Verifica tu número e intenta nuevamente.' });
   }
 
   res.json({ success: true, runner });
@@ -192,20 +193,29 @@ app.post('/api/start-checkin', (req, res) => {
     cleanToken === MASTER_START_TOKEN || 
     cleanToken === 'ADMIN_CHECKIN_OVERRIDE' ||
     cleanToken.includes(MASTER_START_TOKEN) ||
-    cleanToken.includes('OHANA-START-LINE');
+    cleanToken.includes('OHANA-START-LINE') ||
+    cleanToken.includes('checkin=start');
 
   if (!isValid) {
     return res.status(400).json({ error: 'Código QR de partida no válido. Escanea el QR oficial mostrado en la Plaza de Armas.' });
   }
 
   const registrations = readJSON<any[]>(REGISTRATIONS_FILE, []);
-  const cleanDni = dni ? String(dni).trim().toLowerCase() : '';
-  const cleanDorsal = dorsal ? Number(dorsal) : null;
+  const cleanDni = dni ? String(dni).trim().toLowerCase().replace(/[\s\.\-#]/g, '') : '';
+  const cleanDigits = dni ? String(dni).replace(/\D/g, '') : '';
+  const cleanDorsal = dorsal && !isNaN(Number(dorsal)) ? Number(dorsal) : null;
+  const cleanRunnerId = runnerId ? String(runnerId).trim().toLowerCase() : '';
 
   const idx = registrations.findIndex((r) => {
-    if (runnerId && r.id === runnerId) return true;
-    if (cleanDorsal && (r.registrationNumber === cleanDorsal || r.bibNumber === cleanDorsal)) return true;
-    if (cleanDni && String(r.documentNumber).toLowerCase() === cleanDni) return true;
+    const rDni = String(r.documentNumber || '').toLowerCase().replace(/[\s\.\-#]/g, '');
+    const rDigits = String(r.documentNumber || '').replace(/\D/g, '');
+    const rId = String(r.id || '').toLowerCase();
+    const rDorsal = Number(r.registrationNumber || r.bibNumber || 0);
+
+    if (cleanRunnerId && rId === cleanRunnerId) return true;
+    if (cleanDigits && (rDni === cleanDigits || rDigits === cleanDigits)) return true;
+    if (cleanDni && rDni === cleanDni) return true;
+    if (cleanDorsal && rDorsal === cleanDorsal) return true;
     return false;
   });
 
@@ -221,9 +231,11 @@ app.post('/api/start-checkin', (req, res) => {
   registrations[idx] = updatedRunner;
   writeJSON(REGISTRATIONS_FILE, registrations);
 
+  console.log(`[Check-in Realtime] Participante ${updatedRunner.firstName} ${updatedRunner.lastName} (DNI: ${updatedRunner.documentNumber}) confirmó asistencia a las ${updatedRunner.startCheckinTime}`);
+
   res.json({
     success: true,
-    message: '¡Confirmación de partida exitosa! Tu asistencia ha sido validada.',
+    message: '¡Confirmación de partida exitosa! Tu asistencia ha sido validada en tiempo real.',
     runner: updatedRunner,
   });
 });

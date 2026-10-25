@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, Shield, Search, Flame, Instagram, Sparkles, User } from 'lucide-react';
+import { Menu, X, Shield, Flame, Instagram, Sparkles, User } from 'lucide-react';
 
 interface NavbarProps {
   onOpenAdmin: () => void;
@@ -61,13 +61,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="hover:text-lime-400 transition cursor-pointer"
           >
             Ruta 5K
-          </button>
-          <button
-            onClick={() => handleNavClick('consultar-inscripcion')}
-            className="hover:text-cyan-400 transition cursor-pointer flex items-center gap-1 text-cyan-400/90"
-          >
-            <Search className="w-3.5 h-3.5" />
-            Consultar Mi Pase
           </button>
         </div>
 
@@ -163,12 +156,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-neutral-200 border-b border-neutral-900"
           >
             🗺️ Ruta Oficial 5K Tarapoto
-          </button>
-          <button
-            onClick={() => handleNavClick('consultar-inscripcion')}
-            className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-cyan-400 border-b border-neutral-900 flex items-center gap-1.5"
-          >
-            <Search className="w-4 h-4" /> Consultar Mi Pase
           </button>
 
           <a

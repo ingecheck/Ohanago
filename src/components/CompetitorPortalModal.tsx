@@ -123,6 +123,7 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           runnerId: competitor.id,
+          dni: competitor.documentNumber,
           token: scannedToken,
         }),
       });
@@ -137,6 +138,7 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
       const updated = data.runner || { ...competitor, confirmedAtStart: true, startCheckinTime: new Date().toISOString() };
       onUpdateCompetitor(updated);
       try {
+        window.dispatchEvent(new CustomEvent('ohana-checkin'));
         confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
       } catch (e) {}
       setActionSuccessMessage('¡Asistencia confirmada en la partida de la Plaza de Armas!');
@@ -154,8 +156,8 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
         {/* Header Bar */}
         <div className="p-4 sm:p-6 bg-gradient-to-r from-neutral-950 via-neutral-900 to-neutral-950 border-b border-neutral-800 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-lime-400 text-black flex items-center justify-center font-bebas text-2xl font-black shadow-lg shadow-lime-400/20">
-              #{competitor.registrationNumber || competitor.bibNumber || '01'}
+            <div className="w-12 h-12 rounded-2xl bg-lime-400 text-black flex items-center justify-center shadow-lg shadow-lime-400/20">
+              <User className="w-6 h-6 stroke-[2.5]" />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">

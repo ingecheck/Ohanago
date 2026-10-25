@@ -4,10 +4,10 @@ import { EventHero } from './components/EventHero';
 import { EventKitSection } from './components/EventKitSection';
 import { RaceRouteSection } from './components/RaceRouteSection';
 import { RegistrationForm } from './components/RegistrationForm';
-import { ConsultDorsalSection } from './components/ConsultDorsalSection';
 import { RegistrationSuccessModal } from './components/RegistrationSuccessModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AdminLoginModal } from './components/AdminLoginModal';
+import { CompetitorLoginModal } from './components/CompetitorLoginModal';
 import { CompetitorPortalModal } from './components/CompetitorPortalModal';
 import { Footer } from './components/Footer';
 import { RunnerRegistration } from './types/race';
@@ -21,7 +21,7 @@ export const App: React.FC = () => {
   const [recentlyRegistered, setRecentlyRegistered] = useState<RunnerRegistration | null>(null);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
-  const [loginModalTab, setLoginModalTab] = useState<'admin' | 'competitor'>('admin');
+  const [isCompetitorLoginOpen, setIsCompetitorLoginOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   // Direct Start Line QR Check-in states (when runner scans start QR with camera)
@@ -128,7 +128,7 @@ export const App: React.FC = () => {
           } catch (e) {}
         }
 
-        // Si no está logueado, abrir modal para que ingrese DNI o Dorsal
+        // Si no está logueado, abrir modal para que ingrese DNI
         setDirectCheckinOpen(true);
       }
     } catch (e) {}
@@ -143,7 +143,7 @@ export const App: React.FC = () => {
   const handleExecuteDirectCheckin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!directCheckinQuery.trim()) {
-      setDirectCheckinError('Ingresa tu número de DNI o número de dorsal.');
+      setDirectCheckinError('Ingresa tu número de DNI.');
       return;
     }
 
@@ -155,7 +155,6 @@ export const App: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          dorsal: directCheckinQuery.trim(),
           dni: directCheckinQuery.trim(),
           token: directCheckinToken,
         }),
@@ -177,6 +176,7 @@ export const App: React.FC = () => {
       setDirectCheckinOpen(false);
 
       try {
+        window.dispatchEvent(new CustomEvent('ohana-checkin'));
         confetti({ particleCount: 100, spread: 75, origin: { y: 0.6 } });
       } catch (err) {}
     } catch (err) {
@@ -200,7 +200,6 @@ export const App: React.FC = () => {
     if (isAdminAuthenticated()) {
       setIsAdminOpen(true);
     } else {
-      setLoginModalTab('admin');
       setIsAdminLoginOpen(true);
     }
   };
@@ -209,8 +208,7 @@ export const App: React.FC = () => {
     if (activeCompetitor) {
       setIsCompetitorPortalOpen(true);
     } else {
-      setLoginModalTab('competitor');
-      setIsAdminLoginOpen(true);
+      setIsCompetitorLoginOpen(true);
     }
   };
 
@@ -286,11 +284,6 @@ export const App: React.FC = () => {
         onRegistrationSuccess={handleRegistrationSuccess}
       />
 
-      {/* Consult Dorsal Section */}
-      <ConsultDorsalSection
-        registrations={registrations}
-      />
-
       {/* Frequently Asked Questions */}
       <section id="preguntas-frecuentes" className="pt-6 pb-12 px-4 max-w-4xl mx-auto w-full scroll-mt-20">
         <div className="text-center mb-6">
@@ -342,19 +335,25 @@ export const App: React.FC = () => {
         onClose={() => setRecentlyRegistered(null)}
       />
 
-      {/* Login Modal with Clean Admin and Competitor Tabs */}
+      {/* Competitor Login Modal (Mi Espacio ONLY) */}
+      {isCompetitorLoginOpen && (
+        <CompetitorLoginModal
+          onSuccess={(runner) => {
+            setActiveCompetitor(runner);
+            localStorage.setItem('ohana_active_competitor', JSON.stringify(runner));
+            setIsCompetitorLoginOpen(false);
+            setIsCompetitorPortalOpen(true);
+          }}
+          onClose={() => setIsCompetitorLoginOpen(false)}
+        />
+      )}
+
+      {/* Admin Login Modal (Gestión / Organizador ONLY) */}
       {isAdminLoginOpen && (
         <AdminLoginModal
-          initialTab={loginModalTab}
           onSuccess={() => {
             setIsAdminLoginOpen(false);
             setIsAdminOpen(true);
-          }}
-          onCompetitorSuccess={(runner) => {
-            setActiveCompetitor(runner);
-            localStorage.setItem('ohana_active_competitor', JSON.stringify(runner));
-            setIsAdminLoginOpen(false);
-            setIsCompetitorPortalOpen(true);
           }}
           onClose={() => setIsAdminLoginOpen(false)}
         />
@@ -414,23 +413,26 @@ export const App: React.FC = () => {
                 Confirmar <span className="text-lime-400">Asistencia 5K</span>
               </h3>
               <p className="text-xs text-neutral-300 mt-1">
-                ¡Bienvenido a la OHANA GO 5K! Ingresa tu DNI o número de dorsal para validar tu check-in en vivo.
+                ¡Bienvenido a la OHANA GO 5K! Ingresa tu número de DNI para validar tu check-in en vivo en la Plaza de Armas.
               </p>
             </div>
 
             <form onSubmit={handleExecuteDirectCheckin} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
-                  Número de DNI o Número de Dorsal *
+                <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5 flex items-center justify-between">
+                  <span>Número de DNI del Participante *</span>
+                  <span className="text-[10px] text-lime-400">solo documento</span>
                 </label>
                 <input
-                  type="text"
+                  type="tel"
+                  inputMode="numeric"
                   required
                   autoFocus
+                  maxLength={12}
                   value={directCheckinQuery}
                   onChange={(e) => setDirectCheckinQuery(e.target.value)}
-                  placeholder="Ej: 72849102 o Dorsal 12"
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white text-base font-bold focus:outline-none focus:border-lime-400 transition"
+                  placeholder="Ingresa tu DNI (Ej: 70930296)"
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white text-base font-bold font-mono focus:outline-none focus:border-lime-400 transition"
                 />
               </div>
 
@@ -481,8 +483,8 @@ export const App: React.FC = () => {
                 <span className="text-sm font-bold text-white">{directCheckinSuccess.firstName} {directCheckinSuccess.lastName}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-neutral-400 uppercase font-bold">Dorsal Oficial:</span>
-                <span className="text-base font-black text-lime-400 font-mono">#{directCheckinSuccess.registrationNumber || directCheckinSuccess.bibNumber}</span>
+                <span className="text-[11px] text-neutral-400 uppercase font-bold">DNI Verificado:</span>
+                <span className="text-sm font-black text-lime-400 font-mono">{directCheckinSuccess.documentNumber}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-neutral-400 uppercase font-bold">Hora de Check-in:</span>

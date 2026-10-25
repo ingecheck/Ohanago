@@ -5,7 +5,7 @@ export const getStoredRegistrations = (): RunnerRegistration[] => {
     const saved = localStorage.getItem('ohana_registrations');
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed) && parsed.length >= INITIAL_REGISTRATIONS.length) {
         return parsed;
       }
     }
@@ -27,7 +27,7 @@ export const saveRegistrations = (registrations: RunnerRegistration[]): void => 
 export const exportToCSV = (registrations: RunnerRegistration[]) => {
   const headers = [
     'N°',
-    'Dorsal',
+    'Código Registro',
     'Nombres',
     'Apellidos',
     'Documento',
@@ -42,7 +42,7 @@ export const exportToCSV = (registrations: RunnerRegistration[]) => {
 
   const rows = registrations.map(r => [
     r.registrationNumber || r.bibNumber || '',
-    r.bibNumber || r.registrationNumber || '',
+    r.id || `OHA-2026-${String(r.registrationNumber).padStart(4, '0')}`,
     `"${r.firstName}"`,
     `"${r.lastName}"`,
     r.documentType,

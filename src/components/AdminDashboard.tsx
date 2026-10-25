@@ -30,7 +30,8 @@ import {
   Activity,
   Maximize2,
   Minimize2,
-  Printer
+  Printer,
+  RefreshCw
 } from 'lucide-react';
 import { DigitalBib } from './DigitalBib';
 
@@ -124,32 +125,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       .catch((err) => console.error('Error generating start QR:', err));
   }, []);
 
-  useEffect(() => {
-    // Sincronizar en tiempo real cada 2.5 segundos para reflejar automáticamente el checklist cuando los corredores pasen el QR
-    let previousConfirmedCount = registrations.filter((r) => r.confirmedAtStart).length;
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-    const syncLiveCheckins = async () => {
-      try {
-        const res = await fetch('/api/registrations');
-        if (res.ok) {
-          const serverList: RunnerRegistration[] = await res.json();
-          if (Array.isArray(serverList) && serverList.length > 0) {
-            const currentConfirmed = serverList.filter((r) => r.confirmedAtStart);
-            if (currentConfirmed.length > previousConfirmedCount) {
-              const latest = currentConfirmed[0];
-              setLiveNotice(`🏁 ¡Check-in en Partida! #${latest.registrationNumber || latest.bibNumber} ${latest.firstName} ${latest.lastName} acaba de pasar el arco.`);
-              setTimeout(() => setLiveNotice(null), 5000);
-            }
-            previousConfirmedCount = currentConfirmed.length;
-            onUpdateRegistrations(serverList);
-          }
+  const fetchLiveRegistrations = async () => {
+    setIsRefreshing(true);
+    try {
+      const res = await fetch('/api/registrations');
+      if (res.ok) {
+        const serverList: RunnerRegistration[] = await res.json();
+        if (Array.isArray(serverList) && serverList.length > 0) {
+          onUpdateRegistrations(serverList);
         }
-      } catch (err) {}
-    };
+      }
+    } catch (err) {
+      console.warn('Error fetching registrations:', err);
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
 
-    const intervalId = setInterval(syncLiveCheckins, 2500);
-    return () => clearInterval(intervalId);
-  }, [onUpdateRegistrations, registrations]);
+  useEffect(() => {
+    fetchLiveRegistrations();
+    const intervalId = setInterval(fetchLiveRegistrations, 2500);
+    window.addEventListener('ohana-checkin', fetchLiveRegistrations);
+    window.addEventListener('storage', fetchLiveRegistrations);
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('ohana-checkin', fetchLiveRegistrations);
+      window.removeEventListener('storage', fetchLiveRegistrations);
+    };
+  }, []);
 
   useEffect(() => {
     // Sincronizar con el servidor para que la medalla sea consistente en todos los dispositivos
@@ -377,6 +382,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </button>
 
             <button
+              onClick={fetchLiveRegistrations}
+              disabled={isRefreshing}
+              className="flex items-center gap-1.5 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl text-xs font-bold transition shadow cursor-pointer border border-neutral-700"
+              title="Recargar y sincronizar participantes en tiempo real"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-lime-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Actualizar</span>
+            </button>
+
+            <button
               onClick={() => exportToCSV(registrations)}
               className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow cursor-pointer"
             >
@@ -503,7 +518,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar por nombre, DNI, celular, dorsal o ciudad..."
+              placeholder="Buscar por nombre, DNI, celular o ciudad..."
               className="w-full pl-9 pr-3 py-2 bg-neutral-950 border border-neutral-800 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-lime-400 transition text-xs"
             />
           </div>
@@ -605,7 +620,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <table className="w-full text-left border-collapse text-xs">
             <thead className="sticky top-0 bg-neutral-900 border-b border-neutral-800 text-neutral-400 uppercase text-[10px] font-bold tracking-wider z-10">
               <tr>
-                <th className="py-3 px-3"># Dorsal</th>
+                <th className="py-3 px-3">N°</th>
                 <th className="py-3 px-3">Corredor / Runner</th>
                 <th className="py-3 px-3">Modalidad</th>
                 <th className="py-3 px-3">Ubicación</th>
@@ -622,13 +637,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </td>
                 </tr>
               ) : (
-                filteredRegistrations.map((runner) => {
+                filteredRegistrations.map((runner, index) => {
                   const isRunVirtual = runner.modality === 'Virtual';
                   return (
                     <tr key={runner.id} className="hover:bg-neutral-800/40 transition">
-                      {/* Dorsal */}
-                      <td className="py-3 px-3 font-mono font-bold text-lime-400 text-sm">
-                        #{String(runner.registrationNumber || runner.bibNumber || '01').padStart(3, '0')}
+                      {/* Consecutive registration index */}
+                      <td className="py-3 px-3 font-mono font-bold text-neutral-400 text-xs">
+                        {index + 1}
                       </td>
 
                       {/* Runner info */}
@@ -790,7 +805,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div>
                 <span className="text-[10px] text-purple-400 uppercase font-black tracking-wider block">Evidencia 5K Virtual</span>
                 <h4 className="font-bebas text-2xl text-white uppercase">
-                  {viewingEvidenceRunner.firstName} {viewingEvidenceRunner.lastName} (Dorsal #{viewingEvidenceRunner.registrationNumber})
+                  {viewingEvidenceRunner.firstName} {viewingEvidenceRunner.lastName} (DNI: {viewingEvidenceRunner.documentNumber})
                 </h4>
               </div>
               <button
@@ -1270,21 +1285,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 )}
               </div>
 
-              <span className="font-bebas text-xl sm:text-2xl text-lime-400 uppercase tracking-widest mt-3">
-                Escanea con la cámara de tu celular
-              </span>
-              <p className="text-xs text-neutral-300 max-w-md mt-0.5">
-                Al escanear este QR en la Plaza de Armas, tu asistencia se validará automáticamente en vivo en el sistema del organizador.
+              <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-400/10 border border-lime-400/30 text-lime-400 text-xs font-black uppercase tracking-wider">
+                QR Oficial de Largada • Plaza de Armas
+              </div>
+              <p className="text-xs text-neutral-300 max-w-lg mt-2 leading-relaxed">
+                Este es el código QR que se colocará impreso en el stand o arco de largada de la Plaza de Armas. Los participantes lo escanean con la cámara de su teléfono o desde <strong>Mi Espacio 🎒</strong> para confirmar su asistencia presencial en vivo.
               </p>
+
+              {/* Direct Link Copier */}
+              <div className="mt-3 flex items-center gap-2 bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-1.5 max-w-md w-full">
+                <span className="text-[11px] text-neutral-400 font-mono truncate flex-1 text-left">
+                  {typeof window !== 'undefined' ? `${window.location.origin}/?checkin=start` : ''}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (navigator.clipboard) {
+                      navigator.clipboard.writeText(`${window.location.origin}/?checkin=start&token=OHANA-START-LINE-TARAPOTO-2026`);
+                      alert('Enlace de check-in copiado al portapapeles');
+                    }
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-lime-400 text-[11px] font-bold transition cursor-pointer shrink-0"
+                >
+                  Copiar Link
+                </button>
+              </div>
             </div>
 
             {/* Bottom Actions Bar */}
             <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-neutral-800 text-xs">
               <div className="flex items-center gap-2">
-                <span className="inline-block w-2.5 h-2.5 rounded-full bg-lime-400 animate-ping" />
-                <span className="text-neutral-400 text-[11px]">
-                  Sincronización online activa • Actualización instantánea
-                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowStaffScanner(true);
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-purple-950/80 hover:bg-purple-900 text-purple-200 border border-purple-500/40 font-bold transition flex items-center gap-2 cursor-pointer shadow-md"
+                >
+                  <Camera className="w-4 h-4 text-lime-400" />
+                  <span>Escanear Corredor con la Cámara</span>
+                </button>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
@@ -1349,7 +1389,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {showStaffScanner && (
         <QRScannerModal
           title="Control de Partida • Escanear Pase de Atleta"
-          subtitle="Apunta la cámara al código QR del pase digital o dorsal del competidor."
+          subtitle="Apunta la cámara al código QR del pase digital o credencial del competidor."
           expectedType="any"
           onScanSuccess={async (scannedText) => {
             setShowStaffScanner(false);
@@ -1359,7 +1399,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   runnerId: scannedText,
-                  dorsal: scannedText,
                   dni: scannedText,
                   token: 'ADMIN_CHECKIN_OVERRIDE',
                 }),
@@ -1369,7 +1408,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 const updated = registrations.map((r) => r.id === data.runner.id ? data.runner : r);
                 onUpdateRegistrations(updated);
                 saveRegistrations(updated);
-                setLiveNotice(`🎉 ¡Dorsal #${data.runner.registrationNumber || data.runner.bibNumber} ${data.runner.firstName} ${data.runner.lastName} confirmado en partida!`);
+                setLiveNotice(`🎉 ¡${data.runner.firstName} ${data.runner.lastName} (DNI: ${data.runner.documentNumber}) confirmado en partida!`);
                 setTimeout(() => setLiveNotice(null), 5000);
               } else {
                 setLiveNotice(`❌ ${data.error || 'No se encontró un competidor registrado con ese código.'}`);
