@@ -158,10 +158,10 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
               #{competitor.registrationNumber || competitor.bibNumber || '01'}
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-bebas text-2xl sm:text-3xl text-white tracking-wide uppercase leading-none">
-                  {competitor.firstName} {competitor.lastName}
-                </h3>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[11px] font-bold text-lime-400 tracking-wider uppercase flex items-center gap-1">
+                  Mi Espacio 🎒
+                </span>
                 <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${
                   isVirtual 
                     ? 'bg-purple-950/80 text-purple-300 border-purple-500/40' 
@@ -169,6 +169,11 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
                 }`}>
                   {isVirtual ? 'Modalidad Virtual' : 'Presencial Tarapoto'}
                 </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bebas text-2xl sm:text-3xl text-white tracking-wide uppercase leading-none">
+                  {competitor.firstName} {competitor.lastName}
+                </h3>
               </div>
               <p className="text-xs text-neutral-400 mt-0.5">
                 {competitor.documentType}: <strong>{competitor.documentNumber}</strong> • {competitor.department || 'San Martín'} - {competitor.city}

@@ -39,9 +39,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 OHANA <span className="text-lime-400 font-extrabold">GO</span>
               </span>
             </div>
-            <span className="text-[10px] uppercase font-bold tracking-widest text-neutral-400 block -mt-0.5">
-              Tarapoto • 31 Octubre 2026
-            </span>
           </div>
         </div>
 
@@ -80,10 +77,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={onOpenCompetitorLogin}
             className="px-3 py-2 rounded-xl bg-gradient-to-r from-purple-900/80 to-neutral-900 hover:from-purple-800 hover:to-neutral-800 border border-purple-500/40 text-purple-200 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm hover:scale-[1.02]"
-            title="Acceso al Portal del Competidor"
+            title="Mi Espacio 🎒"
           >
             <Sparkles className="w-3.5 h-3.5 text-lime-400" />
-            <span>{loggedInCompetitorName ? `Mi Cuenta (${loggedInCompetitorName})` : 'Portal Competidor'}</span>
+            <span>{loggedInCompetitorName ? `Mi Espacio 🎒 (${loggedInCompetitorName})` : 'Mi Espacio 🎒'}</span>
           </button>
 
           {/* Instagram Link Button */}
@@ -97,14 +94,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Instagram className="w-4 h-4" />
             <span className="text-xs font-bold font-sans">@ohanago.peru</span>
           </a>
-
-          {/* Register CTA */}
-          <button
-            onClick={() => handleNavClick('formulario-registro')}
-            className="px-5 py-2.5 bg-lime-400 hover:bg-lime-300 text-black font-bebas text-lg tracking-wider uppercase rounded-xl transition shadow-lg shadow-lime-400/20 cursor-pointer"
-          >
-            Inscribirme
-          </button>
         </div>
 
         {/* Mobile menu trigger */}
@@ -112,7 +101,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={onOpenCompetitorLogin}
             className="p-2 rounded-lg bg-purple-950/80 border border-purple-500/40 text-purple-200"
-            title="Portal Competidor"
+            title="Mi Espacio 🎒"
           >
             <Sparkles className="w-4 h-4 text-lime-400" />
           </button>
@@ -126,13 +115,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Instagram className="w-4 h-4" />
           </a>
-
-          <button
-            onClick={() => handleNavClick('formulario-registro')}
-            className="px-3 py-1.5 bg-lime-400 text-black font-bebas text-sm uppercase rounded-lg tracking-wider"
-          >
-            Inscripción
-          </button>
 
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -156,7 +138,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <span className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-lime-400" />
-              Portal Competidor / Caldero de Pociones
+              Mi Espacio 🎒
             </span>
             <span className="text-[10px] bg-lime-400 text-black px-1.5 py-0.5 rounded font-black">
               Entrar

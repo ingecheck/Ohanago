@@ -1,46 +1,44 @@
 import React from 'react';
-import { Navigation, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 
 export const RaceRouteSection: React.FC = () => {
   return (
-    <section id="ruta-5k" className="pt-4 pb-3 px-4 max-w-7xl mx-auto">
-      {/* Section Header */}
-      <div className="text-center max-w-3xl mx-auto mb-5">
-        <h2 className="font-bebas text-4xl sm:text-5xl md:text-6xl text-white tracking-wider uppercase">
-          Ruta Oficial <span className="text-lime-400 text-glow-lime">5 Kilómetros</span>
-        </h2>
-        <p className="text-neutral-400 text-sm md:text-base mt-1">
-          De la <strong>Plaza de Armas de Tarapoto</strong> hasta <strong>Entre Jarras (Jr. Lima cda. 13)</strong>. Recorrido 100% asfaltado e iluminado.
-        </p>
-      </div>
-
+    <section id="ruta-5k" className="pt-6 pb-6 px-4 max-w-7xl mx-auto">
       {/* Main Container: High-fidelity Visual Route Map */}
-      <div className="bg-neutral-950 border border-neutral-800 rounded-3xl p-4 sm:p-6 shadow-2xl relative overflow-hidden">
+      <div className="bg-neutral-950 border border-neutral-800 rounded-3xl p-5 sm:p-7 shadow-2xl relative overflow-hidden transition-all duration-300 hover:border-lime-500/30">
         
-        {/* Route Card Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-800/80 pb-4 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-lime-400 to-lime-500 text-black flex items-center justify-center font-bebas text-2xl shadow-lg shadow-lime-400/20">
-              5K
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bebas text-2xl sm:text-3xl text-white tracking-wider">
-                  OHANA GO <span className="text-lime-400">HALLOWEEN 5K</span>
-                </span>
-                <span className="bg-orange-600 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded font-marker">
-                  RUTA OFICIAL
-                </span>
+        {/* Route Card Header with Prominent Large Title & Details */}
+        <div className="border-b border-neutral-800/80 pb-5 mb-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-lime-400 via-lime-500 to-lime-600 text-black flex items-center justify-center font-bebas text-3xl sm:text-4xl shadow-xl shadow-lime-400/25 shrink-0">
+                5K
               </div>
-              <span className="text-xs text-neutral-400">Tarapoto, San Martín • 5.00 km exactos</span>
+              <div>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h2 className="font-bebas text-3xl sm:text-4xl md:text-5xl text-white tracking-wider leading-none">
+                    OHANA GO <span className="text-lime-400 text-glow-lime">HALLOWEEN 5K</span>
+                  </h2>
+                  <span className="bg-gradient-to-r from-orange-500 to-amber-500 text-black text-xs font-black uppercase px-2.5 py-1 rounded-lg tracking-wider shadow-sm">
+                    RUTA OFICIAL
+                  </span>
+                </div>
+                {/* Important route details in small clear text */}
+                <p className="text-xs sm:text-sm text-neutral-300 mt-2 leading-relaxed">
+                  De la <strong className="text-white">Plaza de Armas de Tarapoto</strong> hasta <strong className="text-white">Entre Jarras (Jr. Lima cda. 13)</strong>. Recorrido 100% asfaltado e iluminado.
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1.5 rounded-xl bg-neutral-900 border border-neutral-700 text-xs font-bold text-lime-400 flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4" />
-              Puntos de Control & Guía Policial
-            </span>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <span className="px-3.5 py-1.5 rounded-xl bg-lime-950/60 border border-lime-500/40 text-xs font-bold text-lime-400 flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-lime-400" />
+                Puntos de Control & Guía Policial
+              </span>
+              <span className="px-3.5 py-1.5 rounded-xl bg-neutral-900 border border-neutral-700 text-xs font-bold text-neutral-300">
+                Tarapoto • 5.00 km exactos
+              </span>
+            </div>
           </div>
         </div>
 

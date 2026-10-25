@@ -149,7 +149,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
             }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
-            Competidor
+            Mi Espacio 🎒
           </button>
         </div>
 
@@ -222,7 +222,7 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
           </div>
         )}
 
-        {/* TAB 2: PORTAL DEL COMPETIDOR (Corredor registrado) */}
+        {/* TAB 2: MI ESPACIO 🎒 (Corredor registrado) */}
         {activeTab === 'competitor' && (
           <div>
             <div className="text-center mb-6">
@@ -230,10 +230,10 @@ export const AdminLoginModal: React.FC<AdminLoginModalProps> = ({
                 <Sparkles className="w-7 h-7" />
               </div>
               <h3 className="font-bebas text-3xl text-white tracking-wider uppercase">
-                Portal del Competidor
+                Mi Espacio 🎒
               </h3>
               <p className="text-xs text-neutral-400 mt-1">
-                Accede a tu pase digital, check-in de partida y al minijuego del Caldero de Pociones.
+                Accede a tu pase digital, número de dorsal y check-in de partida.
               </p>
             </div>
 

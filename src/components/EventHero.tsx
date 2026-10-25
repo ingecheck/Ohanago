@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, Flag, Sparkles, ArrowRight, ShieldCheck, Flame, Trophy, Gift } from 'lucide-react';
+import { Calendar, Clock, MapPin, Flag, Sparkles, ShieldCheck, Flame, Trophy, Gift } from 'lucide-react';
 
 interface EventHeroProps {
-  onRegisterClick: () => void;
-  onExploreKitClick: () => void;
+  onRegisterClick?: () => void;
+  onExploreKitClick?: () => void;
   registeredCount: number;
 }
 
@@ -94,9 +94,6 @@ export const EventHero: React.FC<EventHeroProps> = ({
             <Gift className="w-4 h-4 text-purple-400" />
             Sorteos en la Llegada
           </span>
-          <span className="px-4 py-2 rounded-xl bg-lime-950/60 border border-lime-500/40 text-xs font-bold text-lime-400">
-            Partida: Plaza de Armas • Llegada: Entre Jarras
-          </span>
         </div>
 
         {/* Event Key Facts Bar */}
@@ -161,25 +158,6 @@ export const EventHero: React.FC<EventHeroProps> = ({
               <span className="text-[9px] uppercase font-bold text-neutral-500">Segundos</span>
             </div>
           </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-7">
-          <button
-            onClick={onRegisterClick}
-            className="w-full sm:w-auto px-10 py-4 bg-lime-400 hover:bg-lime-300 text-black font-bebas text-2xl uppercase tracking-wider rounded-2xl shadow-xl shadow-lime-400/30 transition-all transform hover:scale-105 flex items-center justify-center gap-2 cursor-pointer"
-          >
-            Inscribirme a la Carrera
-            <ArrowRight className="w-6 h-6" />
-          </button>
-
-          <button
-            onClick={onExploreKitClick}
-            className="w-full sm:w-auto px-8 py-4 bg-neutral-900 hover:bg-neutral-800 text-white font-bebas text-xl uppercase tracking-wider rounded-2xl border border-neutral-700 hover:border-lime-400 transition flex items-center justify-center gap-2 cursor-pointer shadow-lg"
-          >
-            <Trophy className="w-5 h-5 text-amber-400" />
-            Ver Medalla Finisher Oficial
-          </button>
         </div>
 
       </div>

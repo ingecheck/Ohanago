@@ -71,30 +71,37 @@ export const FinisherMedalCard: React.FC = () => {
         </p>
       </div>
 
-      {/* Main Medal Display */}
-      <div className="relative mx-auto my-2 w-full max-w-[280px] flex flex-col items-center justify-center">
-        <div className="relative group/photo flex flex-col items-center w-full">
-          <div className="relative rounded-2xl overflow-hidden border-2 border-lime-400/70 shadow-[0_0_30px_rgba(163,230,53,0.3)] bg-black/90 p-2 w-full flex items-center justify-center min-h-[250px]">
-            <img
-              src={medalImage || defaultOfficialMedal}
-              alt="Medalla Finisher Oficial OHANA GO 5K"
-              className="w-full max-h-[350px] object-contain drop-shadow-[0_15px_25px_rgba(0,0,0,0.9)] transition-transform duration-300 group-hover/photo:scale-105 cursor-pointer"
-              onClick={() => setIsZoomed(true)}
-              onError={(e) => {
-                const target = e.currentTarget as HTMLImageElement;
-                if (target.src !== defaultOfficialMedal) {
-                  target.src = defaultOfficialMedal;
-                }
-              }}
-            />
-            <button
-              onClick={() => setIsZoomed(true)}
-              className="absolute bottom-3 right-3 p-2 rounded-xl bg-black/80 text-lime-400 hover:text-white border border-lime-400/40 backdrop-blur-md opacity-0 group-hover/photo:opacity-100 transition cursor-pointer"
-              title="Ver medalla ampliada"
-            >
-              <ZoomIn className="w-4 h-4" />
-            </button>
-          </div>
+      {/* Main Medal Display - Single Clean Sharp Square Showcase */}
+      <div className="relative mx-auto my-3 w-full max-w-[320px] aspect-square flex items-center justify-center">
+        {/* Soft radial glow directly behind the medal */}
+        <div className="absolute inset-4 bg-radial from-lime-400/15 via-transparent to-transparent rounded-full blur-2xl pointer-events-none" />
+
+        <div
+          className="relative w-full h-full flex items-center justify-center cursor-pointer group/photo"
+          onClick={() => setIsZoomed(true)}
+        >
+          <img
+            src={medalImage || defaultOfficialMedal}
+            alt="Medalla Finisher Oficial OHANA GO 5K"
+            className="w-full h-full object-contain drop-shadow-[0_20px_35px_rgba(0,0,0,0.95)] transition-transform duration-300 group-hover/photo:scale-105"
+            loading="eager"
+            onError={(e) => {
+              const target = e.currentTarget as HTMLImageElement;
+              if (target.src !== defaultOfficialMedal) {
+                target.src = defaultOfficialMedal;
+              }
+            }}
+          />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsZoomed(true);
+            }}
+            className="absolute bottom-2 right-2 p-2 rounded-xl bg-black/80 text-lime-400 hover:text-white border border-lime-400/40 backdrop-blur-md opacity-0 group-hover/photo:opacity-100 transition shadow-lg cursor-pointer"
+            title="Ver medalla en alta resolución"
+          >
+            <ZoomIn className="w-4 h-4" />
+          </button>
         </div>
       </div>
 

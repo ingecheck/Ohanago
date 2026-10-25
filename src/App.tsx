@@ -228,7 +228,7 @@ export const App: React.FC = () => {
   const faqs = [
     {
       q: '¿Cuál es la diferencia entre la Modalidad Presencial y la Modalidad Virtual?',
-      a: 'En la modalidad Presencial, corres en vivo el sábado 31 de Octubre a las 7:00 PM desde la Plaza de Armas de Tarapoto hasta Entre Jarras, con hidratación en ruta, pulseras neón y entrega de tu Medalla Finisher física al cruzar la meta. En la modalidad Virtual, puedes correr o caminar tus 5K desde cualquier ciudad del Perú o del mundo entre el 28 de Octubre y el 2 de Noviembre con tu app favorita (Strava, Nike, Garmin), subes tu captura en tu Portal de Competidor y te enviamos tu Medalla Finisher física y kit oficial a domicilio o agencia.',
+      a: 'En la modalidad Presencial, corres en vivo el sábado 31 de Octubre a las 7:00 PM desde la Plaza de Armas de Tarapoto hasta Entre Jarras, con hidratación en ruta, pulseras neón y entrega de tu Medalla Finisher física al cruzar la meta. En la modalidad Virtual, puedes correr o caminar tus 5K desde cualquier ciudad del Perú o del mundo entre el 28 de Octubre y el 2 de Noviembre con tu app favorita (Strava, Nike, Garmin), subes tu captura en Mi Espacio 🎒 y te enviamos tu Medalla Finisher física y kit oficial a domicilio o agencia.',
     },
     {
       q: '¿Qué incluye exactamente el valor de mi inscripción (S/ 50.00)?',
@@ -236,7 +236,7 @@ export const App: React.FC = () => {
     },
     {
       q: 'Si elijo la modalidad Virtual, ¿cómo y cuándo registro mi tiempo?',
-      a: 'Podrás completar tus 5 kilómetros en cualquier momento entre el 28 de Octubre y el 2 de Noviembre. Al finalizar, ingresa a la web en el botón "Portal Competidor" con tu DNI, haz clic en "Subir Evidencia 5K", registra tu tiempo y sube una captura de pantalla de Strava, Nike Run Club, Garmin, Apple Watch o foto de la pantalla de tu trotadora.',
+      a: 'Podrás completar tus 5 kilómetros en cualquier momento entre el 28 de Octubre y el 2 de Noviembre. Al finalizar, ingresa a la web en el botón "Mi Espacio 🎒" con tu DNI, haz clic en "Subir Evidencia 5K", registra tu tiempo y sube una captura de pantalla de Strava, Nike Run Club, Garmin, Apple Watch o foto de la pantalla de tu trotadora.',
     },
     {
       q: '¿Es obligatorio correr con disfraz de Halloween?',
@@ -503,7 +503,7 @@ export const App: React.FC = () => {
               }}
               className="w-full py-3 bg-lime-400 hover:bg-lime-300 text-black font-bebas text-lg uppercase tracking-wider rounded-xl transition cursor-pointer shadow-md"
             >
-              Ver Mi Portal y Pase Digital
+              Ir a Mi Espacio 🎒 y Pase Digital
             </button>
           </div>
         </div>
