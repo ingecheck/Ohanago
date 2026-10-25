@@ -91,10 +91,33 @@ export const App: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
 
-    // Detectar si el usuario escaneó el QR de partida con su cámara nativa (?checkin=start)
+    // Detectar si el usuario escaneó el QR con su cámara nativa (?checkin=start o ?runner=... o ?dni=...)
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('checkin') === 'start') {
+      const runnerParam = urlParams.get('runner') || urlParams.get('runnerId');
+      const dniParam = urlParams.get('dni');
+
+      if (runnerParam || dniParam) {
+        // Limpiar URL sin recargar
+        window.history.replaceState({}, document.title, window.location.pathname);
+        fetch('/api/verify-runner', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: runnerParam || dniParam }),
+        })
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.runner) {
+              setActiveCompetitor(data.runner);
+              localStorage.setItem('ohana_active_competitor', JSON.stringify(data.runner));
+              setIsCompetitorPortalOpen(true);
+              try {
+                confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+              } catch (e) {}
+            }
+          })
+          .catch(() => {});
+      } else if (urlParams.get('checkin') === 'start') {
         const tokenFromUrl = urlParams.get('token') || 'OHANA-START-LINE-TARAPOTO-2026';
         setDirectCheckinToken(tokenFromUrl);
 

@@ -48,6 +48,9 @@ export interface RunnerRegistration {
   // Race day check-in verification for presencial
   confirmedAtStart?: boolean;
   startCheckinTime?: string;
+  finishedAtMeta?: boolean;
+  finishCheckinTime?: string;
+  medalDelivered?: boolean;
   // Compatibility fields
   totalCandies?: number;
   potionsCollected?: string[];

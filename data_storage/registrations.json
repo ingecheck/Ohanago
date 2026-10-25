@@ -81,10 +81,14 @@
     "paymentMethod": "Yape",
     "paymentReference": "YAPE-FORMS-0003",
     "paymentStatus": "Verificado",
-    "confirmedAtStart": false,
+    "confirmedAtStart": true,
     "modality": "Presencial",
     "createdAt": "2026-10-06T10:12:46.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "startCheckinTime": "2026-10-25T04:29:47.165Z",
+    "finishedAtMeta": true,
+    "finishCheckinTime": "2026-10-25T04:29:50.752Z",
+    "medalDelivered": true
   },
   {
     "id": "OHA-2026-0004",

@@ -178,18 +178,8 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/90 backdrop-blur-md overflow-y-auto">
       <div className="relative w-full max-w-4xl bg-gradient-to-b from-neutral-950 via-purple-950/30 to-neutral-950 border-2 border-purple-500/50 rounded-3xl shadow-[0_0_60px_rgba(168,85,247,0.25)] overflow-hidden my-4 max-h-[94vh] flex flex-col">
         
-        {/* Top Floating Close Button (Direct, accessible X) */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-30 p-2.5 rounded-full bg-neutral-900/90 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-purple-500/30 hover:border-lime-400 transition cursor-pointer shadow-lg group"
-          title="Regresar a la página principal (Cerrar)"
-          aria-label="Cerrar Mi Espacio"
-        >
-          <X className="w-5 h-5 text-neutral-300 group-hover:text-lime-400 transition" />
-        </button>
-
-        {/* Warm & Welcoming Header Bar */}
-        <div className="p-4 sm:p-6 bg-gradient-to-r from-purple-950/80 via-neutral-900/90 to-purple-950/80 border-b border-purple-500/30 flex flex-wrap items-center justify-between gap-4">
+        {/* Warm & Welcoming Header Bar (No floating X; Volver and Cerrar Sesion side-by-side) */}
+        <div className="p-4 sm:p-6 bg-gradient-to-r from-purple-950/90 via-neutral-900/95 to-purple-950/90 border-b border-purple-500/30 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-700 text-white flex items-center justify-center shadow-lg shadow-purple-600/30 border border-purple-400/40 text-2xl">
               🎒
@@ -217,14 +207,14 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
             </div>
           </div>
 
-          {/* Navigation Controls in Header */}
-          <div className="flex items-center gap-2 pr-12 sm:pr-14">
+          {/* Navigation Controls in Header (Volver a Inicio and Cerrar Sesión side by side) */}
+          <div className="flex items-center gap-2.5">
             <button
               onClick={onClose}
-              className="px-3.5 py-2 rounded-xl bg-neutral-800/90 hover:bg-neutral-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border border-neutral-700 hover:border-lime-400"
+              className="px-4 py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-lime-400 hover:text-white text-xs font-bold transition flex items-center gap-2 cursor-pointer border border-lime-400/40 hover:border-lime-400 shadow-md"
               title="Regresar a la página de inicio"
             >
-              <ArrowLeft className="w-3.5 h-3.5 text-lime-400" />
+              <ArrowLeft className="w-4 h-4 text-lime-400" />
               <span>Volver a Inicio</span>
             </button>
 
@@ -233,11 +223,11 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
                 onLogout();
                 onClose();
               }}
-              className="px-3 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-red-300 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer border border-neutral-800"
-              title="Cerrar sesión"
+              className="px-4 py-2.5 rounded-xl bg-red-950/70 hover:bg-red-900 text-red-200 hover:text-white text-xs font-bold transition flex items-center gap-2 cursor-pointer border border-red-500/40 hover:border-red-400 shadow-md"
+              title="Cerrar sesión de mi cuenta"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Cerrar Sesión</span>
+              <LogOut className="w-4 h-4 text-red-400" />
+              <span>Cerrar Sesión</span>
             </button>
           </div>
         </div>
@@ -477,15 +467,26 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
 
           {/* Tab 2: Digital Bib */}
           {activeTab === 'bib' && (
-            <div className="flex flex-col items-center">
-              <DigitalBib registration={competitor} />
+            <div className="flex flex-col items-center w-full">
+              {/* Back navigation header */}
+              <div className="w-full flex items-center justify-between mb-3 pb-2 border-b border-neutral-800">
+                <button
+                  onClick={() => setActiveTab('overview')}
+                  className="px-3.5 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-lime-400 text-xs font-bold transition flex items-center gap-1.5 border border-lime-400/30 cursor-pointer shadow-sm"
+                >
+                  <ArrowLeft className="w-4 h-4 text-lime-400" />
+                  <span>Volver a Mi Información</span>
+                </button>
+                <span className="text-[11px] font-mono text-neutral-400">Pase Oficial Digital 5K</span>
+              </div>
+              <DigitalBib registration={competitor} onBack={() => setActiveTab('overview')} />
             </div>
           )}
 
           {/* Tab 3: Virtual Evidence Submission */}
           {activeTab === 'evidence' && isVirtual && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-800 pb-3">
                 <div>
                   <h4 className="font-bebas text-2xl text-white uppercase tracking-wide">
                     Envío de Evidencia • 5K Virtual
@@ -494,6 +495,13 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
                     Sube el tiempo y captura de tu carrera 5K realizada del 28 de Octubre al 2 de Noviembre.
                   </p>
                 </div>
+                <button
+                  onClick={() => setActiveTab('overview')}
+                  className="px-3.5 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-purple-300 text-xs font-bold transition flex items-center gap-1.5 border border-purple-500/30 cursor-pointer shadow-sm"
+                >
+                  <ArrowLeft className="w-4 h-4 text-purple-400" />
+                  <span>Volver a Mi Información</span>
+                </button>
               </div>
 
               <form onSubmit={handleSaveEvidence} className="space-y-4 max-w-2xl">

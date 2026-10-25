@@ -155,103 +155,196 @@ app.put('/api/registrations', (req, res) => {
   res.status(400).json({ error: 'Expected array of registrations' });
 });
 
-// 3. Competitor Auth: Login strictly by DNI
+// Helper function to find a runner by ANY identifier (DNI, ID with/without dash, URL, JSON, phone, or name)
+function findRunner(query: any, registrations: any[]): { runner: any; index: number } | null {
+  if (!query) return null;
+  const raw = String(typeof query === 'object' ? JSON.stringify(query) : query).trim();
+  if (!raw) return null;
+
+  // Extract from URL if present
+  let extractedDni = '';
+  let extractedId = '';
+  try {
+    if (raw.includes('?') || raw.includes('/')) {
+      const url = new URL(raw.startsWith('http') ? raw : `http://dummy.com/${raw}`);
+      extractedDni = url.searchParams.get('dni') || '';
+      extractedId = url.searchParams.get('runner') || url.searchParams.get('runnerId') || url.searchParams.get('id') || '';
+    }
+  } catch (e) {}
+
+  // Extract from JSON if present
+  let parsedJson: any = null;
+  try {
+    if (raw.startsWith('{') && raw.endsWith('}')) {
+      parsedJson = JSON.parse(raw);
+    }
+  } catch (e) {}
+
+  const normalize = (s: any) =>
+    String(s || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
+
+  const digitsOnly = (s: any) => String(s || '').replace(/\D/g, '');
+
+  const targetNorm = normalize(raw);
+  const targetDigits = digitsOnly(raw);
+  const jsonIdNorm = parsedJson?.id ? normalize(parsedJson.id) : '';
+  const jsonDniDigits = parsedJson?.dni || parsedJson?.documentNumber ? digitsOnly(parsedJson.dni || parsedJson.documentNumber) : '';
+  const extIdNorm = extractedId ? normalize(extractedId) : '';
+  const extDniDigits = extractedDni ? digitsOnly(extractedDni) : '';
+
+  const index = registrations.findIndex((r) => {
+    const rIdNorm = normalize(r.id);
+    const rDniDigits = digitsOnly(r.documentNumber);
+    const rWspDigits = digitsOnly(r.whatsapp);
+    const rFullNameNorm = normalize(`${r.firstName} ${r.lastName}`);
+
+    // Match by runner ID (e.g., OHA-2026-0003 or oha20260003)
+    if (targetNorm && rIdNorm === targetNorm) return true;
+    if (extIdNorm && rIdNorm === extIdNorm) return true;
+    if (jsonIdNorm && rIdNorm === jsonIdNorm) return true;
+
+    // Match by DNI digits (e.g. 47605471)
+    if (targetDigits && (rDniDigits === targetDigits || (targetDigits.length >= 7 && rDniDigits.endsWith(targetDigits)))) return true;
+    if (extDniDigits && (rDniDigits === extDniDigits || rDniDigits.endsWith(extDniDigits))) return true;
+    if (jsonDniDigits && (rDniDigits === jsonDniDigits || rDniDigits.endsWith(jsonDniDigits))) return true;
+
+    // Match by WhatsApp phone
+    if (targetDigits && targetDigits.length === 9 && rWspDigits === targetDigits) return true;
+
+    // Match by Full Name
+    if (targetNorm.length >= 6 && rFullNameNorm.includes(targetNorm)) return true;
+
+    return false;
+  });
+
+  if (index === -1) return null;
+  return { runner: registrations[index], index };
+}
+
+// 3. Competitor Auth: Login strictly by DNI (or ID)
 app.post('/api/competitor/login', (req, res) => {
   const { dni, query } = req.body;
   const rawInput = String(dni || query || '').trim();
   if (!rawInput) {
     return res.status(400).json({ error: 'Ingresa tu número de DNI.' });
   }
-  const clean = rawInput.toLowerCase().replace(/[\s\.\-#]/g, '');
-  const cleanDigits = rawInput.replace(/\D/g, '');
+
   const registrations = readJSON<any[]>(REGISTRATIONS_FILE, []);
-  
-  const runner = registrations.find((r) => {
-    const rDni = String(r.documentNumber || '').toLowerCase().replace(/[\s\.\-#]/g, '');
-    const rDigits = String(r.documentNumber || '').replace(/\D/g, '');
-    const rWsp = String(r.whatsapp || '').replace(/\D/g, '');
-    const rId = String(r.id || '').toLowerCase();
-    const rName = `${r.firstName} ${r.lastName}`.toLowerCase();
+  const match = findRunner(rawInput, registrations);
 
-    return (
-      (clean && rDni === clean) ||
-      (cleanDigits && rDigits === cleanDigits) ||
-      (cleanDigits && rWsp === cleanDigits) ||
-      (cleanDigits && cleanDigits.length >= 7 && (rDigits.endsWith(cleanDigits) || cleanDigits.endsWith(rDigits))) ||
-      (clean && rId === clean) ||
-      (clean.length >= 5 && rName.includes(clean))
-    );
-  });
-
-  if (!runner) {
-    return res.status(404).json({ error: 'No se encontró un competidor registrado con ese número de DNI. Verifica tu número e intenta nuevamente.' });
+  if (!match) {
+    return res.status(404).json({
+      error: 'No se encontró un competidor registrado con ese número de DNI. Verifica tu número e intenta nuevamente.',
+    });
   }
 
-  res.json({ success: true, runner });
+  res.json({ success: true, runner: match.runner });
 });
 
-// 4. Start Line QR Check-in: Verification of attendance when arriving at starting arch
+// 4. Runner Lookup / Scan Verification (universal for both start and finish line / meta)
+app.post('/api/verify-runner', (req, res) => {
+  const { code, runnerId, dni } = req.body;
+  const input = code || runnerId || dni || '';
+  const registrations = readJSON<any[]>(REGISTRATIONS_FILE, []);
+  const match = findRunner(input, registrations);
+
+  if (!match) {
+    return res.status(404).json({
+      error: 'No se encontró ningún participante con los datos del código escaneado.',
+    });
+  }
+
+  res.json({
+    success: true,
+    runner: match.runner,
+  });
+});
+
+// 5. Start Line QR Check-in: Verification of attendance when arriving at starting arch
 app.post('/api/start-checkin', (req, res) => {
   const { runnerId, dorsal, dni, token, qrData } = req.body;
-  
+
   const cleanToken = typeof token === 'string' ? token.trim() : '';
-  const isValid = 
-    cleanToken === MASTER_START_TOKEN || 
+  const isValid =
+    cleanToken === MASTER_START_TOKEN ||
     cleanToken === 'ADMIN_CHECKIN_OVERRIDE' ||
     cleanToken.includes(MASTER_START_TOKEN) ||
     cleanToken.includes('OHANA-START-LINE') ||
     cleanToken.includes('checkin=start');
 
   if (!isValid) {
-    return res.status(400).json({ error: 'Código QR de partida no válido. Escanea el QR oficial mostrado en la Plaza de Armas.' });
+    return res.status(400).json({
+      error: 'Código QR de partida no válido. Escanea el QR oficial mostrado en la Plaza de Armas.',
+    });
   }
 
-  const rawInput = String(runnerId || dni || qrData || dorsal || '').trim();
-  let parsedPayload: any = null;
-  try {
-    if (rawInput.startsWith('{') && rawInput.endsWith('}')) {
-      parsedPayload = JSON.parse(rawInput);
-    }
-  } catch (e) {}
-
   const registrations = readJSON<any[]>(REGISTRATIONS_FILE, []);
-  const cleanRaw = rawInput.toLowerCase().replace(/[\s\.\-#]/g, '');
-  const cleanDigits = rawInput.replace(/\D/g, '');
-  const cleanId = cleanRaw.replace(/^dni:/, '');
+  const match =
+    findRunner(runnerId, registrations) ||
+    findRunner(dni, registrations) ||
+    findRunner(qrData, registrations) ||
+    findRunner(dorsal, registrations);
 
-  const idx = registrations.findIndex((r) => {
-    const rDni = String(r.documentNumber || '').toLowerCase().replace(/[\s\.\-#]/g, '');
-    const rDigits = String(r.documentNumber || '').replace(/\D/g, '');
-    const rId = String(r.id || '').toLowerCase();
-    const rWsp = String(r.whatsapp || '').replace(/\D/g, '');
-
-    if (parsedPayload && parsedPayload.id && String(parsedPayload.id).toLowerCase() === rId) return true;
-    if (parsedPayload && parsedPayload.dni && String(parsedPayload.dni).replace(/\D/g, '') === rDigits) return true;
-
-    if (cleanRaw && rId === cleanRaw) return true;
-    if (cleanId && (rDni === cleanId || rDigits === cleanId)) return true;
-    if (cleanDigits && (rDni === cleanDigits || rDigits === cleanDigits || rWsp === cleanDigits)) return true;
-    if (cleanDigits && cleanDigits.length >= 7 && (rDigits.endsWith(cleanDigits) || cleanDigits.endsWith(rDigits))) return true;
-    return false;
-  });
-
-  if (idx === -1) {
-    return res.status(404).json({ error: 'Competidor no encontrado para confirmación de asistencia.' });
+  if (!match) {
+    return res.status(404).json({
+      error: 'Competidor no encontrado para confirmación de asistencia.',
+    });
   }
 
   const updatedRunner = {
-    ...registrations[idx],
+    ...registrations[match.index],
     confirmedAtStart: true,
     startCheckinTime: new Date().toISOString(),
   };
-  registrations[idx] = updatedRunner;
+  registrations[match.index] = updatedRunner;
   writeJSON(REGISTRATIONS_FILE, registrations);
 
-  console.log(`[Check-in Realtime] Participante ${updatedRunner.firstName} ${updatedRunner.lastName} (DNI: ${updatedRunner.documentNumber}) confirmó asistencia a las ${updatedRunner.startCheckinTime}`);
+  console.log(
+    `[Check-in Realtime] Participante ${updatedRunner.firstName} ${updatedRunner.lastName} (DNI: ${updatedRunner.documentNumber}) confirmó asistencia a las ${updatedRunner.startCheckinTime}`
+  );
 
   res.json({
     success: true,
     message: '¡Asistencia Confirmada! Prepárate para la carrera 🏃‍♂️💨',
+    runner: updatedRunner,
+  });
+});
+
+// 6. Meta / Finish Line QR Check-in & Medal Delivery Confirmation (Entre Jarras)
+app.post('/api/meta-checkin', (req, res) => {
+  const { runnerId, dni, code } = req.body;
+  const registrations = readJSON<any[]>(REGISTRATIONS_FILE, []);
+  const match =
+    findRunner(runnerId, registrations) ||
+    findRunner(dni, registrations) ||
+    findRunner(code, registrations);
+
+  if (!match) {
+    return res.status(404).json({
+      error: 'Competidor no encontrado para validar llegada a meta.',
+    });
+  }
+
+  const updatedRunner = {
+    ...registrations[match.index],
+    finishedAtMeta: true,
+    finishCheckinTime: new Date().toISOString(),
+    medalDelivered: true,
+  };
+  registrations[match.index] = updatedRunner;
+  writeJSON(REGISTRATIONS_FILE, registrations);
+
+  console.log(
+    `[Meta Finisher Realtime] Participante ${updatedRunner.firstName} ${updatedRunner.lastName} (DNI: ${updatedRunner.documentNumber}) cruzó la meta y recibió medalla a las ${updatedRunner.finishCheckinTime}`
+  );
+
+  res.json({
+    success: true,
+    message: '¡Llegada a meta y entrega de medalla confirmada exitosamente!',
     runner: updatedRunner,
   });
 });

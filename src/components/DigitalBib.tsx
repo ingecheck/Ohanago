@@ -1,22 +1,28 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { RunnerRegistration } from '../types/race';
-import { Printer, Share2, CheckCircle2, QrCode, Award, Droplets, Sparkles, Gift } from 'lucide-react';
+import { Printer, Share2, CheckCircle2, QrCode, Award, Droplets, Sparkles, Gift, ArrowLeft } from 'lucide-react';
 import QRCode from 'qrcode';
 
 interface DigitalBibProps {
   registration: RunnerRegistration;
   showActions?: boolean;
+  onBack?: () => void;
 }
 
-export const DigitalBib: React.FC<DigitalBibProps> = ({ registration, showActions = true }) => {
+export const DigitalBib: React.FC<DigitalBibProps> = ({
+  registration,
+  showActions = true,
+  onBack,
+}) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [bibQrUrl, setBibQrUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    // Generate real scannable QR code containing runner ID and document number
-    const codeData = registration.id || registration.documentNumber || `RUNNER-${registration.registrationNumber}`;
+    // Generate real scannable QR code containing universal verification URL
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://ohanago.pro';
+    const codeData = `${origin}/?runner=${encodeURIComponent(registration.id)}&dni=${encodeURIComponent(registration.documentNumber)}`;
     QRCode.toDataURL(codeData, {
-      width: 256,
+      width: 280,
       margin: 1,
       color: { dark: '#000000', light: '#ffffff' },
     })
@@ -178,6 +184,16 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({ registration, showAction
       {/* Action Buttons */}
       {showActions && (
         <div className="flex flex-wrap items-center justify-center gap-3 mt-4 print:hidden">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="flex items-center gap-2 px-5 py-2.5 bg-neutral-900 hover:bg-neutral-800 text-lime-400 rounded-xl text-xs font-bold transition border border-lime-400/40 shadow-md cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4 text-lime-400" />
+              <span>← Volver a Mi Resumen</span>
+            </button>
+          )}
+
           <button
             onClick={handlePrint}
             className="flex items-center gap-2 px-5 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl text-xs font-bold transition border border-neutral-700 hover:border-lime-400 shadow-md cursor-pointer"

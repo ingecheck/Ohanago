@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { X, Camera, AlertCircle, Sparkles, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { X, Camera, AlertCircle, Sparkles, RefreshCw, CheckCircle2, ArrowLeft, User } from 'lucide-react';
 export const MASTER_START_QR_TOKEN = 'OHANA-START-LINE-TARAPOTO-2026';
 
 interface QRScannerModalProps {
@@ -106,16 +106,27 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   return (
     <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
       <div className="relative w-full max-w-md bg-neutral-900 border border-neutral-700 rounded-3xl p-6 shadow-2xl flex flex-col max-h-[92vh] overflow-y-auto">
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-white bg-neutral-800 rounded-full transition cursor-pointer z-10"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        {/* Header navigation bar with Volver button */}
+        <div className="flex items-center justify-between mb-3 border-b border-neutral-800 pb-2">
+          <button
+            onClick={onClose}
+            className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-lime-400 hover:text-white text-xs font-bold transition flex items-center gap-1.5 border border-lime-400/30 cursor-pointer shadow-sm"
+          >
+            <ArrowLeft className="w-4 h-4 text-lime-400" />
+            <span>← Volver</span>
+          </button>
+
+          <button
+            onClick={onClose}
+            className="p-1.5 text-neutral-400 hover:text-white bg-neutral-800 rounded-full transition cursor-pointer"
+            title="Cerrar escáner"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
 
         {/* Title */}
-        <div className="text-center mb-4">
+        <div className="text-center mb-3">
           <div className="w-12 h-12 mx-auto rounded-2xl bg-lime-400/10 border border-lime-400/30 text-lime-400 flex items-center justify-center mb-2">
             <Camera className="w-6 h-6" />
           </div>
@@ -155,14 +166,14 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
         {/* Manual code input */}
         <form onSubmit={handleManualSubmit} className="mb-4">
           <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-1">
-            Ingreso manual de código QR
+            Ingreso manual de código QR o DNI
           </label>
           <div className="flex gap-2">
             <input
               type="text"
               value={manualCode}
               onChange={(e) => setManualCode(e.target.value)}
-              placeholder="Ej: OHANA-START-LINE-TARAPOTO-2026"
+              placeholder="Ej: 47605471 o OHA-2026-0003"
               className="flex-1 bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-lime-400"
             />
             <button
@@ -176,8 +187,8 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
         </form>
 
         {/* Quick simulator buttons for easy testing */}
-        <div className="pt-3 border-t border-neutral-800 text-xs">
-          <span className="text-[10px] uppercase font-bold text-neutral-400 block mb-2">
+        <div className="pt-3 border-t border-neutral-800 text-xs space-y-2">
+          <span className="text-[10px] uppercase font-bold text-neutral-400 block">
             Accesos de Prueba Rápida en el Evento:
           </span>
 
@@ -187,10 +198,35 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
               onClick={() => handleCodeFound(MASTER_START_QR_TOKEN)}
               className="w-full p-2.5 rounded-xl bg-lime-400/10 hover:bg-lime-400/20 border border-lime-400/40 text-lime-400 text-left flex items-center justify-between text-xs font-bold transition cursor-pointer"
             >
-              <span>🏁 Simular Escaneo: QR Maestro de Partida (Plaza de Armas)</span>
+              <span>🏁 Simular: QR Maestro de Partida (Plaza de Armas)</span>
               <span className="text-[10px] bg-lime-400 text-black px-1.5 py-0.5 rounded font-black">Probar</span>
             </button>
           ) : null}
+
+          {/* Quick simulator for runner María Teresa */}
+          <button
+            type="button"
+            onClick={() => handleCodeFound('OHA-2026-0003')}
+            className="w-full p-2.5 rounded-xl bg-purple-950/60 hover:bg-purple-900/80 border border-purple-500/40 text-purple-200 text-left flex items-center justify-between text-xs font-bold transition cursor-pointer"
+          >
+            <span className="flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-lime-400" />
+              <span>Simular Pase: María Teresa (DNI: 47605471)</span>
+            </span>
+            <span className="text-[10px] bg-purple-500 text-white px-1.5 py-0.5 rounded font-black">Probar</span>
+          </button>
+        </div>
+
+        {/* Bottom Back Button */}
+        <div className="pt-3 border-t border-neutral-800 mt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4 text-lime-400" />
+            <span>← Volver y Cerrar Escáner</span>
+          </button>
         </div>
       </div>
     </div>
