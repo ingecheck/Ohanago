@@ -22,11 +22,12 @@
     "paymentMethod": "Yape",
     "paymentReference": "YAPE-FORMS-0001",
     "paymentStatus": "Verificado",
-    "confirmedAtStart": false,
+    "confirmedAtStart": true,
     "createdAt": "2026-10-03T16:51:47.000Z",
     "disclaimerAccepted": true,
     "modality": "Presencial",
-    "department": "San Martín"
+    "department": "San Martín",
+    "startCheckinTime": "2026-10-25T02:00:16.891Z"
   },
   {
     "id": "OHA-2026-0002",

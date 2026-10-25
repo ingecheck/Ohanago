@@ -13,7 +13,8 @@ import { Footer } from './components/Footer';
 import { RunnerRegistration } from './types/race';
 import { getStoredRegistrations } from './data/initialRegistrations';
 import { isAdminAuthenticated } from './data/auth';
-import { HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { HelpCircle, ChevronDown, ChevronUp, CheckCircle2, AlertCircle, X, Sparkles, MapPin, QrCode } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 export const App: React.FC = () => {
   const [registrations, setRegistrations] = useState<RunnerRegistration[]>([]);
@@ -22,6 +23,14 @@ export const App: React.FC = () => {
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
   const [loginModalTab, setLoginModalTab] = useState<'admin' | 'competitor'>('admin');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  // Direct Start Line QR Check-in states (when runner scans start QR with camera)
+  const [directCheckinOpen, setDirectCheckinOpen] = useState(false);
+  const [directCheckinToken, setDirectCheckinToken] = useState('OHANA-START-LINE-TARAPOTO-2026');
+  const [directCheckinQuery, setDirectCheckinQuery] = useState('');
+  const [directCheckinLoading, setDirectCheckinLoading] = useState(false);
+  const [directCheckinError, setDirectCheckinError] = useState<string | null>(null);
+  const [directCheckinSuccess, setDirectCheckinSuccess] = useState<RunnerRegistration | null>(null);
   
   // Active competitor session
   const [activeCompetitor, setActiveCompetitor] = useState<RunnerRegistration | null>(() => {
@@ -76,12 +85,106 @@ export const App: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
 
+    // Detectar si el usuario escaneó el QR de partida con su cámara nativa (?checkin=start)
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('checkin') === 'start') {
+        const tokenFromUrl = urlParams.get('token') || 'OHANA-START-LINE-TARAPOTO-2026';
+        setDirectCheckinToken(tokenFromUrl);
+
+        // Limpiar URL sin recargar
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        // Si ya hay un competidor en sesión en este teléfono:
+        const savedComp = localStorage.getItem('ohana_active_competitor');
+        if (savedComp) {
+          try {
+            const runnerObj = JSON.parse(savedComp);
+            if (runnerObj && runnerObj.id) {
+              fetch('/api/start-checkin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  runnerId: runnerObj.id,
+                  token: tokenFromUrl,
+                }),
+              })
+                .then((r) => r.json())
+                .then((resData) => {
+                  if (resData.runner) {
+                    setActiveCompetitor(resData.runner);
+                    localStorage.setItem('ohana_active_competitor', JSON.stringify(resData.runner));
+                    setDirectCheckinSuccess(resData.runner);
+                    try {
+                      confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
+                    } catch (e) {}
+                  } else {
+                    setDirectCheckinOpen(true);
+                  }
+                })
+                .catch(() => setDirectCheckinOpen(true));
+              return;
+            }
+          } catch (e) {}
+        }
+
+        // Si no está logueado, abrir modal para que ingrese DNI o Dorsal
+        setDirectCheckinOpen(true);
+      }
+    } catch (e) {}
+
     return () => {
       clearInterval(intervalId);
       window.removeEventListener('focus', syncRegistrations);
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
+
+  const handleExecuteDirectCheckin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!directCheckinQuery.trim()) {
+      setDirectCheckinError('Ingresa tu número de DNI o número de dorsal.');
+      return;
+    }
+
+    setDirectCheckinLoading(true);
+    setDirectCheckinError(null);
+
+    try {
+      const res = await fetch('/api/start-checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dorsal: directCheckinQuery.trim(),
+          dni: directCheckinQuery.trim(),
+          token: directCheckinToken,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.runner) {
+        setDirectCheckinError(data.error || 'No se encontró un competidor registrado con ese documento.');
+        return;
+      }
+
+      // Éxito: actualiza estados y guarda sesión de competidor
+      setActiveCompetitor(data.runner);
+      localStorage.setItem('ohana_active_competitor', JSON.stringify(data.runner));
+      setRegistrations((prev) =>
+        prev.map((r) => (r.id === data.runner.id ? data.runner : r))
+      );
+      setDirectCheckinSuccess(data.runner);
+      setDirectCheckinOpen(false);
+
+      try {
+        confetti({ particleCount: 100, spread: 75, origin: { y: 0.6 } });
+      } catch (err) {}
+    } catch (err) {
+      setDirectCheckinError('Error de conexión al procesar tu check-in.');
+    } finally {
+      setDirectCheckinLoading(false);
+    }
+  };
 
   const handleRegistrationSuccess = (newReg: RunnerRegistration) => {
     // Actualiza el estado para que la nómina se sincronice
@@ -284,6 +387,126 @@ export const App: React.FC = () => {
           onClose={() => setIsAdminOpen(false)}
           onLogout={() => setIsAdminOpen(false)}
         />
+      )}
+
+      {/* Modal: Direct Start QR Check-in Prompt (When scanned with native mobile camera) */}
+      {directCheckinOpen && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className="relative max-w-md w-full bg-neutral-900 border-2 border-lime-400 rounded-3xl p-6 shadow-2xl">
+            <button
+              onClick={() => {
+                setDirectCheckinOpen(false);
+                setDirectCheckinError(null);
+              }}
+              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-center mb-5">
+              <div className="w-14 h-14 rounded-2xl bg-lime-400 text-black flex items-center justify-center font-bebas text-3xl mx-auto mb-3 shadow-lg shadow-lime-400/30">
+                🏁
+              </div>
+              <span className="text-[10px] font-bold tracking-widest uppercase text-lime-400 block mb-1">
+                Punto de Largada Oficial • Plaza de Armas
+              </span>
+              <h3 className="font-bebas text-3xl text-white uppercase tracking-wide">
+                Confirmar <span className="text-lime-400">Asistencia 5K</span>
+              </h3>
+              <p className="text-xs text-neutral-300 mt-1">
+                ¡Bienvenido a la OHANA GO 5K! Ingresa tu DNI o número de dorsal para validar tu check-in en vivo.
+              </p>
+            </div>
+
+            <form onSubmit={handleExecuteDirectCheckin} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5">
+                  Número de DNI o Número de Dorsal *
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  value={directCheckinQuery}
+                  onChange={(e) => setDirectCheckinQuery(e.target.value)}
+                  placeholder="Ej: 72849102 o Dorsal 12"
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white text-base font-bold focus:outline-none focus:border-lime-400 transition"
+                />
+              </div>
+
+              {directCheckinError && (
+                <div className="p-3 rounded-xl bg-red-950/80 border border-red-500/40 text-red-300 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{directCheckinError}</span>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={directCheckinLoading}
+                className="w-full py-3.5 bg-lime-400 hover:bg-lime-300 disabled:opacity-50 text-black font-bebas text-xl uppercase tracking-wider rounded-xl transition shadow-lg shadow-lime-400/25 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {directCheckinLoading ? 'Validando Asistencia...' : '✓ Confirmar Mi Partida'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Direct Start QR Check-in Success Confirmation */}
+      {directCheckinSuccess && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
+          <div className="relative max-w-md w-full bg-neutral-900 border-2 border-emerald-400 rounded-3xl p-6 text-center shadow-[0_0_50px_rgba(52,211,153,0.3)]">
+            <button
+              onClick={() => setDirectCheckinSuccess(null)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-16 h-16 rounded-3xl bg-emerald-500/20 border-2 border-emerald-400 text-emerald-400 flex items-center justify-center mx-auto mb-3">
+              <CheckCircle2 className="w-10 h-10" />
+            </div>
+
+            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 block mb-1">
+              Check-in de Partida Validado
+            </span>
+            <h3 className="font-bebas text-3xl sm:text-4xl text-white uppercase tracking-wide">
+              ¡Listo para la Largada!
+            </h3>
+            
+            <div className="my-4 p-4 rounded-2xl bg-neutral-950 border border-neutral-800 text-left space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-neutral-400 uppercase font-bold">Corredor:</span>
+                <span className="text-sm font-bold text-white">{directCheckinSuccess.firstName} {directCheckinSuccess.lastName}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-neutral-400 uppercase font-bold">Dorsal Oficial:</span>
+                <span className="text-base font-black text-lime-400 font-mono">#{directCheckinSuccess.registrationNumber || directCheckinSuccess.bibNumber}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-neutral-400 uppercase font-bold">Hora de Check-in:</span>
+                <span className="text-xs text-neutral-300 font-mono">
+                  {directCheckinSuccess.startCheckinTime ? new Date(directCheckinSuccess.startCheckinTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Registrado'}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-xs text-neutral-300 mb-4">
+              Tu asistencia ya se encuentra marcada en tiempo real en la lista oficial del organizador. ¡Nos vemos en la meta en Entre Jarras!
+            </p>
+
+            <button
+              onClick={() => {
+                setDirectCheckinSuccess(null);
+                setIsCompetitorPortalOpen(true);
+              }}
+              className="w-full py-3 bg-lime-400 hover:bg-lime-300 text-black font-bebas text-lg uppercase tracking-wider rounded-xl transition cursor-pointer shadow-md"
+            >
+              Ver Mi Portal y Pase Digital
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

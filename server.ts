@@ -13,6 +13,9 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Always serve static files from public directory (e.g. /official-medal.png)
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Persistent directory for shared data (medal photo, registrations)
 const DATA_DIR = path.join(__dirname, 'data_storage');
 if (!fs.existsSync(DATA_DIR)) {
@@ -43,35 +46,43 @@ function writeJSON<T>(filePath: string, data: T): void {
 }
 
 function savePublicMedalImage(image: string | null): void {
+  if (!image) return;
+
   const publicDir = path.join(__dirname, 'public');
   const targetFile = path.join(publicDir, 'official-medal.png');
   if (!fs.existsSync(publicDir)) {
     fs.mkdirSync(publicDir, { recursive: true });
   }
 
-  if (!image) {
-    if (fs.existsSync(targetFile)) {
-      try {
-        fs.unlinkSync(targetFile);
-      } catch (e) {}
-    }
-    return;
-  }
-
   if (typeof image === 'string' && image.startsWith('data:image')) {
     try {
       const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
-      fs.writeFileSync(targetFile, Buffer.from(base64Data, 'base64'));
-      console.log('[Medal] Successfully saved /public/official-medal.png');
+      const buffer = Buffer.from(base64Data, 'base64');
+      fs.writeFileSync(targetFile, buffer);
+
+      // Also sync to dist if it exists for production
+      const distDir = path.join(__dirname, 'dist');
+      if (fs.existsSync(distDir)) {
+        fs.writeFileSync(path.join(distDir, 'official-medal.png'), buffer);
+      }
+      console.log('[Medal] Successfully saved official-medal.png to public & dist');
     } catch (err) {
-      console.error('Error writing public/official-medal.png:', err);
+      console.error('Error writing official-medal.png:', err);
     }
   }
 }
 
-// Ensure medal state is synced on startup
-const initialMedal = readJSON<{ image: string | null }>(MEDAL_FILE, { image: null });
-if (initialMedal && initialMedal.image) {
+// Ensure medal state is synced on startup from public/official-medal.png
+let initialMedal = readJSON<{ image: string | null; updatedAt?: string }>(MEDAL_FILE, { image: null });
+if (!initialMedal.image) {
+  const defaultPng = path.join(__dirname, 'public', 'official-medal.png');
+  if (fs.existsSync(defaultPng)) {
+    const b64 = 'data:image/png;base64,' + fs.readFileSync(defaultPng).toString('base64');
+    initialMedal = { image: b64, updatedAt: new Date().toISOString() };
+    writeJSON(MEDAL_FILE, initialMedal);
+    console.log('[Medal] Initialized medal.json from public/official-medal.png');
+  }
+} else {
   savePublicMedalImage(initialMedal.image);
 }
 
@@ -81,7 +92,16 @@ const MASTER_START_TOKEN = 'OHANA-START-LINE-TARAPOTO-2026';
 
 // 1. Medal Photo API: Shared across ALL users, devices and browsers
 app.get('/api/medal', (req, res) => {
-  const data = readJSON(MEDAL_FILE, { image: null, updatedAt: null });
+  const data = readJSON<{ image: string | null; updatedAt?: string }>(MEDAL_FILE, { image: null });
+  if (!data.image) {
+    const defaultPng = path.join(__dirname, 'public', 'official-medal.png');
+    if (fs.existsSync(defaultPng)) {
+      const b64 = 'data:image/png;base64,' + fs.readFileSync(defaultPng).toString('base64');
+      data.image = b64;
+      data.updatedAt = data.updatedAt || new Date().toISOString();
+      writeJSON(MEDAL_FILE, data);
+    }
+  }
   res.json(data);
 });
 
@@ -167,16 +187,25 @@ app.post('/api/competitor/login', (req, res) => {
 app.post('/api/start-checkin', (req, res) => {
   const { runnerId, dorsal, dni, token } = req.body;
   
-  // Accept master event token or admin confirmation
-  if (token !== MASTER_START_TOKEN && token !== 'ADMIN_CHECKIN_OVERRIDE') {
+  const cleanToken = typeof token === 'string' ? token.trim() : '';
+  const isValid = 
+    cleanToken === MASTER_START_TOKEN || 
+    cleanToken === 'ADMIN_CHECKIN_OVERRIDE' ||
+    cleanToken.includes(MASTER_START_TOKEN) ||
+    cleanToken.includes('OHANA-START-LINE');
+
+  if (!isValid) {
     return res.status(400).json({ error: 'Código QR de partida no válido. Escanea el QR oficial mostrado en la Plaza de Armas.' });
   }
 
   const registrations = readJSON<any[]>(REGISTRATIONS_FILE, []);
+  const cleanDni = dni ? String(dni).trim().toLowerCase() : '';
+  const cleanDorsal = dorsal ? Number(dorsal) : null;
+
   const idx = registrations.findIndex((r) => {
     if (runnerId && r.id === runnerId) return true;
-    if (dorsal && (r.registrationNumber === Number(dorsal) || r.bibNumber === Number(dorsal))) return true;
-    if (dni && r.documentNumber === dni) return true;
+    if (cleanDorsal && (r.registrationNumber === cleanDorsal || r.bibNumber === cleanDorsal)) return true;
+    if (cleanDni && String(r.documentNumber).toLowerCase() === cleanDni) return true;
     return false;
   });
 

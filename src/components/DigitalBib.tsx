@@ -1,6 +1,7 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { RunnerRegistration } from '../types/race';
 import { Printer, Share2, CheckCircle2, QrCode, Award, Droplets, Sparkles, Gift } from 'lucide-react';
+import QRCode from 'qrcode';
 
 interface DigitalBibProps {
   registration: RunnerRegistration;
@@ -9,6 +10,19 @@ interface DigitalBibProps {
 
 export const DigitalBib: React.FC<DigitalBibProps> = ({ registration, showActions = true }) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const [bibQrUrl, setBibQrUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Generate real scannable QR code containing runner ID and document number
+    const codeData = registration.id || registration.documentNumber || `RUNNER-${registration.registrationNumber}`;
+    QRCode.toDataURL(codeData, {
+      width: 256,
+      margin: 1,
+      color: { dark: '#000000', light: '#ffffff' },
+    })
+      .then((url) => setBibQrUrl(url))
+      .catch((err) => console.error('Error generating bib QR:', err));
+  }, [registration]);
 
   const handlePrint = () => {
     window.print();
@@ -151,8 +165,12 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({ registration, showAction
               Presenta este pase en la meta en Entre Jarras
             </span>
           </div>
-          <div className="w-11 h-11 bg-white text-black rounded-xl p-1 flex items-center justify-center">
-            <QrCode className="w-9 h-9 text-black" />
+          <div className="w-12 h-12 bg-white text-black rounded-xl p-0.5 flex items-center justify-center overflow-hidden border border-lime-400/50 shadow-sm">
+            {bibQrUrl ? (
+              <img src={bibQrUrl} alt="QR Pase Oficial" className="w-full h-full object-contain" />
+            ) : (
+              <QrCode className="w-8 h-8 text-black" />
+            )}
           </div>
         </div>
       </div>

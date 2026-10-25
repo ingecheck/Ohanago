@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Award, ZoomIn, X, Sparkles, MapPin } from 'lucide-react';
+import defaultOfficialMedal from '../assets/official-medal.png';
 
 export const FinisherMedalCard: React.FC = () => {
-  const [medalImage, setMedalImage] = useState<string | null>(null);
+  const [medalImage, setMedalImage] = useState<string>(defaultOfficialMedal);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [isZoomed, setIsZoomed] = useState(false);
 
@@ -22,18 +23,17 @@ export const FinisherMedalCard: React.FC = () => {
               localStorage.setItem('ohana_medal_photo_v2', data.image);
             } catch (e) {}
           } else {
-            setMedalImage(null);
-            try {
-              localStorage.removeItem('ohana_medal_photo_v2');
-            } catch (e) {}
+            // Keep the default permanent official medal
+            setMedalImage(defaultOfficialMedal);
           }
         })
         .catch((err) => {
           console.warn('Conexión con /api/medal:', err);
-          // Only fallback to local if present
           const local = localStorage.getItem('ohana_medal_photo_v2');
           if (local && local.startsWith('data:image')) {
             setMedalImage(local);
+          } else {
+            setMedalImage(defaultOfficialMedal);
           }
         });
     };
@@ -73,42 +73,31 @@ export const FinisherMedalCard: React.FC = () => {
 
       {/* Main Medal Display */}
       <div className="relative mx-auto my-2 w-full max-w-[280px] flex flex-col items-center justify-center">
-        {medalImage ? (
-          <div className="relative group/photo flex flex-col items-center w-full">
-            <div className="relative rounded-2xl overflow-hidden border-2 border-lime-400/70 shadow-[0_0_30px_rgba(163,230,53,0.3)] bg-black/90 p-2 w-full flex items-center justify-center min-h-[250px]">
-              <img
-                src={medalImage}
-                alt="Medalla Finisher Oficial OHANA GO 5K"
-                className="w-full max-h-[350px] object-contain drop-shadow-[0_15px_25px_rgba(0,0,0,0.9)] transition-transform duration-300 group-hover/photo:scale-105 cursor-pointer"
-                onClick={() => setIsZoomed(true)}
-              />
-              <button
-                onClick={() => setIsZoomed(true)}
-                className="absolute bottom-3 right-3 p-2 rounded-xl bg-black/80 text-lime-400 hover:text-white border border-lime-400/40 backdrop-blur-md opacity-0 group-hover/photo:opacity-100 transition cursor-pointer"
-                title="Ver medalla ampliada"
-              >
-                <ZoomIn className="w-4 h-4" />
-              </button>
-            </div>
+        <div className="relative group/photo flex flex-col items-center w-full">
+          <div className="relative rounded-2xl overflow-hidden border-2 border-lime-400/70 shadow-[0_0_30px_rgba(163,230,53,0.3)] bg-black/90 p-2 w-full flex items-center justify-center min-h-[250px]">
+            <img
+              src={medalImage || defaultOfficialMedal}
+              alt="Medalla Finisher Oficial OHANA GO 5K"
+              className="w-full max-h-[350px] object-contain drop-shadow-[0_15px_25px_rgba(0,0,0,0.9)] transition-transform duration-300 group-hover/photo:scale-105 cursor-pointer"
+              onClick={() => setIsZoomed(true)}
+              onError={(e) => {
+                const target = e.currentTarget as HTMLImageElement;
+                if (target.src !== defaultOfficialMedal) {
+                  target.src = defaultOfficialMedal;
+                }
+              }}
+            />
+            <button
+              onClick={() => setIsZoomed(true)}
+              className="absolute bottom-3 right-3 p-2 rounded-xl bg-black/80 text-lime-400 hover:text-white border border-lime-400/40 backdrop-blur-md opacity-0 group-hover/photo:opacity-100 transition cursor-pointer"
+              title="Ver medalla ampliada"
+            >
+              <ZoomIn className="w-4 h-4" />
+            </button>
           </div>
-        ) : (
-          /* Sleek official badge placeholder when no custom photo is uploaded yet (NO AI generated image) */
-          <div className="relative rounded-2xl overflow-hidden border border-lime-400/40 bg-neutral-950 p-6 w-full flex flex-col items-center justify-center text-center min-h-[250px]">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-lime-400/20 via-amber-400/20 to-orange-500/20 border-2 border-lime-400/50 flex items-center justify-center mb-3 shadow-lg shadow-lime-400/10">
-              <Award className="w-10 h-10 text-lime-400" />
-            </div>
-            <span className="font-bebas text-2xl text-white uppercase tracking-wider">
-              Medalla Finisher 5K
-            </span>
-            <span className="text-xs text-lime-400 font-bold mt-1">
-              OHANA GO • TARAPOTO
-            </span>
-            <p className="text-[11px] text-neutral-400 mt-2 max-w-[200px]">
-              Diseño oficial exclusivo. Entrega en mano al cruzar la meta.
-            </p>
-          </div>
-        )}
+        </div>
       </div>
+
 
       {/* Footer details */}
       <div className="mt-4 pt-3 border-t border-neutral-800/80 flex items-center justify-between text-xs text-neutral-400">
@@ -133,9 +122,15 @@ export const FinisherMedalCard: React.FC = () => {
             </button>
             <div className="relative p-2 rounded-3xl bg-neutral-900 border-2 border-lime-400 shadow-[0_0_50px_rgba(163,230,53,0.4)]">
               <img
-                src={medalImage}
+                src={medalImage || defaultOfficialMedal}
                 alt="Medalla Finisher Oficial OHANA GO 5K"
                 className="max-h-[80vh] w-auto rounded-2xl object-contain"
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement;
+                  if (target.src !== defaultOfficialMedal) {
+                    target.src = defaultOfficialMedal;
+                  }
+                }}
               />
             </div>
             <p className="text-xs text-lime-400 font-bold uppercase tracking-wider mt-3">

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { RunnerRegistration, PaymentStatus, RaceModality, VirtualEvidence } from '../types/race';
 import { exportToCSV, saveRegistrations } from '../data/initialRegistrations';
 import { adminLogout, updateAdminPassword } from '../data/auth';
+import QRCode from 'qrcode';
+import { QRScannerModal } from './QRScannerModal';
 import {
   Users,
   DollarSign,
@@ -25,7 +27,10 @@ import {
   Truck,
   AlertCircle,
   Trash2,
-  Activity
+  Activity,
+  Maximize2,
+  Minimize2,
+  Printer
 } from 'lucide-react';
 import { DigitalBib } from './DigitalBib';
 
@@ -62,6 +67,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [filterModality, setFilterModality] = useState<'all' | 'Presencial' | 'Virtual'>('all');
   const [filterPayment, setFilterPayment] = useState<'all' | 'Verificado' | 'Pendiente'>('all');
+  const [filterCheckin, setFilterCheckin] = useState<'all' | 'confirmed' | 'pending'>('all');
   
   // Modals
   const [viewingProof, setViewingProof] = useState<string | null>(null);
@@ -71,6 +77,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassInput, setNewPassInput] = useState('');
   const [passSuccess, setPassSuccess] = useState(false);
+
+  // Start Line Official Check-in QR and Staff Scanner
+  const [showStartQRModal, setShowStartQRModal] = useState(false);
+  const [isFullScreenQR, setIsFullScreenQR] = useState(false);
+  const [startQrDataUrl, setStartQrDataUrl] = useState<string | null>(null);
+  const [showStaffScanner, setShowStaffScanner] = useState(false);
+  const [liveNotice, setLiveNotice] = useState<string | null>(null);
 
   // Medal Photo Management in Admin
   const [showMedalModal, setShowMedalModal] = useState(false);
@@ -97,6 +110,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     willWearCostume: false,
     costumeName: '',
   });
+
+  useEffect(() => {
+    // Generate official start check-in QR code
+    const origin = window.location.origin;
+    const startUrl = `${origin}/?checkin=start&token=OHANA-START-LINE-TARAPOTO-2026`;
+    QRCode.toDataURL(startUrl, {
+      width: 600,
+      margin: 2,
+      color: { dark: '#000000', light: '#ffffff' },
+    })
+      .then((url) => setStartQrDataUrl(url))
+      .catch((err) => console.error('Error generating start QR:', err));
+  }, []);
+
+  useEffect(() => {
+    // Sincronizar en tiempo real cada 2.5 segundos para reflejar automáticamente el checklist cuando los corredores pasen el QR
+    let previousConfirmedCount = registrations.filter((r) => r.confirmedAtStart).length;
+
+    const syncLiveCheckins = async () => {
+      try {
+        const res = await fetch('/api/registrations');
+        if (res.ok) {
+          const serverList: RunnerRegistration[] = await res.json();
+          if (Array.isArray(serverList) && serverList.length > 0) {
+            const currentConfirmed = serverList.filter((r) => r.confirmedAtStart);
+            if (currentConfirmed.length > previousConfirmedCount) {
+              const latest = currentConfirmed[0];
+              setLiveNotice(`🏁 ¡Check-in en Partida! #${latest.registrationNumber || latest.bibNumber} ${latest.firstName} ${latest.lastName} acaba de pasar el arco.`);
+              setTimeout(() => setLiveNotice(null), 5000);
+            }
+            previousConfirmedCount = currentConfirmed.length;
+            onUpdateRegistrations(serverList);
+          }
+        }
+      } catch (err) {}
+    };
+
+    const intervalId = setInterval(syncLiveCheckins, 2500);
+    return () => clearInterval(intervalId);
+  }, [onUpdateRegistrations, registrations]);
 
   useEffect(() => {
     // Sincronizar con el servidor para que la medalla sea consistente en todos los dispositivos
@@ -252,7 +305,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       (filterPayment === 'Verificado' && r.paymentStatus === 'Verificado') ||
       (filterPayment === 'Pendiente' && r.paymentStatus !== 'Verificado');
 
-    return matchSearch && matchModality && matchPayment;
+    // Attendance checkin filter
+    const matchCheckin =
+      filterCheckin === 'all' ||
+      (filterCheckin === 'confirmed' && !!r.confirmedAtStart) ||
+      (filterCheckin === 'pending' && !r.confirmedAtStart && (r.modality || 'Presencial') === 'Presencial');
+
+    return matchSearch && matchModality && matchPayment && matchCheckin;
   });
 
   return (
@@ -277,6 +336,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* Quick Actions Buttons */}
           <div className="flex flex-wrap items-center gap-2">
+            {/* Start Line QR Code Button (exclusive for Admin to display at starting arch) */}
+            <button
+              onClick={() => setShowStartQRModal(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-lime-400 to-lime-300 hover:from-lime-300 text-black rounded-xl text-xs font-black transition shadow-lg shadow-lime-400/25 cursor-pointer ring-2 ring-lime-400/50"
+              title="Mostrar y proyectar QR oficial de check-in para que los corredores lo escaneen en la Plaza de Armas"
+            >
+              <QrCode className="w-4 h-4 text-black" />
+              <span>🏁 QR Partida (Plaza)</span>
+            </button>
+
+            {/* Staff scan runner pass button */}
+            <button
+              onClick={() => setShowStaffScanner(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-lime-400 rounded-xl text-xs font-bold transition border border-lime-400/30 cursor-pointer"
+              title="Escanear pase digital de un corredor con la cámara del organizador"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Escanear Runner</span>
+            </button>
+
             <button
               onClick={() => {
                 setTempMedalPreview(currentAdminMedal);
@@ -286,7 +365,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               title="Subir o cambiar foto de la medalla oficial"
             >
               <Award className="w-3.5 h-3.5 text-amber-400" />
-              <span>Foto Medalla Oficial</span>
+              <span>Foto Medalla</span>
             </button>
 
             <button
@@ -335,8 +414,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
 
+        {/* Live Automatic Check-in Notice Alert */}
+        {liveNotice && (
+          <div className="mt-3 p-3 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-neutral-900 to-emerald-950/90 border-2 border-emerald-400 text-emerald-200 text-xs font-bold flex items-center justify-between shadow-xl shadow-emerald-500/20 animate-pulse">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+              <span>{liveNotice}</span>
+            </div>
+            <button
+              onClick={() => setLiveNotice(null)}
+              className="text-emerald-400 hover:text-white p-1 rounded-lg hover:bg-emerald-900/60 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* Metrics Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 py-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 py-4">
           <div className="bg-neutral-950 p-3 rounded-2xl border border-neutral-800">
             <span className="text-[10px] uppercase font-bold text-neutral-400 block">Total Inscritos</span>
             <div className="flex items-baseline gap-1 mt-0.5">
@@ -352,6 +447,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="flex items-baseline gap-1 mt-0.5">
               <span className="font-bebas text-2xl sm:text-3xl text-lime-300">{presencialCount}</span>
               <span className="text-[10px] text-neutral-500">Tarapoto</span>
+            </div>
+          </div>
+
+          <div className="bg-neutral-950 p-3 rounded-2xl border border-emerald-400/50 bg-gradient-to-br from-emerald-950/30 to-neutral-950 shadow-sm shadow-emerald-500/10">
+            <span className="text-[10px] uppercase font-bold text-emerald-400 block flex items-center gap-1">
+              <Check className="w-3 h-3 text-emerald-400" /> Check-in Partida
+            </span>
+            <div className="flex items-baseline gap-1 mt-0.5">
+              <span className="font-bebas text-2xl sm:text-3xl text-emerald-400">{checkinPresencialCount}</span>
+              <span className="text-[10px] text-neutral-400 font-bold">de {presencialCount} ({Math.round((checkinPresencialCount / (presencialCount || 1)) * 100)}%)</span>
             </div>
           </div>
 
@@ -405,6 +510,38 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* Filter Pills */}
           <div className="flex flex-wrap items-center gap-2">
+            {/* Attendance Check-in Filter */}
+            <div className="flex items-center bg-neutral-950 p-1 rounded-xl border border-neutral-800">
+              <button
+                onClick={() => setFilterCheckin('all')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                  filterCheckin === 'all' ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                Toda Asistencia
+              </button>
+              <button
+                onClick={() => setFilterCheckin('confirmed')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1 ${
+                  filterCheckin === 'confirmed' ? 'bg-emerald-950 border border-emerald-500/40 text-emerald-400 font-bold' : 'text-neutral-400 hover:text-emerald-300'
+                }`}
+                title="Corredores que ya pasaron el QR o tienen asistencia confirmada"
+              >
+                <Check className="w-3 h-3 text-emerald-400" />
+                ✓ En Partida ({checkinPresencialCount})
+              </button>
+              <button
+                onClick={() => setFilterCheckin('pending')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1 ${
+                  filterCheckin === 'pending' ? 'bg-amber-950 border border-amber-500/40 text-amber-400 font-bold' : 'text-neutral-400 hover:text-amber-300'
+                }`}
+                title="Corredores presenciales que aún no han pasado el QR"
+              >
+                <Clock className="w-3 h-3 text-amber-400" />
+                ⏳ Por Llegar ({Math.max(0, presencialCount - checkinPresencialCount)})
+              </button>
+            </div>
+
             {/* Modality Filter */}
             <div className="flex items-center bg-neutral-950 p-1 rounded-xl border border-neutral-800">
               <button
@@ -413,7 +550,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   filterModality === 'all' ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:text-white'
                 }`}
               >
-                Todas Modalidades
+                Modalidades
               </button>
               <button
                 onClick={() => setFilterModality('Presencial')}
@@ -441,7 +578,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   filterPayment === 'all' ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:text-white'
                 }`}
               >
-                Todos Pagos
+                Pagos
               </button>
               <button
                 onClick={() => setFilterPayment('Verificado')}
@@ -449,7 +586,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   filterPayment === 'Verificado' ? 'bg-emerald-950 border border-emerald-500/40' : 'hover:text-emerald-300'
                 }`}
               >
-                Pagados
+                Pagados ({verifiedCount})
               </button>
               <button
                 onClick={() => setFilterPayment('Pendiente')}
@@ -457,7 +594,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   filterPayment === 'Pendiente' ? 'bg-amber-950 border border-amber-500/40' : 'hover:text-amber-300'
                 }`}
               >
-                Pendientes
+                Pendientes ({pendingCount})
               </button>
             </div>
           </div>
@@ -548,17 +685,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               Pendiente envío
                             </span>
                           )
+                        ) : runner.confirmedAtStart ? (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleToggleCheckin(runner.id, true)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-black uppercase transition cursor-pointer border bg-emerald-950/90 text-emerald-400 border-emerald-500/50 hover:bg-red-950/60 hover:text-red-400 hover:border-red-500/40 shadow-sm shadow-emerald-500/10 group"
+                              title="Asistencia confirmada. Clic para anular si fue un error."
+                            >
+                              <Check className="w-3.5 h-3.5 text-emerald-400 group-hover:hidden" />
+                              <X className="w-3.5 h-3.5 text-red-400 hidden group-hover:inline" />
+                              <span className="group-hover:hidden">✓ En Partida</span>
+                              <span className="hidden group-hover:inline">Desmarcar</span>
+                            </button>
+                            {runner.startCheckinTime && (
+                              <span className="text-[10px] text-neutral-400 font-mono hidden md:inline">
+                                {new Date(runner.startCheckinTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            )}
+                          </div>
                         ) : (
                           <button
-                            onClick={() => handleToggleCheckin(runner.id, !!runner.confirmedAtStart)}
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase transition cursor-pointer border ${
-                              runner.confirmedAtStart
-                                ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/40 hover:bg-emerald-900'
-                                : 'bg-neutral-800 text-neutral-400 border-neutral-700 hover:text-white hover:border-lime-400'
-                            }`}
+                            onClick={() => handleToggleCheckin(runner.id, false)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase transition cursor-pointer border bg-neutral-800 text-neutral-400 border-neutral-700 hover:text-white hover:border-lime-400 hover:bg-neutral-700"
+                            title="Hacer clic para marcar asistencia manual de este corredor"
                           >
-                            <Check className="w-3.5 h-3.5" />
-                            {runner.confirmedAtStart ? 'Confirmado Partida' : 'Marcar Asistencia'}
+                            <Clock className="w-3.5 h-3.5 text-amber-400" />
+                            <span>Marcar Asistencia</span>
                           </button>
                         )}
                       </td>
@@ -1040,6 +1192,196 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* Modal: Start Line Official Check-in QR (Visible exclusively in Admin Dashboard for Plaza de Armas) */}
+      {showStartQRModal && (
+        <div className={`fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-6 bg-black/95 backdrop-blur-xl overflow-y-auto ${isFullScreenQR ? 'p-0' : ''}`}>
+          <div className={`relative w-full ${isFullScreenQR ? 'h-full max-w-none rounded-none p-6 sm:p-10 flex flex-col justify-between' : 'max-w-2xl rounded-3xl p-6'} bg-neutral-900 border border-lime-400/50 shadow-[0_0_60px_rgba(163,230,53,0.3)] transition-all`}>
+            
+            {/* Modal Top Bar */}
+            <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-lime-400 text-black flex items-center justify-center font-bebas text-xl font-black">
+                  🏁
+                </div>
+                <div>
+                  <h4 className="font-bebas text-2xl sm:text-3xl text-white tracking-wide uppercase leading-tight">
+                    Punto de Partida • <span className="text-lime-400">QR Oficial de Check-in</span>
+                  </h4>
+                  <p className="text-[11px] text-neutral-400">
+                    Plaza de Armas de Tarapoto • Sábado 31 de Octubre 2026
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsFullScreenQR(!isFullScreenQR)}
+                  className="p-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition cursor-pointer"
+                  title={isFullScreenQR ? 'Salir de pantalla completa' : 'Modo pantalla gigante / tablet'}
+                >
+                  {isFullScreenQR ? <Minimize2 className="w-5 h-5 text-lime-400" /> : <Maximize2 className="w-5 h-5" />}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowStartQRModal(false);
+                    setIsFullScreenQR(false);
+                  }}
+                  className="p-2 rounded-full bg-neutral-800 hover:bg-neutral-700 text-neutral-400 hover:text-white transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Live Progress Banner */}
+            <div className="my-4 p-3.5 rounded-2xl bg-gradient-to-r from-lime-950/60 via-neutral-950 to-neutral-950 border border-lime-400/40">
+              <div className="flex items-center justify-between text-xs font-bold mb-1.5">
+                <span className="text-lime-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Check className="w-4 h-4 text-lime-400" />
+                  Asistencia en Partida en Tiempo Real:
+                </span>
+                <span className="font-mono text-white text-sm">
+                  {checkinPresencialCount} de {presencialCount} confirmados ({Math.round((checkinPresencialCount / (presencialCount || 1)) * 100)}%)
+                </span>
+              </div>
+              <div className="w-full bg-neutral-800 h-2.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-gradient-to-r from-lime-500 to-emerald-400 h-full transition-all duration-500"
+                  style={{ width: `${Math.min(100, Math.round((checkinPresencialCount / (presencialCount || 1)) * 100))}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Center: Giant High-Contrast QR Code */}
+            <div className="flex flex-col items-center justify-center my-2 text-center">
+              <div className="p-4 sm:p-6 bg-white rounded-3xl shadow-2xl border-4 border-lime-400/80 max-w-[320px] sm:max-w-[380px] w-full flex items-center justify-center transition-transform hover:scale-[1.02]">
+                {startQrDataUrl ? (
+                  <img
+                    src={startQrDataUrl}
+                    alt="Código QR de Partida OHANA GO 5K"
+                    className="w-full h-auto object-contain aspect-square"
+                  />
+                ) : (
+                  <div className="w-64 h-64 flex items-center justify-center text-neutral-400 text-xs">
+                    Generando código QR...
+                  </div>
+                )}
+              </div>
+
+              <span className="font-bebas text-xl sm:text-2xl text-lime-400 uppercase tracking-widest mt-3">
+                Escanea con la cámara de tu celular
+              </span>
+              <p className="text-xs text-neutral-300 max-w-md mt-0.5">
+                Al escanear este QR en la Plaza de Armas, tu asistencia se validará automáticamente en vivo en el sistema del organizador.
+              </p>
+            </div>
+
+            {/* Bottom Actions Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-neutral-800 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="inline-block w-2.5 h-2.5 rounded-full bg-lime-400 animate-ping" />
+                <span className="text-neutral-400 text-[11px]">
+                  Sincronización online activa • Actualización instantánea
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {startQrDataUrl && (
+                  <a
+                    href={startQrDataUrl}
+                    download="QR-Partida-OHANA-GO-5K-Tarapoto.png"
+                    className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold transition flex items-center gap-1.5 cursor-pointer border border-neutral-700"
+                  >
+                    <Download className="w-4 h-4 text-lime-400" />
+                    Descargar Imagen QR
+                  </a>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const printWindow = window.open('', '_blank');
+                    if (printWindow && startQrDataUrl) {
+                      printWindow.document.write(`
+                        <html>
+                          <head>
+                            <title>QR Partida OHANA GO 5K Tarapoto</title>
+                            <style>
+                              body { font-family: sans-serif; text-align: center; padding: 40px; background: #000; color: #fff; }
+                              h1 { font-size: 38px; margin: 0; color: #a3e635; text-transform: uppercase; }
+                              h2 { font-size: 20px; color: #fff; margin: 5px 0 25px 0; font-weight: normal; }
+                              .qr-box { background: #fff; padding: 20px; border-radius: 20px; display: inline-block; border: 4px solid #a3e635; }
+                              img { width: 380px; height: 380px; display: block; }
+                              p { font-size: 18px; margin-top: 25px; color: #e5e5e5; }
+                              .badge { background: #f97316; color: #fff; padding: 6px 16px; border-radius: 20px; font-weight: bold; font-size: 14px; text-transform: uppercase; }
+                            </style>
+                          </head>
+                          <body>
+                            <span class="badge">Punto de Largada Oficial</span>
+                            <h1>OHANA GO 5K TARAPOTO</h1>
+                            <h2>Plaza de Armas • Sábado 31 de Octubre</h2>
+                            <div class="qr-box">
+                              <img src="${startQrDataUrl}" />
+                            </div>
+                            <p><strong>Apunta con la cámara de tu celular para registrar tu asistencia en vivo</strong></p>
+                            <script>window.onload = function() { window.print(); }<\/script>
+                          </body>
+                        </html>
+                      `);
+                      printWindow.document.close();
+                    }
+                  }}
+                  className="px-4 py-2 rounded-xl bg-lime-400 hover:bg-lime-300 text-black font-bebas text-base uppercase tracking-wider transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-lime-400/20"
+                >
+                  <Printer className="w-4 h-4" />
+                  Imprimir Cartel para Arco
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Staff Scanner Modal (Admin scans runner's digital bib with camera) */}
+      {showStaffScanner && (
+        <QRScannerModal
+          title="Control de Partida • Escanear Pase de Atleta"
+          subtitle="Apunta la cámara al código QR del pase digital o dorsal del competidor."
+          expectedType="any"
+          onScanSuccess={async (scannedText) => {
+            setShowStaffScanner(false);
+            try {
+              const res = await fetch('/api/start-checkin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  runnerId: scannedText,
+                  dorsal: scannedText,
+                  dni: scannedText,
+                  token: 'ADMIN_CHECKIN_OVERRIDE',
+                }),
+              });
+              const data = await res.json();
+              if (res.ok && data.runner) {
+                const updated = registrations.map((r) => r.id === data.runner.id ? data.runner : r);
+                onUpdateRegistrations(updated);
+                saveRegistrations(updated);
+                setLiveNotice(`🎉 ¡Dorsal #${data.runner.registrationNumber || data.runner.bibNumber} ${data.runner.firstName} ${data.runner.lastName} confirmado en partida!`);
+                setTimeout(() => setLiveNotice(null), 5000);
+              } else {
+                setLiveNotice(`❌ ${data.error || 'No se encontró un competidor registrado con ese código.'}`);
+                setTimeout(() => setLiveNotice(null), 5000);
+              }
+            } catch (err) {
+              setLiveNotice('❌ Error de conexión al validar check-in.');
+              setTimeout(() => setLiveNotice(null), 4000);
+            }
+          }}
+          onClose={() => setShowStaffScanner(false)}
+        />
       )}
 
     </div>

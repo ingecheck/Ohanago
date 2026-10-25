@@ -6,7 +6,7 @@ export const MASTER_START_QR_TOKEN = 'OHANA-START-LINE-TARAPOTO-2026';
 interface QRScannerModalProps {
   title: string;
   subtitle?: string;
-  expectedType?: 'start_checkin' | 'potion' | 'any';
+  expectedType?: 'start_checkin' | 'any';
   onScanSuccess: (decodedText: string) => void;
   onClose: () => void;
 }
@@ -162,7 +162,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
               type="text"
               value={manualCode}
               onChange={(e) => setManualCode(e.target.value)}
-              placeholder="Ej: OHANA-POTION-1-HIDRATACION"
+              placeholder="Ej: OHANA-START-LINE-TARAPOTO-2026"
               className="flex-1 bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-lime-400"
             />
             <button
