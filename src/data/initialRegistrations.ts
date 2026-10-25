@@ -24,6 +24,37 @@ export const saveRegistrations = (registrations: RunnerRegistration[]): void => 
   } catch (e) {}
 };
 
+export const addRegistration = async (registration: Omit<RunnerRegistration, 'id' | 'registrationNumber' | 'createdAt'>): Promise<RunnerRegistration> => {
+  const current = getStoredRegistrations();
+  const nextNum = current.length > 0
+    ? Math.max(...current.map((r) => r.registrationNumber || r.bibNumber || 0)) + 1
+    : 1;
+  const newRecord: RunnerRegistration = {
+    ...registration,
+    id: `OHA-2026-${String(nextNum).padStart(4, '0')}`,
+    registrationNumber: nextNum,
+    bibNumber: nextNum,
+    createdAt: new Date().toISOString(),
+  };
+
+  const updated = [newRecord, ...current];
+  saveRegistrations(updated);
+
+  try {
+    const res = await fetch('/api/registrations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newRecord),
+    });
+    if (res.ok) {
+      const serverSaved = await res.json();
+      return serverSaved;
+    }
+  } catch (e) {}
+
+  return newRecord;
+};
+
 export const exportToCSV = (registrations: RunnerRegistration[]) => {
   const headers = [
     'N°',

@@ -89,33 +89,36 @@ export const CompetitorLoginModal: React.FC<CompetitorLoginModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-      <div className="relative w-full max-w-md bg-neutral-900 border border-neutral-700 rounded-3xl p-6 sm:p-8 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+      <div className="relative w-full max-w-md bg-gradient-to-b from-neutral-950 via-purple-950/40 to-neutral-950 border-2 border-purple-500/50 rounded-3xl p-6 sm:p-8 shadow-[0_0_60px_rgba(168,85,247,0.25)]">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-white bg-neutral-800 rounded-full transition cursor-pointer"
-          title="Cerrar"
+          className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-white bg-neutral-800/80 rounded-full transition cursor-pointer hover:border-lime-400 border border-neutral-700"
+          title="Cerrar y volver a la página de inicio"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* Modal Header */}
         <div className="text-center mb-6">
-          <div className="w-16 h-16 mx-auto rounded-3xl bg-gradient-to-br from-purple-600/20 to-lime-400/20 border border-purple-500/40 text-lime-400 flex items-center justify-center mb-3 shadow-lg shadow-purple-500/10">
-            <span className="text-3xl">🎒</span>
+          <div className="w-16 h-16 mx-auto rounded-3xl bg-gradient-to-br from-purple-600 to-indigo-700 text-white flex items-center justify-center mb-3 shadow-xl shadow-purple-600/30 border border-purple-400/40 text-3xl">
+            🎒
           </div>
+          <span className="text-[10px] font-black uppercase tracking-wider text-purple-300 bg-purple-900/60 px-3 py-1 rounded-full border border-purple-500/40 inline-block mb-1.5">
+            Portal del Atleta Oficial
+          </span>
           <h3 className="font-bebas text-3xl sm:text-4xl text-white tracking-wider uppercase leading-none">
             Mi Espacio <span className="text-lime-400">OHANA GO</span>
           </h3>
-          <p className="text-xs text-neutral-400 mt-2">
-            Ingresa tu número de DNI para acceder a tu pase digital oficial, credencial y check-in de largada.
+          <p className="text-xs text-neutral-300 mt-2">
+            Ingresa tu número de DNI para acceder a tu pase digital oficial, credencial y validación de asistencia en partida.
           </p>
         </div>
 
         {/* Error Alert */}
         {errorMessage && (
-          <div className="mb-4 p-3 bg-red-950/80 border border-red-500/50 rounded-2xl text-red-200 text-xs flex items-start gap-2">
+          <div className="mb-4 p-3 bg-red-950/90 border border-red-500/60 rounded-2xl text-red-200 text-xs flex items-start gap-2">
             <AlertCircle className="w-4 h-4 shrink-0 text-red-400 mt-0.5" />
             <span className="leading-relaxed">{errorMessage}</span>
           </div>
@@ -125,10 +128,10 @@ export const CompetitorLoginModal: React.FC<CompetitorLoginModalProps> = ({
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-neutral-300 mb-1.5 flex items-center justify-between">
               <span>Número de DNI</span>
-              <span className="text-[10px] text-lime-400 font-semibold lowercase">solo documento</span>
+              <span className="text-[10px] text-lime-400 font-semibold lowercase">8 dígitos</span>
             </label>
             <div className="relative">
-              <User className="w-4 h-4 text-neutral-500 absolute left-3.5 top-3.5" />
+              <User className="w-4 h-4 text-purple-400 absolute left-3.5 top-3.5" />
               <input
                 type="tel"
                 inputMode="numeric"
@@ -140,11 +143,11 @@ export const CompetitorLoginModal: React.FC<CompetitorLoginModalProps> = ({
                   if (errorMessage) setErrorMessage('');
                 }}
                 placeholder="Ingresa tu DNI (Ej: 47605471)"
-                className="w-full pl-10 pr-4 py-3 bg-neutral-950 border border-neutral-700 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-lime-400 transition text-sm font-semibold tracking-wider font-mono"
+                className="w-full pl-10 pr-4 py-3 bg-neutral-950 border border-purple-500/40 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-lime-400 focus:ring-1 focus:ring-lime-400 transition text-sm font-semibold tracking-wider font-mono"
               />
             </div>
-            <p className="text-[11px] text-neutral-500 mt-1.5">
-              💡 Ingresa el DNI con el que te registraste en la ficha oficial.
+            <p className="text-[11px] text-neutral-400 mt-1.5">
+              💡 Ingresa el DNI con el que te registraste en la nómina oficial.
             </p>
           </div>
 

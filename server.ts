@@ -169,11 +169,17 @@ app.post('/api/competitor/login', (req, res) => {
   const runner = registrations.find((r) => {
     const rDni = String(r.documentNumber || '').toLowerCase().replace(/[\s\.\-#]/g, '');
     const rDigits = String(r.documentNumber || '').replace(/\D/g, '');
+    const rWsp = String(r.whatsapp || '').replace(/\D/g, '');
+    const rId = String(r.id || '').toLowerCase();
+    const rName = `${r.firstName} ${r.lastName}`.toLowerCase();
 
     return (
       (clean && rDni === clean) ||
       (cleanDigits && rDigits === cleanDigits) ||
-      (cleanDigits && cleanDigits.length >= 7 && rDigits.endsWith(cleanDigits))
+      (cleanDigits && rWsp === cleanDigits) ||
+      (cleanDigits && cleanDigits.length >= 7 && (rDigits.endsWith(cleanDigits) || cleanDigits.endsWith(rDigits))) ||
+      (clean && rId === clean) ||
+      (clean.length >= 5 && rName.includes(clean))
     );
   });
 
@@ -186,7 +192,7 @@ app.post('/api/competitor/login', (req, res) => {
 
 // 4. Start Line QR Check-in: Verification of attendance when arriving at starting arch
 app.post('/api/start-checkin', (req, res) => {
-  const { runnerId, dorsal, dni, token } = req.body;
+  const { runnerId, dorsal, dni, token, qrData } = req.body;
   
   const cleanToken = typeof token === 'string' ? token.trim() : '';
   const isValid = 
@@ -200,27 +206,37 @@ app.post('/api/start-checkin', (req, res) => {
     return res.status(400).json({ error: 'Código QR de partida no válido. Escanea el QR oficial mostrado en la Plaza de Armas.' });
   }
 
+  const rawInput = String(runnerId || dni || qrData || dorsal || '').trim();
+  let parsedPayload: any = null;
+  try {
+    if (rawInput.startsWith('{') && rawInput.endsWith('}')) {
+      parsedPayload = JSON.parse(rawInput);
+    }
+  } catch (e) {}
+
   const registrations = readJSON<any[]>(REGISTRATIONS_FILE, []);
-  const cleanDni = dni ? String(dni).trim().toLowerCase().replace(/[\s\.\-#]/g, '') : '';
-  const cleanDigits = dni ? String(dni).replace(/\D/g, '') : '';
-  const cleanDorsal = dorsal && !isNaN(Number(dorsal)) ? Number(dorsal) : null;
-  const cleanRunnerId = runnerId ? String(runnerId).trim().toLowerCase() : '';
+  const cleanRaw = rawInput.toLowerCase().replace(/[\s\.\-#]/g, '');
+  const cleanDigits = rawInput.replace(/\D/g, '');
+  const cleanId = cleanRaw.replace(/^dni:/, '');
 
   const idx = registrations.findIndex((r) => {
     const rDni = String(r.documentNumber || '').toLowerCase().replace(/[\s\.\-#]/g, '');
     const rDigits = String(r.documentNumber || '').replace(/\D/g, '');
     const rId = String(r.id || '').toLowerCase();
-    const rDorsal = Number(r.registrationNumber || r.bibNumber || 0);
+    const rWsp = String(r.whatsapp || '').replace(/\D/g, '');
 
-    if (cleanRunnerId && rId === cleanRunnerId) return true;
-    if (cleanDigits && (rDni === cleanDigits || rDigits === cleanDigits)) return true;
-    if (cleanDni && rDni === cleanDni) return true;
-    if (cleanDorsal && rDorsal === cleanDorsal) return true;
+    if (parsedPayload && parsedPayload.id && String(parsedPayload.id).toLowerCase() === rId) return true;
+    if (parsedPayload && parsedPayload.dni && String(parsedPayload.dni).replace(/\D/g, '') === rDigits) return true;
+
+    if (cleanRaw && rId === cleanRaw) return true;
+    if (cleanId && (rDni === cleanId || rDigits === cleanId)) return true;
+    if (cleanDigits && (rDni === cleanDigits || rDigits === cleanDigits || rWsp === cleanDigits)) return true;
+    if (cleanDigits && cleanDigits.length >= 7 && (rDigits.endsWith(cleanDigits) || cleanDigits.endsWith(rDigits))) return true;
     return false;
   });
 
   if (idx === -1) {
-    return res.status(404).json({ error: 'Competidor no encontrado para confirmación de partida.' });
+    return res.status(404).json({ error: 'Competidor no encontrado para confirmación de asistencia.' });
   }
 
   const updatedRunner = {
@@ -235,7 +251,7 @@ app.post('/api/start-checkin', (req, res) => {
 
   res.json({
     success: true,
-    message: '¡Confirmación de partida exitosa! Tu asistencia ha sido validada en tiempo real.',
+    message: '¡Asistencia Confirmada! Prepárate para la carrera 🏃‍♂️💨',
     runner: updatedRunner,
   });
 });

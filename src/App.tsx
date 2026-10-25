@@ -41,6 +41,9 @@ export const App: React.FC = () => {
       return null;
     }
   });
+  const activeCompetitorRef = React.useRef(activeCompetitor);
+  activeCompetitorRef.current = activeCompetitor;
+
   const [isCompetitorPortalOpen, setIsCompetitorPortalOpen] = useState(false);
 
   useEffect(() => {
@@ -60,8 +63,9 @@ export const App: React.FC = () => {
             setRegistrations(serverData);
 
             // Sincroniza al competidor activo si está logueado
-            if (activeCompetitor) {
-              const found = serverData.find((r: RunnerRegistration) => r.id === activeCompetitor.id);
+            const currentComp = activeCompetitorRef.current;
+            if (currentComp) {
+              const found = serverData.find((r: RunnerRegistration) => r.id === currentComp.id || r.documentNumber === currentComp.documentNumber);
               if (found) {
                 setActiveCompetitor(found);
                 localStorage.setItem('ohana_active_competitor', JSON.stringify(found));
@@ -73,8 +77,10 @@ export const App: React.FC = () => {
     };
 
     syncRegistrations();
-    const intervalId = setInterval(syncRegistrations, 4000);
+    const intervalId = setInterval(syncRegistrations, 2500);
     window.addEventListener('focus', syncRegistrations);
+    window.addEventListener('storage', syncRegistrations);
+    window.addEventListener('ohana-checkin', syncRegistrations);
 
     // Atajo de teclado discreto para el organizador (Alt + A)
     const handleKeyDown = (e: KeyboardEvent) => {
