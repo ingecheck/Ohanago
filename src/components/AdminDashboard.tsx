@@ -17,21 +17,16 @@ import {
   Check,
   Camera,
   QrCode,
-  Globe,
   MapPin,
   RefreshCw,
   Phone,
-  Shirt,
   DollarSign,
   Maximize2,
   Minimize2,
   Printer,
   ArrowLeft,
-  Award,
-  Trophy,
-  AlertCircle
+  PackageCheck
 } from 'lucide-react';
-import { DigitalBib } from './DigitalBib';
 
 interface AdminDashboardProps {
   registrations: RunnerRegistration[];
@@ -47,18 +42,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onLogout,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterCheckin, setFilterCheckin] = useState<'all' | 'confirmed' | 'pending' | 'meta'>('all');
+  const [filterCheckin, setFilterCheckin] = useState<'all' | 'confirmed' | 'pending'>('all');
   const [filterPayment, setFilterPayment] = useState<'all' | 'Verificado' | 'Pendiente'>('all');
 
   // Modals
   const [viewingProof, setViewingProof] = useState<string | null>(null);
-  const [viewingBibRunner, setViewingBibRunner] = useState<RunnerRegistration | null>(null);
   const [scannedRunnerModal, setScannedRunnerModal] = useState<RunnerRegistration | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassInput, setNewPassInput] = useState('');
   const [passSuccess, setPassSuccess] = useState(false);
 
-  // Start Line Official Check-in QR and Staff Scanner
+  // Official Kit Delivery QR and Staff Scanner
   const [showStartQRModal, setShowStartQRModal] = useState(false);
   const [isFullScreenQR, setIsFullScreenQR] = useState(false);
   const [startQrDataUrl, setStartQrDataUrl] = useState<string | null>(null);
@@ -67,7 +61,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
-    // Generate official start check-in QR code for Plaza de Armas
+    // Generate official kit delivery check-in QR code for Plaza de Armas
     const origin = window.location.origin;
     const startUrl = `${origin}/?checkin=start&token=OHANA-START-LINE-TARAPOTO-2026`;
     QRCode.toDataURL(startUrl, {
@@ -76,7 +70,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       color: { dark: '#000000', light: '#ffffff' },
     })
       .then((url) => setStartQrDataUrl(url))
-      .catch((err) => console.error('Error generating start QR:', err));
+      .catch((err) => console.error('Error generating kit delivery QR:', err));
   }, []);
 
   const fetchLiveRegistrations = async () => {
@@ -103,7 +97,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const handleCheckinEvent = (e: any) => {
       fetchLiveRegistrations();
       if (e?.detail) {
-        setLiveNotice(`🎉 ¡${e.detail.firstName} ${e.detail.lastName} confirmó asistencia en vivo!`);
+        setLiveNotice(`🎉 ¡${e.detail.firstName} ${e.detail.lastName} confirmó entrega de kit inicial en vivo!`);
         setTimeout(() => setLiveNotice(null), 5000);
       }
     };
@@ -128,7 +122,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     saveRegistrations(updated);
   };
 
-  const handleToggleCheckin = async (runnerId: string, currentVal: boolean) => {
+  const handleToggleKitDelivery = async (runnerId: string, currentVal: boolean) => {
     const updated = registrations.map((r) =>
       r.id === runnerId
         ? {
@@ -140,25 +134,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     );
     onUpdateRegistrations(updated);
     saveRegistrations(updated);
-  };
-
-  const handleToggleMeta = async (runnerId: string, currentVal: boolean) => {
-    const updated = registrations.map((r) =>
-      r.id === runnerId
-        ? {
-            ...r,
-            finishedAtMeta: !currentVal,
-            finishCheckinTime: !currentVal ? new Date().toISOString() : undefined,
-            medalDelivered: !currentVal,
-          }
-        : r
-    );
-    onUpdateRegistrations(updated);
-    saveRegistrations(updated);
 
     if (!currentVal) {
       try {
-        confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+        confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
       } catch (e) {}
     }
   };
@@ -181,7 +160,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const pendingPaymentCount = totalCount - verifiedCount;
   const checkinConfirmedCount = registrations.filter((r) => r.confirmedAtStart).length;
   const checkinPendingCount = totalCount - checkinConfirmedCount;
-  const metaFinishedCount = registrations.filter((r) => r.finishedAtMeta).length;
 
   // Filtered registrations
   const filteredRegistrations = registrations.filter((r) => {
@@ -200,8 +178,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const matchCheckin =
       filterCheckin === 'all' ||
       (filterCheckin === 'confirmed' && !!r.confirmedAtStart) ||
-      (filterCheckin === 'pending' && !r.confirmedAtStart) ||
-      (filterCheckin === 'meta' && !!r.finishedAtMeta);
+      (filterCheckin === 'pending' && !r.confirmedAtStart);
 
     // Payment filter
     const matchPayment =
@@ -213,8 +190,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 bg-neutral-950 overflow-y-auto text-neutral-100 flex flex-col min-h-screen">
-      {/* Top Sticky Header Bar */}
+    <div className="fixed inset-0 z-50 bg-neutral-950 overflow-y-auto text-neutral-100 flex flex-col min-h-screen selection:bg-lime-400 selection:text-black">
+      {/* Top Sticky Header Bar (Fluid page navigation) */}
       <header className="sticky top-0 z-40 bg-neutral-900/95 backdrop-blur-md border-b border-neutral-800 shadow-xl px-4 sm:px-8 py-3.5">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -233,35 +210,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   Panel del <span className="text-lime-400">Organizador</span>
                 </span>
                 <span className="px-2.5 py-0.5 rounded-full bg-lime-400/20 text-lime-400 font-bold uppercase text-[10px] tracking-wider border border-lime-400/30 hidden sm:inline-block">
-                  En Vivo • Tarapoto 2026
+                  Acreditación & Entrega de Kits
                 </span>
               </div>
               <p className="text-[11px] text-neutral-400 mt-0.5 hidden md:block">
-                Control de asistencia en partida (Plaza de Armas) y meta (Entre Jarras) • {totalCount} inscritos
+                Plaza de Armas de Tarapoto • {totalCount} atletas registrados
               </p>
             </div>
           </div>
 
           {/* Action Buttons Toolbar */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Start Line QR Projector Button */}
+            {/* Kit Delivery QR Projector Button */}
             <button
               onClick={() => setShowStartQRModal(true)}
               className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-lime-400 to-lime-300 hover:from-lime-300 text-black rounded-xl text-xs font-black transition shadow-lg shadow-lime-400/25 cursor-pointer ring-2 ring-lime-400/50"
-              title="Mostrar y proyectar QR oficial de check-in para la Plaza de Armas"
+              title="Mostrar y proyectar QR oficial de entrega de kit para la Plaza de Armas"
             >
               <QrCode className="w-4 h-4 text-black" />
-              <span>🏁 QR Partida (Plaza)</span>
+              <span>🏁 QR Entrega de Kit</span>
             </button>
 
             {/* Staff scan runner pass button */}
             <button
               onClick={() => setShowStaffScanner(true)}
               className="flex items-center gap-1.5 px-3.5 py-2 bg-purple-950/80 hover:bg-purple-900 text-purple-200 rounded-xl text-xs font-bold transition border border-purple-500/40 cursor-pointer shadow-sm hover:border-lime-400"
-              title="Escanear pase digital de un corredor con la cámara del organizador"
+              title="Escanear o ingresar DNI para entrega de kit"
             >
               <Camera className="w-4 h-4 text-lime-400" />
-              <span>📷 Escanear QR en Meta / Partida</span>
+              <span>📷 Escanear QR de Corredor</span>
             </button>
 
             {/* Live refresh */}
@@ -301,7 +278,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       </header>
 
-      {/* Main Expansive Content (Natural page flow, no cramped inner rectangle) */}
+      {/* Main Fluid Content (Smooth downward scrolling, no trapped modal borders) */}
       <main className="max-w-7xl mx-auto w-full px-4 sm:px-8 py-6 space-y-6 flex-1">
         {/* Live Notice Banner */}
         {liveNotice && (
@@ -319,22 +296,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
 
-        {/* Metrics Summary Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-          <div className="bg-neutral-900 p-4 rounded-2xl border border-neutral-800 shadow-md">
-            <span className="text-[10px] uppercase font-bold text-neutral-400 block">Total Inscritos</span>
-            <div className="flex items-baseline gap-1 mt-1">
+        {/* 4 Clean Metric Summary Cards (No "meta / medalla", focused purely on registration and kit delivery) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-neutral-800 shadow-md">
+            <span className="text-[10px] uppercase font-bold text-neutral-400 block">Total Atletas</span>
+            <div className="flex items-baseline gap-1.5 mt-1">
               <span className="font-bebas text-3xl sm:text-4xl text-white">{totalCount}</span>
-              <span className="text-[11px] text-neutral-500">atletas</span>
+              <span className="text-[11px] text-neutral-500">registrados</span>
             </div>
           </div>
 
-          <div className="bg-neutral-900 p-4 rounded-2xl border-2 border-emerald-500/50 shadow-md shadow-emerald-500/10">
-            <span className="text-[10px] uppercase font-bold text-emerald-400 block flex items-center gap-1">
-              <Check className="w-3.5 h-3.5" />
-              QR Partida Confirmado
+          <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border-2 border-emerald-500/50 shadow-md shadow-emerald-500/10">
+            <span className="text-[10px] uppercase font-bold text-emerald-400 block flex items-center gap-1.5">
+              <PackageCheck className="w-4 h-4 text-emerald-400" />
+              Kits Iniciales Entregados
             </span>
-            <div className="flex items-baseline gap-1 mt-1">
+            <div className="flex items-baseline gap-1.5 mt-1">
               <span className="font-bebas text-3xl sm:text-4xl text-emerald-400">{checkinConfirmedCount}</span>
               <span className="text-[11px] text-emerald-500 font-bold">
                 ({Math.round((checkinConfirmedCount / (totalCount || 1)) * 100)}%)
@@ -342,33 +319,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           </div>
 
-          <div className="bg-neutral-900 p-4 rounded-2xl border border-amber-500/40 shadow-md">
-            <span className="text-[10px] uppercase font-bold text-amber-400 block flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5" />
-              Pendientes de Partida
+          <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-amber-500/40 shadow-md">
+            <span className="text-[10px] uppercase font-bold text-amber-400 block flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-amber-400" />
+              Pendientes de Kit
             </span>
-            <div className="flex items-baseline gap-1 mt-1">
+            <div className="flex items-baseline gap-1.5 mt-1">
               <span className="font-bebas text-3xl sm:text-4xl text-amber-400">{checkinPendingCount}</span>
-              <span className="text-[11px] text-neutral-500">por escanear</span>
+              <span className="text-[11px] text-neutral-500">en Plaza de Armas</span>
             </div>
           </div>
 
-          <div className="bg-neutral-900 p-4 rounded-2xl border-2 border-purple-500/50 shadow-md shadow-purple-500/10">
-            <span className="text-[10px] uppercase font-bold text-purple-300 block flex items-center gap-1">
-              <Award className="w-3.5 h-3.5 text-purple-400" />
-              Llegada a Meta / Medalla
+          <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-neutral-800 shadow-md">
+            <span className="text-[10px] uppercase font-bold text-neutral-400 block flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-lime-400" />
+              Pagos Verificados
             </span>
-            <div className="flex items-baseline gap-1 mt-1">
-              <span className="font-bebas text-3xl sm:text-4xl text-purple-400">{metaFinishedCount}</span>
-              <span className="text-[11px] text-purple-300 font-bold">
-                ({Math.round((metaFinishedCount / (totalCount || 1)) * 100)}%)
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-neutral-900 p-4 rounded-2xl border border-neutral-800 shadow-md">
-            <span className="text-[10px] uppercase font-bold text-neutral-400 block">Pagos Verificados</span>
-            <div className="flex items-baseline gap-1 mt-1">
+            <div className="flex items-baseline gap-1.5 mt-1">
               <span className="font-bebas text-3xl sm:text-4xl text-lime-400">{verifiedCount}</span>
               <span className="text-[11px] text-neutral-500">de {totalCount}</span>
             </div>
@@ -392,7 +359,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             {/* Filter Tabs */}
             <div className="flex flex-wrap items-center gap-2">
-              {/* Primary Attendance Filter */}
+              {/* Kit Delivery Filter */}
               <div className="flex items-center bg-neutral-950 p-1 rounded-xl border border-neutral-800">
                 <button
                   onClick={() => setFilterCheckin('all')}
@@ -411,10 +378,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       ? 'bg-emerald-950 border border-emerald-500/60 text-emerald-400 shadow-sm shadow-emerald-500/20'
                       : 'text-neutral-400 hover:text-emerald-300'
                   }`}
-                  title="Mostrar participantes con QR de partida confirmado"
+                  title="Mostrar participantes con kit entregado"
                 >
                   <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>✓ Con QR Escaneado ({checkinConfirmedCount})</span>
+                  <span>✓ Kit Entregado ({checkinConfirmedCount})</span>
                 </button>
                 <button
                   onClick={() => setFilterCheckin('pending')}
@@ -423,22 +390,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       ? 'bg-amber-950 border border-amber-500/60 text-amber-400 shadow-sm shadow-amber-500/20'
                       : 'text-neutral-400 hover:text-amber-300'
                   }`}
-                  title="Mostrar participantes pendientes por escanear"
+                  title="Mostrar participantes pendientes de entrega de kit"
                 >
                   <Clock className="w-3.5 h-3.5 text-amber-400" />
-                  <span>⏳ Sin Escanear ({checkinPendingCount})</span>
-                </button>
-                <button
-                  onClick={() => setFilterCheckin('meta')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
-                    filterCheckin === 'meta'
-                      ? 'bg-purple-950 border border-purple-500/60 text-purple-300 shadow-sm shadow-purple-500/20'
-                      : 'text-neutral-400 hover:text-purple-300'
-                  }`}
-                  title="Mostrar corredores que ya cruzaron la meta y recibieron medalla"
-                >
-                  <Award className="w-3.5 h-3.5 text-purple-400" />
-                  <span>🏅 En Meta ({metaFinishedCount})</span>
+                  <span>⏳ Pendiente de Kit ({checkinPendingCount})</span>
                 </button>
               </div>
 
@@ -473,7 +428,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
 
-        {/* Complete Participats List (Natural Page Flow - No cramped inner box!) */}
+        {/* Official Participant Table (No 'tallas', No 'meta / medalla', fluid view) */}
         <div className="w-full bg-neutral-900 border border-neutral-800 rounded-3xl shadow-2xl overflow-hidden">
           <div className="p-4 sm:p-5 border-b border-neutral-800 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -483,7 +438,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </h3>
             </div>
             <span className="text-xs text-neutral-400 font-mono">
-              Mostrando lista completa de atletas
+              Control de Acreditación y Entrega de Kit Inicial
             </span>
           </div>
 
@@ -494,18 +449,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <th className="py-3.5 px-3">N°</th>
                   <th className="py-3.5 px-3">Nombres y Apellidos</th>
                   <th className="py-3.5 px-3">DNI / Celular</th>
-                  <th className="py-3.5 px-3">Talla & Modalidad</th>
+                  <th className="py-3.5 px-3">Modalidad</th>
                   <th className="py-3.5 px-3">Ubicación / Emergencia</th>
-                  <th className="py-3.5 px-3">Asistencia Partida</th>
-                  <th className="py-3.5 px-3">Meta / Medalla</th>
+                  <th className="py-3.5 px-3">Entrega de Kit Inicial (Check-in QR)</th>
                   <th className="py-3.5 px-3">Estado Pago</th>
-                  <th className="py-3.5 px-3 text-right">Pase Oficial</th>
+                  <th className="py-3.5 px-3 text-right">Comprobante</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-800/60">
                 {filteredRegistrations.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-12 text-center text-neutral-500 text-sm">
+                    <td colSpan={8} className="py-12 text-center text-neutral-500 text-sm">
                       No se encontraron participantes con los filtros seleccionados.
                     </td>
                   </tr>
@@ -556,23 +510,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           </a>
                         </td>
 
-                        {/* Shirt Size & Modality */}
+                        {/* Modality (No tallas) */}
                         <td className="py-3.5 px-3">
-                          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-neutral-800 text-white font-bold text-[11px]">
-                            <Shirt className="w-3 h-3 text-neutral-400" />
-                            <span>Talla {runner.tShirtSize || 'M'}</span>
-                          </div>
-                          <div className="mt-1">
-                            {isRunVirtual ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.2 rounded-full text-[10px] font-bold uppercase bg-purple-950/80 text-purple-300 border border-purple-500/40">
-                                Virtual 5K
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.2 rounded-full text-[10px] font-bold uppercase bg-lime-950/80 text-lime-400 border border-lime-500/40">
-                                Presencial
-                              </span>
-                            )}
-                          </div>
+                          {isRunVirtual ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-purple-950/80 text-purple-300 border border-purple-500/40">
+                              Virtual 5K
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-lime-950/80 text-lime-400 border border-lime-500/40">
+                              Presencial 5K
+                            </span>
+                          )}
                         </td>
 
                         {/* Location & Emergency */}
@@ -585,18 +533,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           </div>
                         </td>
 
-                        {/* Attendance in Start */}
+                        {/* Entrega de Kit Inicial (Check-in QR) */}
                         <td className="py-3.5 px-3">
                           {runner.confirmedAtStart ? (
                             <div className="flex items-center gap-1.5">
                               <button
-                                onClick={() => handleToggleCheckin(runner.id, true)}
+                                onClick={() => handleToggleKitDelivery(runner.id, true)}
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-black uppercase transition cursor-pointer border bg-emerald-950/90 text-emerald-400 border-emerald-500/60 hover:bg-red-950/70 hover:text-red-300 hover:border-red-500/40 shadow-sm shadow-emerald-500/20 group"
-                                title="Asistencia confirmada en partida. Clic para desmarcar."
+                                title="Kit inicial entregado. Clic para desmarcar."
                               >
                                 <Check className="w-3.5 h-3.5 text-emerald-400 group-hover:hidden" />
                                 <X className="w-3.5 h-3.5 text-red-400 hidden group-hover:inline" />
-                                <span className="group-hover:hidden">✓ QR Escaneado</span>
+                                <span className="group-hover:hidden">✓ Kit Entregado</span>
                                 <span className="hidden group-hover:inline">Desmarcar</span>
                               </button>
                               {runner.startCheckinTime && (
@@ -607,39 +555,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             </div>
                           ) : (
                             <button
-                              onClick={() => handleToggleCheckin(runner.id, false)}
+                              onClick={() => handleToggleKitDelivery(runner.id, false)}
                               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase transition cursor-pointer border bg-neutral-800 text-neutral-300 border-neutral-700 hover:text-white hover:border-lime-400 hover:bg-neutral-700"
-                              title="Marcar asistencia de largada para este corredor"
+                              title="Marcar entrega de kit inicial para este participante"
                             >
                               <Clock className="w-3.5 h-3.5 text-amber-400" />
-                              <span>Validar Asistencia</span>
-                            </button>
-                          )}
-                        </td>
-
-                        {/* Meta / Medal Delivery */}
-                        <td className="py-3.5 px-3">
-                          {runner.finishedAtMeta ? (
-                            <div className="flex items-center gap-1.5">
-                              <button
-                                onClick={() => handleToggleMeta(runner.id, true)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-black uppercase transition cursor-pointer border bg-purple-950/90 text-purple-300 border-purple-500/60 hover:bg-red-950/70 hover:text-red-300 hover:border-red-500/40 shadow-sm shadow-purple-500/20 group"
-                                title="Medalla entregada en meta. Clic para desmarcar si es necesario."
-                              >
-                                <Award className="w-3.5 h-3.5 text-purple-400 group-hover:hidden" />
-                                <X className="w-3.5 h-3.5 text-red-400 hidden group-hover:inline" />
-                                <span className="group-hover:hidden">🏅 Medalla Entregada</span>
-                                <span className="hidden group-hover:inline">Desmarcar</span>
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => handleToggleMeta(runner.id, false)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase transition cursor-pointer border bg-neutral-800 text-neutral-300 border-neutral-700 hover:text-white hover:border-purple-400 hover:bg-neutral-700"
-                              title="Confirmar llegada a meta y entrega de Medalla Finisher"
-                            >
-                              <Award className="w-3.5 h-3.5 text-neutral-400" />
-                              <span>Marcar Meta</span>
+                              <span>Entregar Kit</span>
                             </button>
                           )}
                         </td>
@@ -659,26 +580,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           </button>
                         </td>
 
-                        {/* Actions */}
+                        {/* Voucher / Action */}
                         <td className="py-3.5 px-3 text-right">
                           <div className="flex items-center justify-end gap-1.5">
-                            {runner.paymentProofImage && (
+                            {runner.paymentProofImage ? (
                               <button
                                 onClick={() => setViewingProof(runner.paymentProofImage || null)}
                                 className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-lime-400 transition cursor-pointer"
-                                title="Ver voucher de pago"
+                                title="Ver comprobante de pago"
                               >
                                 <DollarSign className="w-3.5 h-3.5" />
                               </button>
+                            ) : (
+                              <span className="text-[10px] text-neutral-600">—</span>
                             )}
-
-                            <button
-                              onClick={() => setViewingBibRunner(runner)}
-                              className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-lime-400 transition cursor-pointer"
-                              title="Ver pase digital y código QR"
-                            >
-                              <QrCode className="w-3.5 h-3.5" />
-                            </button>
                           </div>
                         </td>
                       </tr>
@@ -691,7 +606,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       </main>
 
-      {/* Modal: Runner Scanned Profile Card (Shown when Staff Scans or Inspects a runner) */}
+      {/* Modal: Runner Scanned Profile Card (Staff Scanned runner via Camera or DNI search) */}
       {scannedRunnerModal && (
         <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
           <div className="relative max-w-lg w-full bg-neutral-900 border-2 border-lime-400 rounded-3xl p-6 shadow-2xl">
@@ -719,19 +634,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             </div>
 
-            {/* Runner quick details */}
+            {/* Runner quick details (No tallas) */}
             <div className="grid grid-cols-2 gap-3 p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800 text-xs mb-4">
               <div>
                 <span className="text-[10px] uppercase font-bold text-neutral-500 block">Modalidad</span>
                 <span className="font-bold text-white">{scannedRunnerModal.modality || 'Presencial 5K'}</span>
               </div>
               <div>
-                <span className="text-[10px] uppercase font-bold text-neutral-500 block">Talla de Polo</span>
-                <span className="font-bold text-white">Talla {scannedRunnerModal.tShirtSize || 'M'}</span>
-              </div>
-              <div>
                 <span className="text-[10px] uppercase font-bold text-neutral-500 block">WhatsApp</span>
                 <span className="font-bold text-emerald-400 font-mono">{scannedRunnerModal.whatsapp}</span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-neutral-500 block">Ubicación</span>
+                <span className="font-bold text-white">{scannedRunnerModal.city}</span>
               </div>
               <div>
                 <span className="text-[10px] uppercase font-bold text-neutral-500 block">Estado de Pago</span>
@@ -741,53 +656,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             </div>
 
-            {/* Live Actions for Check-in and Meta */}
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center justify-between p-3 rounded-xl bg-neutral-950 border border-neutral-800">
+            {/* Single Prominent Action: Confirm Kit Delivery */}
+            <div className="p-4 rounded-2xl bg-neutral-950 border border-lime-400/40 space-y-3">
+              <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-xs font-bold text-white block">1. Asistencia en Partida (Plaza de Armas)</span>
-                  <span className="text-[11px] text-neutral-400">
-                    {scannedRunnerModal.confirmedAtStart ? '✓ Ya confirmada en vivo' : 'Pendiente por registrar'}
+                  <span className="text-sm font-bold text-white block">Entrega de Kit Inicial</span>
+                  <span className="text-xs text-neutral-400">
+                    {scannedRunnerModal.confirmedAtStart ? '✓ Kit inicial ya entregado' : 'Pendiente de entrega en mesa de acreditación'}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={async () => {
                     const newVal = !scannedRunnerModal.confirmedAtStart;
-                    await handleToggleCheckin(scannedRunnerModal.id, scannedRunnerModal.confirmedAtStart || false);
+                    await handleToggleKitDelivery(scannedRunnerModal.id, scannedRunnerModal.confirmedAtStart || false);
                     setScannedRunnerModal((prev) => prev ? { ...prev, confirmedAtStart: newVal, startCheckinTime: newVal ? new Date().toISOString() : undefined } : null);
                   }}
-                  className={`px-3 py-1.5 rounded-xl font-bebas text-sm uppercase transition cursor-pointer ${
+                  className={`px-4 py-2 rounded-xl font-bebas text-base uppercase transition cursor-pointer ${
                     scannedRunnerModal.confirmedAtStart
                       ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/50'
-                      : 'bg-lime-400 text-black hover:bg-lime-300'
+                      : 'bg-lime-400 text-black hover:bg-lime-300 shadow-md shadow-lime-400/20'
                   }`}
                 >
-                  {scannedRunnerModal.confirmedAtStart ? '✓ Confirmado' : 'Validar Partida'}
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between p-3 rounded-xl bg-neutral-950 border border-purple-500/30">
-                <div>
-                  <span className="text-xs font-bold text-purple-300 block">2. Llegada a Meta & Entrega de Medalla (Entre Jarras)</span>
-                  <span className="text-[11px] text-neutral-400">
-                    {scannedRunnerModal.finishedAtMeta ? '🏅 Medalla Finisher entregada' : 'Pendiente en arco de meta'}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const newVal = !scannedRunnerModal.finishedAtMeta;
-                    await handleToggleMeta(scannedRunnerModal.id, scannedRunnerModal.finishedAtMeta || false);
-                    setScannedRunnerModal((prev) => prev ? { ...prev, finishedAtMeta: newVal, finishCheckinTime: newVal ? new Date().toISOString() : undefined, medalDelivered: newVal } : null);
-                  }}
-                  className={`px-3 py-1.5 rounded-xl font-bebas text-sm uppercase transition cursor-pointer ${
-                    scannedRunnerModal.finishedAtMeta
-                      ? 'bg-purple-950 text-purple-300 border border-purple-500/50'
-                      : 'bg-purple-600 text-white hover:bg-purple-500'
-                  }`}
-                >
-                  {scannedRunnerModal.finishedAtMeta ? '✓ Medalla Lista' : 'Entregar Medalla'}
+                  {scannedRunnerModal.confirmedAtStart ? '✓ Kit Entregado' : 'Entregar Kit Inicial'}
                 </button>
               </div>
             </div>
@@ -798,7 +689,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 onClick={() => setScannedRunnerModal(null)}
                 className="px-5 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold transition cursor-pointer"
               >
-                Cerrar Ficha
+                Cerrar
               </button>
             </div>
           </div>
@@ -821,21 +712,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="rounded-xl overflow-hidden bg-black flex items-center justify-center max-h-[70vh]">
               <img src={viewingProof} alt="Voucher" className="max-w-full max-h-[70vh] object-contain" />
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal: View Digital Pass */}
-      {viewingBibRunner && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md overflow-y-auto">
-          <div className="relative max-w-md w-full bg-neutral-900 rounded-3xl p-5 border border-lime-400/40">
-            <button
-              onClick={() => setViewingBibRunner(null)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer z-10"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <DigitalBib registration={viewingBibRunner} onBack={() => setViewingBibRunner(null)} />
           </div>
         </div>
       )}
@@ -888,7 +764,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* Modal: Start Line Official Check-in QR (For Plaza de Armas) */}
+      {/* Modal: Official Kit Delivery Check-in QR (For Plaza de Armas Accreditation Desk) */}
       {showStartQRModal && (
         <div className={`fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-6 bg-black/95 backdrop-blur-xl overflow-y-auto ${isFullScreenQR ? 'p-0' : ''}`}>
           <div className={`relative w-full ${isFullScreenQR ? 'h-full max-w-none rounded-none p-6 sm:p-10 flex flex-col justify-between' : 'max-w-2xl rounded-3xl p-6'} bg-neutral-900 border border-lime-400/50 shadow-[0_0_60px_rgba(163,230,53,0.3)] transition-all`}>
@@ -900,10 +776,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
                 <div>
                   <h4 className="font-bebas text-2xl sm:text-3xl text-white tracking-wide uppercase leading-tight">
-                    Punto de Partida • <span className="text-lime-400">QR Oficial de Check-in</span>
+                    Mesa de Acreditación • <span className="text-lime-400">QR Entrega de Kit Inicial</span>
                   </h4>
                   <p className="text-[11px] text-neutral-400">
-                    Plaza de Armas de Tarapoto • Sábado 31 de Octubre 2026
+                    Plaza de Armas de Tarapoto • Concentración 5:00 PM • Sábado 31 de Octubre
                   </p>
                 </div>
               </div>
@@ -933,10 +809,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="flex items-center justify-between text-xs font-bold mb-1.5">
                 <span className="text-lime-400 uppercase tracking-wider flex items-center gap-1.5">
                   <Check className="w-4 h-4 text-lime-400" />
-                  Asistencia en Partida en Tiempo Real:
+                  Kits Entregados en Tiempo Real:
                 </span>
                 <span className="font-mono text-white text-sm">
-                  {checkinConfirmedCount} de {totalCount} confirmados ({Math.round((checkinConfirmedCount / (totalCount || 1)) * 100)}%)
+                  {checkinConfirmedCount} de {totalCount} ({Math.round((checkinConfirmedCount / (totalCount || 1)) * 100)}%)
                 </span>
               </div>
               <div className="w-full bg-neutral-800 h-2.5 rounded-full overflow-hidden">
@@ -953,7 +829,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 {startQrDataUrl ? (
                   <img
                     src={startQrDataUrl}
-                    alt="Código QR de Partida OHANA GO 5K"
+                    alt="Código QR Entrega de Kit OHANA GO 5K"
                     className="w-full h-auto object-contain aspect-square"
                   />
                 ) : (
@@ -964,10 +840,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-400/10 border border-lime-400/30 text-lime-400 text-xs font-black uppercase tracking-wider">
-                QR Oficial de Largada • Plaza de Armas
+                QR Oficial Entrega de Kit • Plaza de Armas
               </div>
               <p className="text-xs text-neutral-300 max-w-lg mt-2 leading-relaxed">
-                Este código QR se proyecta o coloca impreso en el arco de largada de la Plaza de Armas. Los participantes lo escanean con su teléfono desde <strong>Mi Espacio 🎒</strong> para confirmar su asistencia presencial en vivo.
+                Este código QR se ubica en la carpa de acreditación de la Plaza de Armas. Los atletas lo escanean con su cámara desde <strong>Mi Espacio 🎒</strong> para confirmar la entrega de su kit inicial en vivo.
               </p>
             </div>
 
@@ -995,7 +871,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       printWindow.document.write(`
                         <html>
                           <head>
-                            <title>QR Partida OHANA GO 5K Tarapoto</title>
+                            <title>QR Entrega de Kit - OHANA GO 5K Tarapoto</title>
                             <style>
                               body { font-family: sans-serif; text-align: center; padding: 40px; background: #000; color: #fff; }
                               h1 { font-size: 38px; margin: 0; color: #a3e635; text-transform: uppercase; }
@@ -1007,13 +883,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             </style>
                           </head>
                           <body>
-                            <span class="badge">Punto de Largada Oficial</span>
+                            <span class="badge">Acreditación Oficial</span>
                             <h1>OHANA GO 5K TARAPOTO</h1>
-                            <h2>Plaza de Armas • Sábado 31 de Octubre</h2>
+                            <h2>Plaza de Armas • Sábado 31 de Octubre - 5:00 PM</h2>
                             <div class="qr-box">
                               <img src="${startQrDataUrl}" />
                             </div>
-                            <p><strong>Apunta con la cámara de tu celular para registrar tu asistencia en vivo</strong></p>
+                            <p><strong>Apunta con la cámara de tu celular para confirmar la entrega de tu Kit Inicial</strong></p>
                             <script>window.onload = function() { window.print(); }<\/script>
                           </body>
                         </html>
@@ -1024,7 +900,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   className="px-4 py-2 rounded-xl bg-lime-400 hover:bg-lime-300 text-black font-bebas text-base uppercase tracking-wider transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-lime-400/20"
                 >
                   <Printer className="w-4 h-4" />
-                  Imprimir Cartel para Arco
+                  Imprimir Cartel de Acreditación
                 </button>
               </div>
             </div>
@@ -1032,11 +908,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* Staff Scanner Modal (Admin scans runner's pass with camera anywhere: Meta or Partida) */}
+      {/* Staff Scanner Modal */}
       {showStaffScanner && (
         <QRScannerModal
-          title="Control de Corredor • Meta & Partida"
-          subtitle="Apunta la cámara al pase oficial digital del competidor o ingresa su DNI."
+          title="Acreditación de Corredor • Entrega de Kit"
+          subtitle="Apunta la cámara al código del participante o ingresa su DNI."
           expectedType="any"
           onScanSuccess={async (scannedText) => {
             setShowStaffScanner(false);
@@ -1066,7 +942,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 const checkData = await checkRes.json();
                 if (checkRes.ok && checkData.runner) {
                   setScannedRunnerModal(checkData.runner);
-                  setLiveNotice(`🎉 ¡${checkData.runner.firstName} ${checkData.runner.lastName} confirmado!`);
+                  setLiveNotice(`🎉 ¡${checkData.runner.firstName} ${checkData.runner.lastName} entrega de kit confirmada!`);
                   setTimeout(() => setLiveNotice(null), 5000);
                 } else {
                   setLiveNotice(`❌ ${checkData.error || 'No se encontró un competidor registrado con ese código.'}`);

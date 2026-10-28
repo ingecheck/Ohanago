@@ -40,10 +40,11 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({
       `Código de Registro: ${registration.id}\n` +
       `Participante: ${registration.firstName} ${registration.lastName}\n` +
       `Distancia: 5K\n` +
-      `Fecha: Sábado 31 de Octubre 2026 - 7:00 P.M.\n` +
+      `Fecha: Sábado 31 de Octubre 2026\n` +
+      `Horario: 5:00 P.M. Concentración • 7:00 P.M. Partida\n` +
       `Partida: Plaza de Armas Tarapoto\n` +
       `Llegada: Entre Jarras (Medalla Finisher & Sorteos)\n\n` +
-      `Inscríbete tú también aquí: https://ohanago.pro`
+      `Consulta tu pase oficial en: https://ohanago.pro`
     );
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
@@ -80,7 +81,7 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({
               5K
             </span>
             <div className="text-[9px] font-bold text-neutral-400 uppercase mt-0.5">
-              31 OCT • 7:00 PM
+              31 OCT • 5:00 PM
             </div>
           </div>
         </div>
@@ -127,7 +128,7 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({
         <div className="space-y-2 mb-4 text-xs text-neutral-300 bg-neutral-950/60 p-3 rounded-2xl border border-neutral-800">
           <div className="flex items-center justify-between">
             <span className="text-neutral-400">Partida:</span>
-            <span className="text-white font-bold">Plaza de Armas Tarapoto (7:00 PM)</span>
+            <span className="text-white font-bold">Plaza de Armas (5:00 PM Concentración)</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-neutral-400">Llegada:</span>

@@ -80,17 +80,18 @@ export const exportToCSV = (registrations: RunnerRegistration[]) => {
     r.documentNumber,
     r.modality || 'Presencial',
     r.whatsapp,
-    `"${r.city}"`,
+    r.city,
     r.paymentStatus,
-    r.confirmedAtStart ? 'CONFIRMADO' : 'PENDIENTE',
+    r.confirmedAtStart ? 'SÍ' : 'NO',
     r.startCheckinTime ? new Date(r.startCheckinTime).toLocaleTimeString() : ''
   ]);
 
-  const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-  const encodedUri = encodeURI(csvContent);
+  const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
-  link.setAttribute('href', encodedUri);
-  link.setAttribute('download', `ohana_go_competidores_${new Date().toISOString().slice(0, 10)}.csv`);
+  link.setAttribute('href', url);
+  link.setAttribute('download', `participantes_ohana_go_5k_${new Date().toISOString().slice(0, 10)}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -121,11 +122,12 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "paymentMethod": "Yape",
     "paymentReference": "YAPE-FORMS-0001",
     "paymentStatus": "Verificado",
-    "confirmedAtStart": true,
-    "startCheckinTime": "2026-10-25T02:00:16.891Z",
+    "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-03T16:51:47.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0002",
@@ -154,7 +156,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-04T16:20:39.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0003",
@@ -183,7 +187,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-06T10:12:46.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0004",
@@ -212,7 +218,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-07T11:34:47.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0005",
@@ -241,7 +249,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-07T13:24:24.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0006",
@@ -270,7 +280,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-08T10:24:48.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0007",
@@ -299,7 +311,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-08T23:34:43.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0008",
@@ -328,7 +342,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-09T15:03:16.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0009",
@@ -357,7 +373,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-09T15:09:56.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0010",
@@ -386,7 +404,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-10T13:00:05.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0011",
@@ -415,7 +435,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-11T09:02:42.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0012",
@@ -444,7 +466,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-11T15:22:13.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0013",
@@ -473,7 +497,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-11T23:12:51.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0014",
@@ -502,7 +528,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-12T14:08:18.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0015",
@@ -531,7 +559,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-12T19:30:21.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0016",
@@ -560,7 +590,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-13T13:32:15.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0017",
@@ -589,7 +621,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-13T22:29:37.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0018",
@@ -618,7 +652,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-14T10:07:15.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0019",
@@ -647,7 +683,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-14T14:27:23.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0020",
@@ -676,7 +714,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-14T19:03:46.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0021",
@@ -705,7 +745,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-14T20:23:24.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0022",
@@ -734,7 +776,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-15T11:25:23.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0023",
@@ -763,7 +807,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-15T11:44:42.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0024",
@@ -792,7 +838,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-15T12:26:22.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0025",
@@ -821,7 +869,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-15T15:37:54.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0026",
@@ -850,7 +900,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-15T20:03:51.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0027",
@@ -879,7 +931,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-15T20:56:00.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0028",
@@ -908,7 +962,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-16T08:58:30.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0029",
@@ -937,7 +993,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-16T20:19:28.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0030",
@@ -966,7 +1024,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-17T14:35:49.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0031",
@@ -995,7 +1055,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-19T09:55:20.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0032",
@@ -1024,7 +1086,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-19T10:00:40.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0033",
@@ -1053,7 +1117,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-19T11:13:50.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0034",
@@ -1082,7 +1148,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-19T15:54:32.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0035",
@@ -1111,7 +1179,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-19T16:59:03.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0036",
@@ -1140,7 +1210,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-19T22:10:49.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0037",
@@ -1169,7 +1241,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-20T14:47:38.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0038",
@@ -1198,7 +1272,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Virtual",
     "createdAt": "2026-10-20T15:12:45.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0039",
@@ -1227,7 +1303,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-20T15:26:55.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0040",
@@ -1256,7 +1334,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-20T15:31:24.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0041",
@@ -1285,7 +1365,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-20T18:43:45.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0042",
@@ -1314,7 +1396,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-20T19:18:25.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0043",
@@ -1343,7 +1427,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-20T22:54:13.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0044",
@@ -1372,7 +1458,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-21T09:25:35.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0045",
@@ -1401,7 +1489,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-21T10:10:44.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0046",
@@ -1430,7 +1520,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-21T13:47:07.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0047",
@@ -1459,7 +1551,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-21T13:54:46.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0048",
@@ -1488,7 +1582,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-21T14:11:12.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0049",
@@ -1517,7 +1613,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-21T14:18:09.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0050",
@@ -1546,7 +1644,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-21T18:30:30.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0051",
@@ -1575,7 +1675,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-22T00:49:19.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0052",
@@ -1604,7 +1706,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-22T13:13:09.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0053",
@@ -1633,7 +1737,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-22T15:46:45.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0054",
@@ -1662,7 +1768,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-22T15:56:49.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0055",
@@ -1691,7 +1799,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-22T16:25:15.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0056",
@@ -1720,7 +1830,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-22T17:56:36.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0057",
@@ -1749,7 +1861,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-22T19:37:40.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0058",
@@ -1778,7 +1892,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-22T19:41:28.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0059",
@@ -1807,7 +1923,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-22T21:08:42.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0060",
@@ -1836,7 +1954,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-22T22:53:29.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0061",
@@ -1865,7 +1985,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-23T06:53:52.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0062",
@@ -1894,7 +2016,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-23T08:03:25.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0063",
@@ -1923,7 +2047,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-23T09:00:24.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0064",
@@ -1952,7 +2078,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-23T11:11:59.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0065",
@@ -1981,7 +2109,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-23T11:36:31.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0066",
@@ -2010,7 +2140,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Virtual",
     "createdAt": "2026-10-23T12:22:04.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0067",
@@ -2039,7 +2171,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-23T16:07:13.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0068",
@@ -2068,7 +2202,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-23T17:42:16.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0069",
@@ -2097,7 +2233,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-23T17:59:09.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0070",
@@ -2126,7 +2264,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-24T11:49:44.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0071",
@@ -2155,7 +2295,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-24T11:52:22.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0072",
@@ -2184,7 +2326,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-24T11:52:36.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0073",
@@ -2213,7 +2357,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-24T14:49:24.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0074",
@@ -2242,7 +2388,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-24T19:10:38.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0075",
@@ -2271,7 +2419,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-24T19:19:34.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0076",
@@ -2300,7 +2450,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-24T19:38:38.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0077",
@@ -2329,7 +2481,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-24T20:23:06.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0078",
@@ -2358,7 +2512,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-24T20:25:45.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0079",
@@ -2387,7 +2543,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-24T20:27:18.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0080",
@@ -2416,7 +2574,9 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-24T20:30:16.000Z",
-    "disclaimerAccepted": true
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0081",
@@ -2445,6 +2605,907 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-24T21:22:10.000Z",
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
+  },
+  {
+    "id": "OHA-2026-0082",
+    "registrationNumber": 82,
+    "bibNumber": 82,
+    "firstName": "Tifanny",
+    "lastName": "Cubas",
+    "documentType": "DNI",
+    "documentNumber": "73622415",
+    "email": "73622415@corredor.pe",
+    "whatsapp": "922112701",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Rioja",
+    "district": "Rioja",
+    "runningClub": "Independiente",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "922112701",
+    "willWearCostume": true,
+    "costumeName": "Disfraz Halloween",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0082",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-24T23:34:50.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0083",
+    "registrationNumber": 83,
+    "bibNumber": 83,
+    "firstName": "Kiara Nicole",
+    "lastName": "Vásquez Rodríguez",
+    "documentType": "DNI",
+    "documentNumber": "75360006",
+    "email": "75360006@corredor.pe",
+    "whatsapp": "931337959",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Independiente",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "931337959",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0083",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-25T00:41:26.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0084",
+    "registrationNumber": 84,
+    "bibNumber": 84,
+    "firstName": "Erika Gianella",
+    "lastName": "Ruiz Marin",
+    "documentType": "DNI",
+    "documentNumber": "74241500",
+    "email": "74241500@corredor.pe",
+    "whatsapp": "922473820",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Independiente",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "922473820",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0084",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-25T01:04:19.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0085",
+    "registrationNumber": 85,
+    "bibNumber": 85,
+    "firstName": "Arnold Alfonso",
+    "lastName": "Ramírez Flores",
+    "documentType": "DNI",
+    "documentNumber": "71228275",
+    "email": "71228275@corredor.pe",
+    "whatsapp": "960337379",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Independiente",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "960337379",
+    "willWearCostume": true,
+    "costumeName": "Disfraz Halloween",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0085",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-25T01:53:34.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0086",
+    "registrationNumber": 86,
+    "bibNumber": 86,
+    "firstName": "Sebastian Raul",
+    "lastName": "Ramirez Fasabi",
+    "documentType": "DNI",
+    "documentNumber": "70884435",
+    "email": "70884435@corredor.pe",
+    "whatsapp": "963118051",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Independiente",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "963118051",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0086",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-25T08:39:40.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0087",
+    "registrationNumber": 87,
+    "bibNumber": 87,
+    "firstName": "César Rodrigo",
+    "lastName": "Campos Vásquez",
+    "documentType": "DNI",
+    "documentNumber": "73096704",
+    "email": "73096704@corredor.pe",
+    "whatsapp": "954540653",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Independiente",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "954540653",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0087",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-25T22:08:04.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0088",
+    "registrationNumber": 88,
+    "bibNumber": 88,
+    "firstName": "Adrian Alejandro",
+    "lastName": "Mucha Aguilar",
+    "documentType": "DNI",
+    "documentNumber": "72363493",
+    "email": "72363493@corredor.pe",
+    "whatsapp": "933046755",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Independiente",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "933046755",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0088",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-25T22:19:48.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0089",
+    "registrationNumber": 89,
+    "bibNumber": 89,
+    "firstName": "Jorge Alexis",
+    "lastName": "Rodríguez Reátegui",
+    "documentType": "DNI",
+    "documentNumber": "71086115",
+    "email": "71086115@corredor.pe",
+    "whatsapp": "958687174",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Independiente",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "958687174",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0089",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-25T22:42:47.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0090",
+    "registrationNumber": 90,
+    "bibNumber": 90,
+    "firstName": "Cristina",
+    "lastName": "Morales",
+    "documentType": "DNI",
+    "documentNumber": "44600653",
+    "email": "44600653@corredor.pe",
+    "whatsapp": "972891705",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Independiente",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "972891705",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0090",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-26T10:30:49.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0091",
+    "registrationNumber": 91,
+    "bibNumber": 91,
+    "firstName": "Bertha Carlos",
+    "lastName": "Díaz",
+    "documentType": "DNI",
+    "documentNumber": "47311851",
+    "email": "47311851@corredor.pe",
+    "whatsapp": "928210304",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "The Fortress Trail Runners",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "928210304",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0091",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-26T10:39:42.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0092",
+    "registrationNumber": 92,
+    "bibNumber": 92,
+    "firstName": "Diana Luz",
+    "lastName": "García Gracias",
+    "documentType": "DNI",
+    "documentNumber": "76597093",
+    "email": "76597093@corredor.pe",
+    "whatsapp": "991152381",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Independiente",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "991152381",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0092",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-26T10:53:50.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0093",
+    "registrationNumber": 93,
+    "bibNumber": 93,
+    "firstName": "Jakelin Guadalupe",
+    "lastName": "Uriarte Tapullima",
+    "documentType": "DNI",
+    "documentNumber": "74278157",
+    "email": "74278157@corredor.pe",
+    "whatsapp": "962133384",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "The Fortress Trail Runners",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "962133384",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0093",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-26T11:34:03.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0094",
+    "registrationNumber": 94,
+    "bibNumber": 94,
+    "firstName": "Jhort Ángel",
+    "lastName": "Pérez Cotrina",
+    "documentType": "DNI",
+    "documentNumber": "72784609",
+    "email": "72784609@corredor.pe",
+    "whatsapp": "975960565",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "The Fortress Trail Runners",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "975960565",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0094",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-26T11:40:48.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0095",
+    "registrationNumber": 95,
+    "bibNumber": 95,
+    "firstName": "Isaías Díaz",
+    "lastName": "López",
+    "documentType": "DNI",
+    "documentNumber": "40924264",
+    "email": "40924264@corredor.pe",
+    "whatsapp": "961439052",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "The Fortress Trail Runners",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "961439052",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0095",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-26T11:46:58.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0096",
+    "registrationNumber": 96,
+    "bibNumber": 96,
+    "firstName": "Astin Fabián",
+    "lastName": "Ramírez Villoslada",
+    "documentType": "DNI",
+    "documentNumber": "90948768",
+    "email": "90948768@corredor.pe",
+    "whatsapp": "941452484",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "The Fortress Trail Runners",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "941452484",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0096",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-26T12:03:57.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0097",
+    "registrationNumber": 97,
+    "bibNumber": 97,
+    "firstName": "Julio Daniel",
+    "lastName": "Pérez Zumaeta",
+    "documentType": "DNI",
+    "documentNumber": "76480262",
+    "email": "76480262@corredor.pe",
+    "whatsapp": "900924285",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Gladiador",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "900924285",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0097",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-26T16:51:51.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0098",
+    "registrationNumber": 98,
+    "bibNumber": 98,
+    "firstName": "Claudia Sánchez",
+    "lastName": "Paredes",
+    "documentType": "DNI",
+    "documentNumber": "70482262",
+    "email": "70482262@corredor.pe",
+    "whatsapp": "982787557",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Independiente",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "982787557",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0098",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-26T17:13:27.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0099",
+    "registrationNumber": 99,
+    "bibNumber": 99,
+    "firstName": "Patricia Johana",
+    "lastName": "Guamuro Castillo",
+    "documentType": "DNI",
+    "documentNumber": "75454175",
+    "email": "75454175@corredor.pe",
+    "whatsapp": "941452484",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "The Fortress Trail Runners",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "941452484",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0099",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-26T17:31:26.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0100",
+    "registrationNumber": 100,
+    "bibNumber": 100,
+    "firstName": "Jessica Paola",
+    "lastName": "Mestanza Bartra",
+    "documentType": "DNI",
+    "documentNumber": "41693830",
+    "email": "41693830@corredor.pe",
+    "whatsapp": "949208285",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Independiente",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "949208285",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0100",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-26T18:05:58.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0101",
+    "registrationNumber": 101,
+    "bibNumber": 101,
+    "firstName": "Lissroy Tuesta",
+    "lastName": "Marchan",
+    "documentType": "DNI",
+    "documentNumber": "72845620",
+    "email": "72845620@corredor.pe",
+    "whatsapp": "916969371",
+    "age": 25,
+    "gender": "Otro",
+    "department": "Loreto",
+    "city": "Yurimaguas",
+    "district": "Yurimaguas",
+    "runningClub": "Independiente",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "916969371",
+    "willWearCostume": true,
+    "costumeName": "Disfraz Halloween",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0101",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-26T18:10:17.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0102",
+    "registrationNumber": 102,
+    "bibNumber": 102,
+    "firstName": "Tonny Jhonatan",
+    "lastName": "Zarria Rojas",
+    "documentType": "DNI",
+    "documentNumber": "73498571",
+    "email": "73498571@corredor.pe",
+    "whatsapp": "951591344",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Independiente",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "951591344",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0102",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-26T18:33:55.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0103",
+    "registrationNumber": 103,
+    "bibNumber": 103,
+    "firstName": "Claudia Isabel",
+    "lastName": "Leveau Torres",
+    "documentType": "DNI",
+    "documentNumber": "70992869",
+    "email": "70992869@corredor.pe",
+    "whatsapp": "906241883",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Independiente",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "906241883",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0103",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-26T18:58:09.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0104",
+    "registrationNumber": 104,
+    "bibNumber": 104,
+    "firstName": "Sinthia Sadith",
+    "lastName": "Bermeo Navarro",
+    "documentType": "DNI",
+    "documentNumber": "77050489",
+    "email": "77050489@corredor.pe",
+    "whatsapp": "920783864",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Independiente",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "920783864",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0104",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-26T19:19:19.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0105",
+    "registrationNumber": 105,
+    "bibNumber": 105,
+    "firstName": "Lourdes Sofía",
+    "lastName": "Rojas Rodríguez",
+    "documentType": "DNI",
+    "documentNumber": "73003368",
+    "email": "73003368@corredor.pe",
+    "whatsapp": "964821132",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Aura Team",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "964821132",
+    "willWearCostume": true,
+    "costumeName": "Disfraz Halloween",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0105",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-26T23:15:58.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0106",
+    "registrationNumber": 106,
+    "bibNumber": 106,
+    "firstName": "Luis Miguel",
+    "lastName": "Barrera Díaz",
+    "documentType": "DNI",
+    "documentNumber": "70456524",
+    "email": "70456524@corredor.pe",
+    "whatsapp": "947801687",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Run Club Tarapoto",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "947801687",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0106",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-26T23:17:17.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0107",
+    "registrationNumber": 107,
+    "bibNumber": 107,
+    "firstName": "Jersons Andy",
+    "lastName": "Osco Ochoa",
+    "documentType": "DNI",
+    "documentNumber": "70201750",
+    "email": "70201750@corredor.pe",
+    "whatsapp": "958394039",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Independiente",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "958394039",
+    "willWearCostume": true,
+    "costumeName": "Disfraz Halloween",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0107",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-26T23:34:15.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0108",
+    "registrationNumber": 108,
+    "bibNumber": 108,
+    "firstName": "Kiara Mishell",
+    "lastName": "Saldaña Villanueva",
+    "documentType": "DNI",
+    "documentNumber": "73655668",
+    "email": "73655668@corredor.pe",
+    "whatsapp": "917599334",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Independiente",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "917599334",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0108",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-27T08:55:26.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0109",
+    "registrationNumber": 109,
+    "bibNumber": 109,
+    "firstName": "Kelvin Mondragón",
+    "lastName": "Huansi",
+    "documentType": "DNI",
+    "documentNumber": "76826738",
+    "email": "76826738@corredor.pe",
+    "whatsapp": "973188125",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Independiente",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "973188125",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0109",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-27T11:37:50.000Z",
+    "disclaimerAccepted": true
+  },
+  {
+    "id": "OHA-2026-0110",
+    "registrationNumber": 110,
+    "bibNumber": 110,
+    "firstName": "Isabel Padilla",
+    "lastName": "Minaya",
+    "documentType": "DNI",
+    "documentNumber": "47734697",
+    "email": "47734697@corredor.pe",
+    "whatsapp": "920057252",
+    "age": 25,
+    "gender": "Otro",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Independiente",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "920057252",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-FORMS-0110",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "finishedAtMeta": false,
+    "medalDelivered": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-27T18:09:25.000Z",
     "disclaimerAccepted": true
   }
 ];

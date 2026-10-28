@@ -255,7 +255,7 @@ export const App: React.FC = () => {
   const faqs = [
     {
       q: '¿Cuál es la diferencia entre la Modalidad Presencial y la Modalidad Virtual?',
-      a: 'En la modalidad Presencial, corres en vivo el sábado 31 de Octubre a las 7:00 PM desde la Plaza de Armas de Tarapoto hasta Entre Jarras, con hidratación en ruta, pulseras neón y entrega de tu Medalla Finisher física al cruzar la meta. En la modalidad Virtual, puedes correr o caminar tus 5K desde cualquier ciudad del Perú o del mundo entre el 28 de Octubre y el 2 de Noviembre con tu app favorita (Strava, Nike, Garmin), subes tu captura en Mi Espacio 🎒 y te enviamos tu Medalla Finisher física y kit oficial a domicilio o agencia.',
+      a: 'En la modalidad Presencial, corres en vivo el sábado 31 de Octubre con concentración desde las 5:00 PM y largada a las 7:00 PM desde la Plaza de Armas de Tarapoto hasta Entre Jarras, con hidratación en ruta, pulseras neón y entrega de tu Medalla Finisher física al cruzar la meta. En la modalidad Virtual, puedes correr o caminar tus 5K desde cualquier ciudad del Perú o del mundo entre el 28 de Octubre y el 2 de Noviembre con tu app favorita (Strava, Nike, Garmin), subes tu captura en Mi Espacio 🎒 y te enviamos tu Medalla Finisher física y kit oficial a domicilio o agencia.',
     },
     {
       q: '¿Qué incluye exactamente el valor de mi inscripción (S/ 50.00)?',
@@ -275,7 +275,7 @@ export const App: React.FC = () => {
     },
     {
       q: '¿Cómo se entregan las medallas y kits en cada modalidad?',
-      a: 'En la modalidad Presencial, las pulseras neón se entregan antes de la largada en la Plaza de Armas (a partir de las 6:00 PM) y la medalla se entrega en el arco de meta en Entre Jarras. En la modalidad Virtual, la medalla física y kit se despachan por agencia o courier (Olva / Shalom) a la dirección indicada en tu ficha de registro.',
+      a: 'En la modalidad Presencial, las pulseras neón se entregan antes de la largada en la Plaza de Armas a partir de las 5:00 PM (hora de concentración) y la medalla se entrega en el arco de meta en Entre Jarras. En la modalidad Virtual, la medalla física y kit se despachan por agencia o courier (Olva / Shalom) a la dirección indicada en tu ficha de registro.',
     },
   ];
 
@@ -283,7 +283,7 @@ export const App: React.FC = () => {
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans selection:bg-lime-400 selection:text-black">
       {/* Top Banner */}
       <div className="bg-gradient-to-r from-orange-600 via-amber-500 to-lime-500 py-1.5 px-4 text-center text-black font-bebas text-sm sm:text-base tracking-wider uppercase shadow-md relative z-40">
-        Carrera 5K Tarapoto • 31 Octubre • Modalidad Presencial & Virtual
+        Carrera 5K Tarapoto • 31 Octubre • 5:00 PM Concentración en Plaza de Armas • Presencial & Virtual
       </div>
 
       {/* Main Navbar */}
@@ -296,21 +296,22 @@ export const App: React.FC = () => {
       {/* Hero Section */}
       <EventHero
         registeredCount={registrations.length}
-        onRegisterClick={() => scrollToSection('formulario-registro')}
-        onExploreKitClick={() => scrollToSection('kit-evento')}
+        onRegisterClick={handleCompetitorAccess}
+        onExploreKitClick={() => scrollToSection('ruta-5k')}
       />
 
       {/* Kit & Medal Section */}
       <EventKitSection
-        onGoToRegister={() => scrollToSection('formulario-registro')}
+        onGoToRegister={handleCompetitorAccess}
       />
 
       {/* Route & Map Section */}
       <RaceRouteSection />
 
-      {/* Registration Form */}
+      {/* Registration Section: Closed Status & Runner Guidance */}
       <RegistrationForm
-        onRegistrationSuccess={handleRegistrationSuccess}
+        onOpenCompetitorLogin={handleCompetitorAccess}
+        onGoToRoute={() => scrollToSection('ruta-5k')}
       />
 
       {/* Frequently Asked Questions */}
@@ -477,7 +478,7 @@ export const App: React.FC = () => {
                 disabled={directCheckinLoading}
                 className="w-full py-3.5 bg-lime-400 hover:bg-lime-300 disabled:opacity-50 text-black font-bebas text-xl uppercase tracking-wider rounded-xl transition shadow-lg shadow-lime-400/25 flex items-center justify-center gap-2 cursor-pointer"
               >
-                {directCheckinLoading ? 'Validando Asistencia...' : '✓ Confirmar Mi Partida'}
+                {directCheckinLoading ? 'Validando Entrega de Kit...' : '✓ Confirmar Entrega de Kit'}
               </button>
             </form>
           </div>
@@ -500,10 +501,10 @@ export const App: React.FC = () => {
             </div>
 
             <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 block mb-1">
-              Check-in de Partida Validado
+              Entrega de Kit Inicial Confirmada
             </span>
             <h3 className="font-bebas text-3xl sm:text-4xl text-white uppercase tracking-wide">
-              ¡Listo para la Largada!
+              ¡Kit Inicial Entregado!
             </h3>
             
             <div className="my-4 p-4 rounded-2xl bg-neutral-950 border border-neutral-800 text-left space-y-1">
@@ -516,7 +517,7 @@ export const App: React.FC = () => {
                 <span className="text-sm font-black text-lime-400 font-mono">{directCheckinSuccess.documentNumber}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[11px] text-neutral-400 uppercase font-bold">Hora de Check-in:</span>
+                <span className="text-[11px] text-neutral-400 uppercase font-bold">Hora de Entrega:</span>
                 <span className="text-xs text-neutral-300 font-mono">
                   {directCheckinSuccess.startCheckinTime ? new Date(directCheckinSuccess.startCheckinTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Registrado'}
                 </span>
@@ -524,7 +525,7 @@ export const App: React.FC = () => {
             </div>
 
             <p className="text-xs text-neutral-300 mb-4">
-              Tu asistencia ya se encuentra marcada en tiempo real en la lista oficial del organizador. ¡Nos vemos en la meta en Entre Jarras!
+              Tu kit inicial y asistencia ya se encuentran confirmados en tiempo real en la lista oficial del organizador. ¡Nos vemos en la largada a las 7:00 PM!
             </p>
 
             <button
@@ -534,7 +535,7 @@ export const App: React.FC = () => {
               }}
               className="w-full py-3 bg-lime-400 hover:bg-lime-300 text-black font-bebas text-lg uppercase tracking-wider rounded-xl transition cursor-pointer shadow-md"
             >
-              Ir a Mi Espacio 🎒 y Pase Digital
+              Ir a Mi Espacio 🎒 (Ficha de Verificación)
             </button>
           </div>
         </div>

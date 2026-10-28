@@ -48,7 +48,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => handleNavClick('formulario-registro')}
             className="hover:text-lime-400 transition cursor-pointer"
           >
-            Inscripción
+            Inscripciones Finalizadas
           </button>
           <button
             onClick={() => handleNavClick('kit-evento')}

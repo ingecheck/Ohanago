@@ -71,11 +71,6 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
                 <span className="font-bold text-white block">Horario de atención: 24 horas</span>
               </div>
             </li>
-
-            {/* Sede y meta */}
-            <li className="text-neutral-400 text-xs px-1">
-              📍 Meta y Sorteos: <strong>Entre Jarras</strong> (Jr. Lima cda. 13)
-            </li>
           </ul>
         </div>
 
