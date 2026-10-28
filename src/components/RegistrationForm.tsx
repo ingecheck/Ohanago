@@ -51,7 +51,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
               <Clock className="w-3.5 h-3.5 text-lime-400" />
               Hora de Concentración
             </span>
-            <span className="font-bebas text-2xl text-lime-400">5:00 P.M.</span>
+            <span className="font-bebas text-2xl text-lime-400">5:30 P.M.</span>
             <span className="text-xs text-neutral-300 block mt-0.5">Largada Oficial: 7:00 P.M.</span>
           </div>
 

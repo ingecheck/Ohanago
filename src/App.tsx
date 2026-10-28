@@ -255,7 +255,7 @@ export const App: React.FC = () => {
   const faqs = [
     {
       q: '¿Cuál es la diferencia entre la Modalidad Presencial y la Modalidad Virtual?',
-      a: 'En la modalidad Presencial, corres en vivo el sábado 31 de Octubre con concentración desde las 5:00 PM y largada a las 7:00 PM desde la Plaza de Armas de Tarapoto hasta Entre Jarras, con hidratación en ruta, pulseras neón y entrega de tu Medalla Finisher física al cruzar la meta. En la modalidad Virtual, puedes correr o caminar tus 5K desde cualquier ciudad del Perú o del mundo entre el 28 de Octubre y el 2 de Noviembre con tu app favorita (Strava, Nike, Garmin), subes tu captura en Mi Espacio 🎒 y te enviamos tu Medalla Finisher física y kit oficial a domicilio o agencia.',
+      a: 'En la modalidad Presencial, corres en vivo el sábado 31 de Octubre con concentración desde las 5:30 PM y largada a las 7:00 PM desde la Plaza de Armas de Tarapoto hasta Entre Jarras, con hidratación en ruta, pulseras neón y entrega de tu Medalla Finisher física al cruzar la meta. En la modalidad Virtual, puedes correr o caminar tus 5K desde cualquier ciudad del Perú o del mundo entre el 28 de Octubre y el 2 de Noviembre con tu app favorita (Strava, Nike, Garmin), subes tu captura en Mi Espacio 🎒 y te enviamos tu Medalla Finisher física y kit oficial a domicilio o agencia.',
     },
     {
       q: '¿Qué incluye exactamente el valor de mi inscripción (S/ 50.00)?',
@@ -275,7 +275,7 @@ export const App: React.FC = () => {
     },
     {
       q: '¿Cómo se entregan las medallas y kits en cada modalidad?',
-      a: 'En la modalidad Presencial, las pulseras neón se entregan antes de la largada en la Plaza de Armas a partir de las 5:00 PM (hora de concentración) y la medalla se entrega en el arco de meta en Entre Jarras. En la modalidad Virtual, la medalla física y kit se despachan por agencia o courier (Olva / Shalom) a la dirección indicada en tu ficha de registro.',
+      a: 'En la modalidad Presencial, las pulseras neón se entregan antes de la largada en la Plaza de Armas a partir de las 5:30 PM (hora de concentración) y la medalla se entrega en el arco de meta en Entre Jarras. En la modalidad Virtual, la medalla física y kit se despachan por agencia o courier (Olva / Shalom) a la dirección indicada en tu ficha de registro.',
     },
   ];
 
@@ -283,7 +283,7 @@ export const App: React.FC = () => {
     <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans selection:bg-lime-400 selection:text-black">
       {/* Top Banner */}
       <div className="bg-gradient-to-r from-orange-600 via-amber-500 to-lime-500 py-1.5 px-4 text-center text-black font-bebas text-sm sm:text-base tracking-wider uppercase shadow-md relative z-40">
-        Carrera 5K Tarapoto • 31 Octubre • 5:00 PM Concentración en Plaza de Armas • Presencial & Virtual
+        Carrera 5K Tarapoto • 31 Octubre • 5:30 PM Concentración en Plaza de Armas • Presencial & Virtual
       </div>
 
       {/* Main Navbar */}

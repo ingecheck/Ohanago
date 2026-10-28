@@ -27,7 +27,7 @@ export const RaceRouteSection: React.FC = () => {
                 </div>
                 {/* Important route details in small clear text */}
                 <p className="text-xs sm:text-sm text-neutral-300 mt-2 leading-relaxed">
-                  De la <strong className="text-white">Plaza de Armas de Tarapoto</strong> (Concentración 5:00 PM • Partida 7:00 PM) hasta <strong className="text-white">Entre Jarras (Jr. Lima cda. 13)</strong>. Recorrido 100% asfaltado e iluminado.
+                  De la <strong className="text-white">Plaza de Armas de Tarapoto</strong> (Concentración 5:30 PM • Partida 7:00 PM) hasta <strong className="text-white">Entre Jarras (Jr. Lima cda. 13)</strong>. Recorrido 100% asfaltado e iluminado.
                 </p>
               </div>
             </div>
@@ -223,7 +223,7 @@ export const RaceRouteSection: React.FC = () => {
                   <rect x="0" y="0" width="150" height="52" rx="10" fill="#fef08a" stroke="#ca8a04" strokeWidth="2" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.5))" />
                   <text x="10" y="18" fill="#713f12" fontSize="11" fontWeight="900" fontFamily="sans-serif">INICIO</text>
                   <text x="10" y="32" fill="#000000" fontSize="11" fontWeight="bold" fontFamily="sans-serif">Plaza de Armas</text>
-                  <text x="10" y="44" fill="#451a03" fontSize="8" fontWeight="bold" fontFamily="sans-serif">Concentración 5:00 PM (Partida 7 PM)</text>
+                  <text x="10" y="44" fill="#451a03" fontSize="8" fontWeight="bold" fontFamily="sans-serif">Concentración 5:30 PM (Partida 7 PM)</text>
                 </g>
               </g>
 
@@ -362,7 +362,7 @@ export const RaceRouteSection: React.FC = () => {
                       <rect x="0" y="0" width="150" height="52" rx="10" fill="#fef08a" stroke="#ca8a04" strokeWidth="2" />
                       <text x="10" y="18" fill="#713f12" fontSize="11" fontWeight="900">INICIO</text>
                       <text x="10" y="32" fill="#000000" fontSize="11" fontWeight="bold">Plaza de Armas</text>
-                      <text x="10" y="44" fill="#451a03" fontSize="8" fontWeight="bold">Concentración 5:00 PM (Partida 7 PM)</text>
+                      <text x="10" y="44" fill="#451a03" fontSize="8" fontWeight="bold">Concentración 5:30 PM (Partida 7 PM)</text>
                     </g>
                   </g>
 

@@ -100,7 +100,7 @@ export const EventHero: React.FC<EventHeroProps> = ({
               <Clock className="w-4 h-4" />
               <span className="text-[10px] font-black uppercase tracking-wider">Horario</span>
             </div>
-            <span className="font-bebas text-xl text-white block">5:00 P.M.</span>
+            <span className="font-bebas text-xl text-white block">5:30 P.M.</span>
             <span className="text-[10px] text-lime-400 font-bold">Concentración (Partida 7 PM)</span>
           </div>
 
@@ -131,7 +131,7 @@ export const EventHero: React.FC<EventHeroProps> = ({
           <div className="relative z-10 flex flex-col items-center">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-950/60 border border-lime-500/30 text-lime-400 text-[11px] font-bold tracking-widest uppercase mb-4">
               <span className="w-2 h-2 rounded-full bg-lime-400 animate-ping" />
-              Tiempo Restante para el Evento • 31 Octubre • 5:00 PM
+              Tiempo Restante para el Evento • 31 Octubre • 5:30 PM
             </div>
 
             <div className="grid grid-cols-4 gap-2.5 sm:gap-4 w-full text-center">
@@ -169,25 +169,6 @@ export const EventHero: React.FC<EventHeroProps> = ({
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Hero Actions for Closed Registration Stage */}
-        <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
-          <button
-            onClick={onRegisterClick}
-            className="px-6 py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bebas text-xl uppercase tracking-wider rounded-2xl transition shadow-xl shadow-purple-600/30 flex items-center gap-2 cursor-pointer hover:scale-105"
-          >
-            <Sparkles className="w-5 h-5 text-lime-400" />
-            <span>Consultar Mi Inscripción (Mi Espacio 🎒)</span>
-          </button>
-
-          <button
-            onClick={onExploreKitClick}
-            className="px-6 py-3.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 hover:border-lime-400 text-neutral-200 hover:text-white font-bebas text-xl uppercase tracking-wider rounded-2xl transition cursor-pointer flex items-center gap-2 shadow-md"
-          >
-            <MapPin className="w-5 h-5 text-lime-400" />
-            <span>Circuito & Horarios</span>
-          </button>
         </div>
 
       </div>

@@ -36,7 +36,7 @@ export const EventKitSection: React.FC<EventKitSectionProps> = () => {
       borderColor: 'border-lime-500/40',
       iconColor: 'text-lime-400',
       description: 'Pulsera o accesorio de luz neón ultra brillante para iluminar las calles de Tarapoto durante los 5 kilómetros nocturnos.',
-      feature: 'Entrega en la Plaza de Armas desde las 5:00 PM (Concentración)'
+      feature: 'Entrega en la Plaza de Armas desde las 5:30 PM (Concentración)'
     },
     {
       icon: Gift,

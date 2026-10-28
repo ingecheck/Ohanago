@@ -229,7 +229,7 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
                     Entrega de Kit Inicial (Check-in QR)
                   </h3>
                   <p className="text-xs sm:text-sm text-neutral-300 mt-1 max-w-xl leading-relaxed">
-                    Al llegar a la Plaza de Armas a las <strong>5:00 PM</strong>, apunta con tu cámara al código QR oficial para confirmar tu asistencia y recibir tu Kit Inicial (pulseras neón, número, hidratación).
+                    Al llegar a la Plaza de Armas a las <strong>5:30 PM</strong>, apunta con tu cámara al código QR oficial para confirmar tu asistencia y recibir tu Kit Inicial (pulseras neón, número, hidratación).
                   </p>
                 </div>
               </div>
@@ -319,12 +319,19 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
               <span>Cronograma Oficial del Evento • Sábado 31 de Octubre</span>
             </div>
             <ul className="text-neutral-300 text-[11px] space-y-1 list-disc list-inside">
-              <li><strong>5:00 PM:</strong> Concentración y entrega de Kit Inicial en la Plaza de Armas de Tarapoto.</li>
+              <li><strong>5:30 PM:</strong> Concentración y entrega de Kit Inicial en la Plaza de Armas de Tarapoto.</li>
               <li><strong>6:30 PM:</strong> Calentamiento grupal, dinámicas y activación.</li>
               <li><strong>7:00 PM:</strong> Conteo regresivo y largada oficial 5K.</li>
               <li><strong>Llegada & After Race:</strong> Meta y sorteos en Entre Jarras (Av. Lima 1230).</li>
             </ul>
           </div>
+        </div>
+
+        {/* Generous bottom spacing area so nothing is clipped or obstructed on mobile/desktop */}
+        <div className="pt-6 pb-20 text-center">
+          <p className="text-xs text-neutral-500 font-mono">
+            OHANA GO 5K TARAPOTO • Ficha Oficial de Participación
+          </p>
         </div>
       </main>
 

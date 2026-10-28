@@ -52,7 +52,7 @@ export const RegistrationSuccessModal: React.FC<RegistrationSuccessModalProps> =
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-neutral-400">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-lime-400 shrink-0" />
-              <span><strong>Sábado 31 Octubre 2026</strong> • 5:00 PM Concentración (Partida 7 PM)</span>
+              <span><strong>Sábado 31 Octubre 2026</strong> • 5:30 PM Concentración (Partida 7 PM)</span>
             </div>
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-lime-400 shrink-0" />

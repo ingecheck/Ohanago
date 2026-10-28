@@ -1,5 +1,5 @@
 export type DocumentType = 'DNI' | 'Carnet de Extranjería' | 'Pasaporte';
-export type Gender = 'Masculino' | 'Femenino' | 'Otro';
+export type Gender = 'Masculino' | 'Femenino' | 'Otro' | 'Mixto';
 export type PaymentMethod = 'Yape' | 'Plin' | 'Transferencia BCP' | 'Transferencia BBVA' | 'Efectivo / Presencial';
 export type PaymentStatus = 'Verificado' | 'Pendiente de Verificación';
 export type RaceModality = 'Presencial' | 'Virtual';

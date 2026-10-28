@@ -449,17 +449,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <th className="py-3.5 px-3">N°</th>
                   <th className="py-3.5 px-3">Nombres y Apellidos</th>
                   <th className="py-3.5 px-3">DNI / Celular</th>
-                  <th className="py-3.5 px-3">Modalidad</th>
-                  <th className="py-3.5 px-3">Ubicación / Emergencia</th>
                   <th className="py-3.5 px-3">Entrega de Kit Inicial (Check-in QR)</th>
                   <th className="py-3.5 px-3">Estado Pago</th>
-                  <th className="py-3.5 px-3 text-right">Comprobante</th>
+                  <th className="py-3.5 px-3 text-center">Comprobante</th>
+                  <th className="py-3.5 px-3 text-right">Modalidad</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-800/60">
                 {filteredRegistrations.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-neutral-500 text-sm">
+                    <td colSpan={7} className="py-12 text-center text-neutral-500 text-sm">
                       No se encontraron participantes con los filtros seleccionados.
                     </td>
                   </tr>
@@ -510,30 +509,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           </a>
                         </td>
 
-                        {/* Modality (No tallas) */}
-                        <td className="py-3.5 px-3">
-                          {isRunVirtual ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-purple-950/80 text-purple-300 border border-purple-500/40">
-                              Virtual 5K
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-lime-950/80 text-lime-400 border border-lime-500/40">
-                              Presencial 5K
-                            </span>
-                          )}
-                        </td>
-
-                        {/* Location & Emergency */}
-                        <td className="py-3.5 px-3 text-[11px] text-neutral-300">
-                          <div className="font-semibold text-white truncate max-w-[150px]">
-                            {runner.city} • {runner.district}
-                          </div>
-                          <div className="text-neutral-400 text-[10px] truncate max-w-[150px]">
-                            Emergencia: {runner.emergencyContactName} ({runner.emergencyContactPhone})
-                          </div>
-                        </td>
-
-                        {/* Entrega de Kit Inicial (Check-in QR) */}
+                        {/* Entrega de Kit Inicial (Check-in QR) directly beside DNI/Phone */}
                         <td className="py-3.5 px-3">
                           {runner.confirmedAtStart ? (
                             <div className="flex items-center gap-1.5">
@@ -556,7 +532,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           ) : (
                             <button
                               onClick={() => handleToggleKitDelivery(runner.id, false)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase transition cursor-pointer border bg-neutral-800 text-neutral-300 border-neutral-700 hover:text-white hover:border-lime-400 hover:bg-neutral-700"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase transition cursor-pointer border bg-neutral-800 text-neutral-300 border-neutral-700 hover:text-white hover:border-lime-400 hover:bg-neutral-700 shadow-sm"
                               title="Marcar entrega de kit inicial para este participante"
                             >
                               <Clock className="w-3.5 h-3.5 text-amber-400" />
@@ -581,8 +557,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         </td>
 
                         {/* Voucher / Action */}
-                        <td className="py-3.5 px-3 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
+                        <td className="py-3.5 px-3 text-center">
+                          <div className="flex items-center justify-center">
                             {runner.paymentProofImage ? (
                               <button
                                 onClick={() => setViewingProof(runner.paymentProofImage || null)}
@@ -595,6 +571,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               <span className="text-[10px] text-neutral-600">—</span>
                             )}
                           </div>
+                        </td>
+
+                        {/* Modality at the VERY LAST column */}
+                        <td className="py-3.5 px-3 text-right">
+                          {isRunVirtual ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-purple-950/80 text-purple-300 border border-purple-500/40">
+                              Virtual 5K
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-lime-950/80 text-lime-400 border border-lime-500/40">
+                              Presencial 5K
+                            </span>
+                          )}
                         </td>
                       </tr>
                     );
@@ -779,7 +768,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     Mesa de Acreditación • <span className="text-lime-400">QR Entrega de Kit Inicial</span>
                   </h4>
                   <p className="text-[11px] text-neutral-400">
-                    Plaza de Armas de Tarapoto • Concentración 5:00 PM • Sábado 31 de Octubre
+                    Plaza de Armas de Tarapoto • Concentración 5:30 PM • Sábado 31 de Octubre
                   </p>
                 </div>
               </div>
@@ -885,7 +874,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <body>
                             <span class="badge">Acreditación Oficial</span>
                             <h1>OHANA GO 5K TARAPOTO</h1>
-                            <h2>Plaza de Armas • Sábado 31 de Octubre - 5:00 PM</h2>
+                            <h2>Plaza de Armas • Sábado 31 de Octubre - 5:30 PM</h2>
                             <div class="qr-box">
                               <img src="${startQrDataUrl}" />
                             </div>
