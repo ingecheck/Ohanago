@@ -215,6 +215,10 @@ function findRunner(query: any, registrations: any[]): { runner: any; index: num
     // Match by WhatsApp phone
     if (targetDigits && targetDigits.length === 9 && rWspDigits === targetDigits) return true;
 
+    // Match by Email
+    const rEmailNorm = normalize(r.email);
+    if (targetNorm && rEmailNorm && (rEmailNorm === targetNorm || (targetNorm.length >= 8 && rEmailNorm.includes(targetNorm)))) return true;
+
     // Match by Full Name
     if (targetNorm.length >= 6 && rFullNameNorm.includes(targetNorm)) return true;
 
@@ -224,6 +228,24 @@ function findRunner(query: any, registrations: any[]): { runner: any; index: num
   if (index === -1) return null;
   return { runner: registrations[index], index };
 }
+
+// Endpoint to update individual runner details (e.g. DNI correction by admin)
+app.post('/api/runner/update', (req, res) => {
+  const { runnerId, documentNumber, whatsapp, firstName, lastName } = req.body;
+  if (!runnerId) return res.status(400).json({ error: 'Falta runnerId' });
+  const registrations = readJSON<any[]>(REGISTRATIONS_FILE, []);
+  const index = registrations.findIndex((r) => r.id === runnerId);
+  if (index === -1) return res.status(404).json({ error: 'No se encontró el participante' });
+
+  if (documentNumber !== undefined) registrations[index].documentNumber = String(documentNumber).trim();
+  if (whatsapp !== undefined) registrations[index].whatsapp = String(whatsapp).trim();
+  if (firstName !== undefined) registrations[index].firstName = String(firstName).trim();
+  if (lastName !== undefined) registrations[index].lastName = String(lastName).trim();
+
+  writeJSON(REGISTRATIONS_FILE, registrations);
+  console.log(`[Admin Update] Updated runner ${registrations[index].id} (DNI: ${registrations[index].documentNumber}, Cel: ${registrations[index].whatsapp})`);
+  res.json({ success: true, runner: registrations[index] });
+});
 
 // 3. Competitor Auth: Login strictly by DNI (or ID)
 app.post('/api/competitor/login', (req, res) => {

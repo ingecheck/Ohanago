@@ -25,7 +25,8 @@ import {
   Minimize2,
   Printer,
   ArrowLeft,
-  PackageCheck
+  PackageCheck,
+  Pencil
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -51,6 +52,45 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassInput, setNewPassInput] = useState('');
   const [passSuccess, setPassSuccess] = useState(false);
+
+  // Edit Runner DNI/Phone modal
+  const [editingRunner, setEditingRunner] = useState<RunnerRegistration | null>(null);
+  const [editDniValue, setEditDniValue] = useState('');
+  const [editPhoneValue, setEditPhoneValue] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  const handleSaveRunnerEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRunner) return;
+    setIsSavingEdit(true);
+    try {
+      const res = await fetch('/api/runner/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          runnerId: editingRunner.id,
+          documentNumber: editDniValue.trim(),
+          whatsapp: editPhoneValue.trim(),
+        }),
+      });
+      if (res.ok) {
+        const updatedList = registrations.map((r) =>
+          r.id === editingRunner.id
+            ? { ...r, documentNumber: editDniValue.trim(), whatsapp: editPhoneValue.trim() }
+            : r
+        );
+        onUpdateRegistrations(updatedList);
+        saveRegistrations(updatedList);
+        setEditingRunner(null);
+        setLiveNotice(`✓ DNI de ${editingRunner.firstName} actualizado correctamente.`);
+        setTimeout(() => setLiveNotice(null), 4000);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
 
   // Official Kit Delivery QR and Staff Scanner
   const [showStartQRModal, setShowStartQRModal] = useState(false);
@@ -448,17 +488,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <tr>
                   <th className="py-3.5 px-3">N°</th>
                   <th className="py-3.5 px-3">Nombres y Apellidos</th>
-                  <th className="py-3.5 px-3">DNI / Celular</th>
                   <th className="py-3.5 px-3">Entrega de Kit Inicial (Check-in QR)</th>
+                  <th className="py-3.5 px-3">DNI / Celular</th>
                   <th className="py-3.5 px-3">Estado Pago</th>
-                  <th className="py-3.5 px-3 text-center">Comprobante</th>
                   <th className="py-3.5 px-3 text-right">Modalidad</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-800/60">
                 {filteredRegistrations.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-neutral-500 text-sm">
+                    <td colSpan={6} className="py-12 text-center text-neutral-500 text-sm">
                       No se encontraron participantes con los filtros seleccionados.
                     </td>
                   </tr>
@@ -492,24 +531,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           </div>
                         </td>
 
-                        {/* DNI & Phone */}
-                        <td className="py-3.5 px-3">
-                          <div className="font-mono font-bold text-lime-400 text-xs">
-                            {runner.documentType}: {runner.documentNumber}
-                          </div>
-                          <a
-                            href={`https://wa.me/51${runner.whatsapp.replace(/\D/g, '')}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-[11px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 mt-0.5 transition"
-                            title="Contactar por WhatsApp"
-                          >
-                            <Phone className="w-3 h-3 text-emerald-400" />
-                            <span>{runner.whatsapp}</span>
-                          </a>
-                        </td>
-
-                        {/* Entrega de Kit Inicial (Check-in QR) directly beside DNI/Phone */}
+                        {/* Entrega de Kit Inicial (Check-in QR) - PRIMERO */}
                         <td className="py-3.5 px-3">
                           {runner.confirmedAtStart ? (
                             <div className="flex items-center gap-1.5">
@@ -541,6 +563,49 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           )}
                         </td>
 
+                        {/* DNI & Phone - LUEGO */}
+                        <td className="py-3.5 px-3">
+                          <div className="flex items-center gap-1.5">
+                            {runner.documentNumber.includes('Pendiente') ? (
+                              <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 font-bold text-[10px] border border-amber-500/40">
+                                ⚠️ Sin DNI (Ingresó correo)
+                              </span>
+                            ) : (
+                              <span className="font-mono font-bold text-lime-400 text-xs">
+                                {runner.documentType}: {runner.documentNumber}
+                              </span>
+                            )}
+                            <button
+                              onClick={() => {
+                                setEditingRunner(runner);
+                                setEditDniValue(runner.documentNumber.includes('Pendiente') ? '' : runner.documentNumber);
+                                setEditPhoneValue(runner.whatsapp);
+                              }}
+                              className="text-neutral-400 hover:text-white p-1 rounded hover:bg-neutral-800 transition cursor-pointer"
+                              title="Editar o asignar DNI a este corredor"
+                            >
+                              <Pencil className="w-3 h-3 text-neutral-400 hover:text-lime-400" />
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <a
+                              href={`https://wa.me/51${runner.whatsapp.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-[11px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition"
+                              title="Contactar por WhatsApp"
+                            >
+                              <Phone className="w-3 h-3 text-emerald-400" />
+                              <span>{runner.whatsapp}</span>
+                            </a>
+                            {runner.documentNumber.includes('Pendiente') && runner.email && (
+                              <span className="text-[10px] text-neutral-400 font-mono truncate max-w-[130px]" title={runner.email}>
+                                ({runner.email})
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
                         {/* Payment Status */}
                         <td className="py-3.5 px-3">
                           <button
@@ -554,23 +619,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             <CheckCircle2 className="w-3 h-3" />
                             {runner.paymentStatus === 'Verificado' ? 'Verificado' : 'Pendiente'}
                           </button>
-                        </td>
-
-                        {/* Voucher / Action */}
-                        <td className="py-3.5 px-3 text-center">
-                          <div className="flex items-center justify-center">
-                            {runner.paymentProofImage ? (
-                              <button
-                                onClick={() => setViewingProof(runner.paymentProofImage || null)}
-                                className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-lime-400 transition cursor-pointer"
-                                title="Ver comprobante de pago"
-                              >
-                                <DollarSign className="w-3.5 h-3.5" />
-                              </button>
-                            ) : (
-                              <span className="text-[10px] text-neutral-600">—</span>
-                            )}
-                          </div>
                         </td>
 
                         {/* Modality at the VERY LAST column */}
@@ -945,6 +993,78 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           }}
           onClose={() => setShowStaffScanner(false)}
         />
+      )}
+      {/* Modal: Edit Runner DNI / Phone */}
+      {editingRunner && (
+        <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className="relative max-w-sm w-full bg-neutral-900 border-2 border-lime-400 rounded-3xl p-6 shadow-2xl">
+            <button
+              onClick={() => setEditingRunner(null)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h4 className="font-bebas text-2xl text-white uppercase mb-1">
+              Editar DNI del Atleta
+            </h4>
+            <p className="text-xs text-neutral-400 mb-4">
+              {editingRunner.firstName} {editingRunner.lastName} ({editingRunner.id})
+            </p>
+
+            <form onSubmit={handleSaveRunnerEdit} className="space-y-4">
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-neutral-400 mb-1">
+                  Número de DNI (8 dígitos)
+                </label>
+                <input
+                  type="text"
+                  required
+                  maxLength={8}
+                  pattern="\d{8}"
+                  value={editDniValue}
+                  onChange={(e) => setEditDniValue(e.target.value.replace(/\D/g, ''))}
+                  placeholder="Ej: 73017454"
+                  className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3.5 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-lime-400"
+                />
+                <span className="text-[10px] text-neutral-500 mt-1 block">
+                  Con este número el corredor ingresará a «Mi Espacio 🎒»
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-neutral-400 mb-1">
+                  Número de WhatsApp
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editPhoneValue}
+                  onChange={(e) => setEditPhoneValue(e.target.value)}
+                  placeholder="Ej: 993778180"
+                  className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3.5 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-lime-400"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingRunner(null)}
+                  className="px-4 py-2 rounded-xl bg-neutral-800 text-neutral-300 text-xs font-bold cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingEdit || editDniValue.length !== 8}
+                  className="px-5 py-2 rounded-xl bg-lime-400 hover:bg-lime-300 text-black font-bebas text-lg uppercase tracking-wider cursor-pointer shadow-md disabled:opacity-50"
+                >
+                  {isSavingEdit ? 'Guardando...' : 'Guardar DNI'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

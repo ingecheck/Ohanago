@@ -43,13 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Desktop Navigation Links */}
-        <div className="hidden lg:flex items-center gap-5 text-xs font-bold uppercase tracking-wider text-neutral-300">
-          <button
-            onClick={() => handleNavClick('formulario-registro')}
-            className="hover:text-lime-400 transition cursor-pointer"
-          >
-            Inscripciones Finalizadas
-          </button>
+        <div className="hidden lg:flex items-center gap-6 text-xs font-bold uppercase tracking-wider text-neutral-300">
           <button
             onClick={() => handleNavClick('kit-evento')}
             className="hover:text-lime-400 transition cursor-pointer"
@@ -139,12 +133,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             </span>
           </button>
 
-          <button
-            onClick={() => handleNavClick('formulario-registro')}
-            className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-lime-400 border-b border-neutral-900"
-          >
-            📝 Formulario de Inscripción
-          </button>
           <button
             onClick={() => handleNavClick('kit-evento')}
             className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-neutral-200 border-b border-neutral-900"
