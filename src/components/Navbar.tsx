@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Menu, X, Shield, Flame, Instagram, Sparkles, User } from 'lucide-react';
+import { trackMiEspacioClick, trackSectionView } from '../utils/analytics';
 
 interface NavbarProps {
   onOpenAdmin: () => void;
@@ -16,9 +17,15 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const handleNavClick = (id: string) => {
+  const handleNavClick = (id: string, label: string) => {
+    trackSectionView(id, label);
     onGoToSection(id);
     setMobileMenuOpen(false);
+  };
+
+  const handleMiEspacioClick = (source: string) => {
+    trackMiEspacioClick(source);
+    onOpenCompetitorLogin();
   };
 
   return (
@@ -27,7 +34,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         
         {/* Brand Logo */}
         <div
-          onClick={() => handleNavClick('inicio')}
+          onClick={() => handleNavClick('inicio', 'Inicio')}
           className="flex items-center gap-2 cursor-pointer group"
         >
           <div className="w-10 h-10 rounded-xl bg-lime-400 text-black flex items-center justify-center font-black shadow-lg shadow-lime-400/20 group-hover:scale-105 transition">
@@ -45,13 +52,13 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Desktop Navigation Links */}
         <div className="hidden lg:flex items-center gap-6 text-xs font-bold uppercase tracking-wider text-neutral-300">
           <button
-            onClick={() => handleNavClick('kit-evento')}
+            onClick={() => handleNavClick('kit-evento', 'Medalla & Kit')}
             className="hover:text-lime-400 transition cursor-pointer"
           >
             Medalla & Kit
           </button>
           <button
-            onClick={() => handleNavClick('ruta-5k')}
+            onClick={() => handleNavClick('ruta-5k', 'Ruta 5K')}
             className="hover:text-lime-400 transition cursor-pointer"
           >
             Ruta 5K
@@ -62,7 +69,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="hidden md:flex items-center gap-2.5">
           {/* Competitor Portal button */}
           <button
-            onClick={onOpenCompetitorLogin}
+            onClick={() => handleMiEspacioClick('Navbar Desktop')}
             className="px-3 py-2 rounded-xl bg-gradient-to-r from-purple-900/80 to-neutral-900 hover:from-purple-800 hover:to-neutral-800 border border-purple-500/40 text-purple-200 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm hover:scale-[1.02]"
             title="Mi Espacio 🎒"
           >
@@ -86,7 +93,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Mobile menu trigger */}
         <div className="flex md:hidden items-center gap-2">
           <button
-            onClick={onOpenCompetitorLogin}
+            onClick={() => handleMiEspacioClick('Navbar Mobile Top')}
             className="px-2.5 py-1.5 rounded-xl bg-purple-950/80 border border-purple-500/40 text-purple-200 text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 transition"
             title="Mi Espacio 🎒"
           >
@@ -119,7 +126,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="md:hidden bg-neutral-950 border-b border-neutral-800 px-4 py-5 space-y-3">
           <button
             onClick={() => {
-              onOpenCompetitorLogin();
+              handleMiEspacioClick('Navbar Mobile Drawer');
               setMobileMenuOpen(false);
             }}
             className="w-full p-2.5 rounded-xl bg-purple-950/60 border border-purple-500/40 text-left text-sm font-bold uppercase tracking-wider text-purple-200 flex items-center justify-between"
@@ -134,13 +141,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           </button>
 
           <button
-            onClick={() => handleNavClick('kit-evento')}
+            onClick={() => handleNavClick('kit-evento', 'Medalla & Beneficios')}
             className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-neutral-200 border-b border-neutral-900"
           >
             🏅 Medalla Finisher & Beneficios
           </button>
           <button
-            onClick={() => handleNavClick('ruta-5k')}
+            onClick={() => handleNavClick('ruta-5k', 'Ruta Oficial 5K')}
             className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-neutral-200 border-b border-neutral-900"
           >
             🗺️ Ruta Oficial 5K Tarapoto

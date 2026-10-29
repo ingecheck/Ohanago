@@ -15,6 +15,7 @@ import { getStoredRegistrations } from './data/initialRegistrations';
 import { isAdminAuthenticated } from './data/auth';
 import { HelpCircle, ChevronDown, ChevronUp, CheckCircle2, AlertCircle, X, Sparkles, MapPin, QrCode } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { trackPageView, trackMiEspacioClick } from './utils/analytics';
 
 export const App: React.FC = () => {
   const [registrations, setRegistrations] = useState<RunnerRegistration[]>([]);
@@ -47,6 +48,9 @@ export const App: React.FC = () => {
   const [isCompetitorPortalOpen, setIsCompetitorPortalOpen] = useState(false);
 
   useEffect(() => {
+    // 0. Registrar visita en métricas de tráfico en vivo
+    trackPageView();
+
     // 1. Carga inmediata desde local para no bloquear la vista inicial
     const initialLocal = getStoredRegistrations();
     setRegistrations(initialLocal);
@@ -234,6 +238,7 @@ export const App: React.FC = () => {
   };
 
   const handleCompetitorAccess = () => {
+    trackMiEspacioClick(activeCompetitor ? 'Mi Espacio Activo' : 'Portal Competidor');
     if (activeCompetitor) {
       setIsCompetitorPortalOpen(true);
     } else {

@@ -24,6 +24,112 @@ if (!fs.existsSync(DATA_DIR)) {
 
 const MEDAL_FILE = path.join(DATA_DIR, 'medal.json');
 const REGISTRATIONS_FILE = path.join(DATA_DIR, 'registrations.json');
+const ANALYTICS_FILE = path.join(DATA_DIR, 'analytics.json');
+
+export interface CompetitorAccessRecord {
+  runnerId: string;
+  runnerName: string;
+  documentNumber: string;
+  whatsapp: string;
+  accessCount: number;
+  lastAccess: string;
+}
+
+export interface ActivityEvent {
+  id: string;
+  type: 'visit' | 'click_mi_espacio' | 'runner_login' | 'section_view' | 'qr_scan';
+  title: string;
+  description: string;
+  timestamp: string;
+  metadata?: any;
+}
+
+export interface AnalyticsData {
+  pageViews: number;
+  uniqueVisitors: string[];
+  miEspacioClicks: number;
+  sectionViews: Record<string, number>;
+  competitorAccesses: CompetitorAccessRecord[];
+  activityLog: ActivityEvent[];
+}
+
+function getInitialAnalytics(): AnalyticsData {
+  return {
+    pageViews: 0,
+    uniqueVisitors: [],
+    miEspacioClicks: 0,
+    sectionViews: {
+      'circuito_5k': 0,
+      'kit_oficial': 0,
+      'horarios': 0,
+      'reglamento': 0,
+      'faq': 0,
+    },
+    competitorAccesses: [],
+    activityLog: [],
+  };
+}
+
+function logAnalyticsEvent(event: {
+  type: 'visit' | 'click_mi_espacio' | 'runner_login' | 'section_view' | 'qr_scan';
+  sessionId?: string;
+  section?: string;
+  runner?: any;
+  title?: string;
+  description?: string;
+  metadata?: any;
+}) {
+  try {
+    const data = readJSON<AnalyticsData>(ANALYTICS_FILE, getInitialAnalytics());
+    const now = new Date().toISOString();
+
+    if (event.type === 'visit') {
+      data.pageViews = (data.pageViews || 0) + 1;
+      if (event.sessionId && !data.uniqueVisitors.includes(event.sessionId)) {
+        data.uniqueVisitors.push(event.sessionId);
+      }
+    } else if (event.type === 'click_mi_espacio') {
+      data.miEspacioClicks = (data.miEspacioClicks || 0) + 1;
+    } else if (event.type === 'section_view') {
+      const sec = event.section || 'general';
+      data.sectionViews[sec] = (data.sectionViews[sec] || 0) + 1;
+    } else if (event.type === 'runner_login' && event.runner) {
+      const r = event.runner;
+      const idx = data.competitorAccesses.findIndex(
+        (c) => c.runnerId === r.id || c.documentNumber === r.documentNumber
+      );
+      if (idx >= 0) {
+        data.competitorAccesses[idx].accessCount += 1;
+        data.competitorAccesses[idx].lastAccess = now;
+        data.competitorAccesses[idx].whatsapp = r.whatsapp || data.competitorAccesses[idx].whatsapp;
+      } else {
+        data.competitorAccesses.unshift({
+          runnerId: r.id,
+          runnerName: `${r.firstName} ${r.lastName}`.trim(),
+          documentNumber: r.documentNumber,
+          whatsapp: r.whatsapp || '',
+          accessCount: 1,
+          lastAccess: now,
+        });
+      }
+    }
+
+    // Append to activity log (keep last 150 events)
+    const logItem: ActivityEvent = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+      type: event.type,
+      title: event.title || event.type,
+      description: event.description || '',
+      timestamp: now,
+      metadata: event.metadata,
+    };
+    data.activityLog = [logItem, ...(data.activityLog || [])].slice(0, 150);
+
+    writeJSON(ANALYTICS_FILE, data);
+  } catch (err) {
+    console.error('Error logging analytics event:', err);
+  }
+}
 
 function readJSON<T>(filePath: string, fallback: T): T {
   try {
@@ -259,10 +365,23 @@ app.post('/api/competitor/login', (req, res) => {
   const match = findRunner(rawInput, registrations);
 
   if (!match) {
+    logAnalyticsEvent({
+      type: 'visit',
+      title: 'Búsqueda DNI fallida',
+      description: `Intento de acceso con DNI no registrado: ${rawInput}`,
+    });
     return res.status(404).json({
       error: 'No se encontró un competidor registrado con ese número de DNI. Verifica tu número e intenta nuevamente.',
     });
   }
+
+  // Log successful competitor login to analytics
+  logAnalyticsEvent({
+    type: 'runner_login',
+    runner: match.runner,
+    title: 'Atleta consultó Mi Espacio',
+    description: `${match.runner.firstName} ${match.runner.lastName} (DNI: ${match.runner.documentNumber}) revisó su credencial y QR`,
+  });
 
   res.json({ success: true, runner: match.runner });
 });
@@ -400,6 +519,42 @@ app.post('/api/competitor/evidence', (req, res) => {
     message: 'Evidencia de carrera virtual guardada exitosamente.',
     runner: updatedRunner,
   });
+});
+
+// ================= 8. ANALYTICS & ACTIVITY TRACKING API =================
+app.get('/api/analytics', (req, res) => {
+  const data = readJSON<AnalyticsData>(ANALYTICS_FILE, getInitialAnalytics());
+  res.json({
+    totalPageViews: data.pageViews || 0,
+    uniqueVisitorsCount: (data.uniqueVisitors || []).length,
+    miEspacioClicks: data.miEspacioClicks || 0,
+    sectionViews: data.sectionViews || {},
+    competitorAccesses: data.competitorAccesses || [],
+    recentActivity: (data.activityLog || []).slice(0, 100),
+    totalCompetitorsConsulted: (data.competitorAccesses || []).length,
+  });
+});
+
+app.post('/api/analytics/track', (req, res) => {
+  const { type, sessionId, section, runner, title, description, metadata } = req.body;
+  if (!type) {
+    return res.status(400).json({ error: 'Falta tipo de evento' });
+  }
+  logAnalyticsEvent({
+    type,
+    sessionId,
+    section,
+    runner,
+    title,
+    description,
+    metadata,
+  });
+  res.json({ success: true });
+});
+
+app.post('/api/analytics/reset', (req, res) => {
+  writeJSON(ANALYTICS_FILE, getInitialAnalytics());
+  res.json({ success: true, message: 'Analítica reseteada' });
 });
 
 // ================= FRONTEND SERVING =================

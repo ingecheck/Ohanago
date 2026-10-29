@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Sparkles, User, AlertCircle, X, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
 import { RunnerRegistration } from '../types/race';
 import { INITIAL_REGISTRATIONS } from '../data/initialRegistrations';
+import { trackEvent } from '../utils/analytics';
 
 interface CompetitorLoginModalProps {
   onSuccess: (runner: RunnerRegistration) => void;
@@ -79,6 +80,12 @@ export const CompetitorLoginModal: React.FC<CompetitorLoginModalProps> = ({
       });
 
       if (match) {
+        trackEvent({
+          type: 'runner_login',
+          runner: match,
+          title: 'Atleta consultó Mi Espacio',
+          description: `${match.firstName} ${match.lastName} (DNI: ${match.documentNumber}) revisó su credencial`,
+        });
         onSuccess(match);
         return;
       }

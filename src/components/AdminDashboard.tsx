@@ -26,8 +26,14 @@ import {
   Printer,
   ArrowLeft,
   PackageCheck,
-  Pencil
+  Pencil,
+  BarChart3,
+  Eye,
+  Activity,
+  MousePointerClick
 } from 'lucide-react';
+import { AdminAnalyticsTab } from './AdminAnalyticsTab';
+import { fetchAnalytics, AnalyticsSummary } from '../utils/analytics';
 
 interface AdminDashboardProps {
   registrations: RunnerRegistration[];
@@ -100,6 +106,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [liveNotice, setLiveNotice] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Active Tab: Roster table vs Traffic/Analytics
+  const [activeAdminTab, setActiveAdminTab] = useState<'roster' | 'analytics'>('roster');
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsSummary | null>(null);
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
+
+  const loadAnalytics = async () => {
+    setIsLoadingAnalytics(true);
+    try {
+      const data = await fetchAnalytics();
+      if (data) {
+        setAnalyticsData(data);
+      }
+    } catch (err) {
+      console.warn('Error fetching analytics:', err);
+    } finally {
+      setIsLoadingAnalytics(false);
+    }
+  };
+
+  const handleResetAnalytics = async () => {
+    try {
+      const res = await fetch('/api/analytics/reset', { method: 'POST' });
+      if (res.ok) {
+        loadAnalytics();
+        setLiveNotice('✓ Contadores de analítica reiniciados correctamente.');
+        setTimeout(() => setLiveNotice(null), 3500);
+      }
+    } catch (e) {}
+  };
+
   useEffect(() => {
     // Generate official kit delivery check-in QR code for Plaza de Armas
     const origin = window.location.origin;
@@ -115,6 +151,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const fetchLiveRegistrations = async () => {
     setIsRefreshing(true);
+    loadAnalytics();
     try {
       const res = await fetch('/api/registrations');
       if (res.ok) {
@@ -132,7 +169,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   useEffect(() => {
     fetchLiveRegistrations();
-    const intervalId = setInterval(fetchLiveRegistrations, 2500);
+    loadAnalytics();
+    const intervalId = setInterval(() => {
+      fetchLiveRegistrations();
+      loadAnalytics();
+    }, 2800);
 
     const handleCheckinEvent = (e: any) => {
       fetchLiveRegistrations();
@@ -336,8 +377,61 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         )}
 
-        {/* 4 Clean Metric Summary Cards (No "meta / medalla", focused purely on registration and kit delivery) */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        {/* Navigation Tabs between Roster & Analytics */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-800 pb-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveAdminTab('roster')}
+              className={`px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition flex items-center gap-2 cursor-pointer ${
+                activeAdminTab === 'roster'
+                  ? 'bg-lime-400 text-black shadow-lg shadow-lime-400/20 font-black'
+                  : 'bg-neutral-900 text-neutral-400 hover:text-white hover:bg-neutral-800 border border-neutral-800'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              <span>Control de Atletas ({totalCount})</span>
+            </button>
+
+            <button
+              onClick={() => setActiveAdminTab('analytics')}
+              className={`px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition flex items-center gap-2 cursor-pointer ${
+                activeAdminTab === 'analytics'
+                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30 font-black'
+                  : 'bg-neutral-900 text-neutral-400 hover:text-white hover:bg-neutral-800 border border-neutral-800'
+              }`}
+            >
+              <BarChart3 className="w-4 h-4 text-purple-300" />
+              <span>Métricas & Tráfico en Vivo</span>
+              {analyticsData && (
+                <span className="ml-1 px-2 py-0.5 rounded-full bg-purple-950 text-purple-200 text-[10px] border border-purple-400/40 font-mono">
+                  {analyticsData.totalPageViews} visitas
+                </span>
+              )}
+            </button>
+          </div>
+
+          <div className="text-xs text-neutral-400 flex items-center gap-3">
+            <span className="hidden sm:inline">Concentración: <strong className="text-lime-400">5:30 PM</strong></span>
+            {analyticsData && (
+              <span className="hidden md:inline text-purple-300 font-medium">
+                🎒 Clics en Mi Espacio: <strong className="text-white font-mono">{analyticsData.miEspacioClicks}</strong>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {activeAdminTab === 'analytics' ? (
+          <AdminAnalyticsTab
+            registrations={registrations}
+            analyticsData={analyticsData}
+            isLoading={isLoadingAnalytics}
+            onRefresh={loadAnalytics}
+            onResetAnalytics={handleResetAnalytics}
+          />
+        ) : (
+          <>
+            {/* 4 Clean Metric Summary Cards (No "meta / medalla", focused purely on registration and kit delivery) */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
           <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-neutral-800 shadow-md">
             <span className="text-[10px] uppercase font-bold text-neutral-400 block">Total Atletas</span>
             <div className="flex items-baseline gap-1.5 mt-1">
@@ -641,6 +735,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </table>
           </div>
         </div>
+        </>
+        )}
       </main>
 
       {/* Modal: Runner Scanned Profile Card (Staff Scanned runner via Camera or DNI search) */}
