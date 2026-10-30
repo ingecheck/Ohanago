@@ -52,14 +52,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCheckin, setFilterCheckin] = useState<'all' | 'confirmed' | 'pending'>('all');
-  const [filterPayment, setFilterPayment] = useState<'all' | 'Verificado' | 'Pendiente'>('all');
 
   // Modals
-  const [viewingProof, setViewingProof] = useState<string | null>(null);
   const [scannedRunnerModal, setScannedRunnerModal] = useState<RunnerRegistration | null>(null);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [newPassInput, setNewPassInput] = useState('');
-  const [passSuccess, setPassSuccess] = useState(false);
 
   // Edit Runner DNI/Phone modal
   const [editingRunner, setEditingRunner] = useState<RunnerRegistration | null>(null);
@@ -176,7 +171,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const intervalId = setInterval(() => {
       fetchLiveRegistrations();
       loadAnalytics();
-    }, 1200);
+    }, 1000);
 
     const handleCheckinEvent = (e: any) => {
       fetchLiveRegistrations();
@@ -186,25 +181,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       }
     };
 
+    // Instant SSE listener for real-time check-in updates
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource('/api/admin/stream');
+      eventSource.onmessage = (event) => {
+        try {
+          const parsed = JSON.parse(event.data);
+          if (parsed && parsed.type === 'checkin' && parsed.runner) {
+            fetchLiveRegistrations();
+            setLiveNotice(`🎉 ¡${parsed.runner.firstName} ${parsed.runner.lastName} confirmó entrega de kit inicial en vivo!`);
+            setTimeout(() => setLiveNotice(null), 5000);
+          }
+        } catch (e) {}
+      };
+    } catch (e) {}
+
     window.addEventListener('ohana-checkin', handleCheckinEvent);
     window.addEventListener('storage', fetchLiveRegistrations);
     return () => {
       clearInterval(intervalId);
+      if (eventSource) eventSource.close();
       window.removeEventListener('ohana-checkin', handleCheckinEvent);
       window.removeEventListener('storage', fetchLiveRegistrations);
     };
   }, []);
-
-  // Handlers for payments and check-in
-  const handleTogglePayment = async (id: string, currentStatus: PaymentStatus) => {
-    const newStatus: PaymentStatus =
-      currentStatus === 'Verificado' ? 'Pendiente de Verificación' : 'Verificado';
-    const updated = registrations.map((r) =>
-      r.id === id ? { ...r, paymentStatus: newStatus } : r
-    );
-    onUpdateRegistrations(updated);
-    saveRegistrations(updated);
-  };
 
   const handleToggleKitDelivery = async (runnerId: string, currentVal: boolean) => {
     const updated = registrations.map((r) =>
@@ -226,22 +227,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  const handleUpdatePassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPassInput.trim()) return;
-    updateAdminPassword(newPassInput.trim());
-    setPassSuccess(true);
-    setNewPassInput('');
-    setTimeout(() => {
-      setPassSuccess(false);
-      setShowPasswordModal(false);
-    }, 1500);
-  };
-
   // Metrics calculation
   const totalCount = registrations.length;
-  const verifiedCount = registrations.filter((r) => r.paymentStatus === 'Verificado').length;
-  const pendingPaymentCount = totalCount - verifiedCount;
   const checkinConfirmedCount = registrations.filter((r) => r.confirmedAtStart).length;
   const checkinPendingCount = totalCount - checkinConfirmedCount;
 
@@ -264,13 +251,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       (filterCheckin === 'confirmed' && !!r.confirmedAtStart) ||
       (filterCheckin === 'pending' && !r.confirmedAtStart);
 
-    // Payment filter
-    const matchPayment =
-      filterPayment === 'all' ||
-      (filterPayment === 'Verificado' && r.paymentStatus === 'Verificado') ||
-      (filterPayment === 'Pendiente' && r.paymentStatus !== 'Verificado');
-
-    return matchSearch && matchCheckin && matchPayment;
+    return matchSearch && matchCheckin;
   });
 
   return (
@@ -325,35 +306,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <span>🏁 QR Entrega de Kit</span>
             </button>
 
-            {/* Staff scan runner pass button */}
-            <button
-              onClick={() => setShowStaffScanner(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-purple-950/80 hover:bg-purple-900 text-purple-200 rounded-xl text-xs font-bold transition border border-purple-500/40 cursor-pointer shadow-sm hover:border-lime-400"
-              title="Escanear o ingresar DNI para entrega de kit"
-            >
-              <Camera className="w-4 h-4 text-lime-400" />
-              <span>📷 Escanear QR de Corredor</span>
-            </button>
-
             {/* Live refresh */}
             <button
               onClick={fetchLiveRegistrations}
               disabled={isRefreshing}
-              className="flex items-center gap-1.5 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl text-xs font-bold transition shadow cursor-pointer border border-neutral-700"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl text-xs font-bold transition shadow cursor-pointer border border-neutral-700"
               title="Sincronizar participantes en tiempo real"
             >
               <RefreshCw className={`w-3.5 h-3.5 text-lime-400 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">Actualizar</span>
-            </button>
-
-            {/* Change Password */}
-            <button
-              onClick={() => setShowPasswordModal(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-semibold transition cursor-pointer"
-              title="Cambiar contraseña de administrador"
-            >
-              <KeyRound className="w-3.5 h-3.5 text-lime-400" />
-              <span className="hidden sm:inline">Clave</span>
+              <span>Actualizar Nómina</span>
             </button>
 
             {/* Logout */}
@@ -452,137 +413,102 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           />
         ) : (
           <>
-            {/* 4 Clean Metric Summary Cards (No "meta / medalla", focused purely on registration and kit delivery) */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-          <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-neutral-800 shadow-md">
-            <span className="text-[10px] uppercase font-bold text-neutral-400 block">Total Atletas</span>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="font-bebas text-3xl sm:text-4xl text-white">{totalCount}</span>
-              <span className="text-[11px] text-neutral-500">registrados</span>
-            </div>
-          </div>
-
-          <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border-2 border-emerald-500/50 shadow-md shadow-emerald-500/10">
-            <span className="text-[10px] uppercase font-bold text-emerald-400 block flex items-center gap-1.5">
-              <PackageCheck className="w-4 h-4 text-emerald-400" />
-              Kits Iniciales Entregados
-            </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="font-bebas text-3xl sm:text-4xl text-emerald-400">{checkinConfirmedCount}</span>
-              <span className="text-[11px] text-emerald-500 font-bold">
-                ({Math.round((checkinConfirmedCount / (totalCount || 1)) * 100)}%)
-              </span>
-            </div>
-          </div>
-
-          <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-amber-500/40 shadow-md">
-            <span className="text-[10px] uppercase font-bold text-amber-400 block flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-amber-400" />
-              Pendientes de Kit
-            </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="font-bebas text-3xl sm:text-4xl text-amber-400">{checkinPendingCount}</span>
-              <span className="text-[11px] text-neutral-500">en Plaza de Armas</span>
-            </div>
-          </div>
-
-          <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-neutral-800 shadow-md">
-            <span className="text-[10px] uppercase font-bold text-neutral-400 block flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-lime-400" />
-              Pagos Verificados
-            </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="font-bebas text-3xl sm:text-4xl text-lime-400">{verifiedCount}</span>
-              <span className="text-[11px] text-neutral-500">de {totalCount}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Filter and Search Toolbar */}
-        <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-4 shadow-lg space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
-            {/* Search Box */}
-            <div className="relative flex-1 min-w-[280px] max-w-lg">
-              <Search className="w-4 h-4 absolute left-3.5 top-3 text-neutral-500" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar por nombre, DNI, celular, ciudad o ID..."
-                className="w-full pl-10 pr-4 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-lime-400 transition text-xs"
-              />
-            </div>
-
-            {/* Filter Tabs */}
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Kit Delivery Filter */}
-              <div className="flex items-center bg-neutral-950 p-1 rounded-xl border border-neutral-800">
-                <button
-                  onClick={() => setFilterCheckin('all')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    filterCheckin === 'all'
-                      ? 'bg-neutral-800 text-white font-bold'
-                      : 'text-neutral-400 hover:text-white'
-                  }`}
-                >
-                  Todos ({totalCount})
-                </button>
-                <button
-                  onClick={() => setFilterCheckin('confirmed')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
-                    filterCheckin === 'confirmed'
-                      ? 'bg-emerald-950 border border-emerald-500/60 text-emerald-400 shadow-sm shadow-emerald-500/20'
-                      : 'text-neutral-400 hover:text-emerald-300'
-                  }`}
-                  title="Mostrar participantes con kit entregado"
-                >
-                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>✓ Kit Entregado ({checkinConfirmedCount})</span>
-                </button>
-                <button
-                  onClick={() => setFilterCheckin('pending')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
-                    filterCheckin === 'pending'
-                      ? 'bg-amber-950 border border-amber-500/60 text-amber-400 shadow-sm shadow-amber-500/20'
-                      : 'text-neutral-400 hover:text-amber-300'
-                  }`}
-                  title="Mostrar participantes pendientes de entrega de kit"
-                >
-                  <Clock className="w-3.5 h-3.5 text-amber-400" />
-                  <span>⏳ Pendiente de Kit ({checkinPendingCount})</span>
-                </button>
+            {/* 3 Clean Metric Summary Cards (Focused purely on registration and kit delivery) */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-neutral-800 shadow-md">
+                <span className="text-[10px] uppercase font-bold text-neutral-400 block">Total Atletas</span>
+                <div className="flex items-baseline gap-1.5 mt-1">
+                  <span className="font-bebas text-3xl sm:text-4xl text-white">{totalCount}</span>
+                  <span className="text-[11px] text-neutral-500">registrados</span>
+                </div>
               </div>
 
-              {/* Payment Filter */}
-              <div className="flex items-center bg-neutral-950 p-1 rounded-xl border border-neutral-800">
-                <button
-                  onClick={() => setFilterPayment('all')}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    filterPayment === 'all' ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:text-white'
-                  }`}
-                >
-                  Pagos
-                </button>
-                <button
-                  onClick={() => setFilterPayment('Verificado')}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer text-emerald-400 ${
-                    filterPayment === 'Verificado' ? 'bg-emerald-950 border border-emerald-500/40 font-bold' : 'hover:text-emerald-300'
-                  }`}
-                >
-                  Pagados ({verifiedCount})
-                </button>
-                <button
-                  onClick={() => setFilterPayment('Pendiente')}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer text-amber-400 ${
-                    filterPayment === 'Pendiente' ? 'bg-amber-950 border border-amber-500/40 font-bold' : 'hover:text-amber-300'
-                  }`}
-                >
-                  Pendientes ({pendingPaymentCount})
-                </button>
+              <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border-2 border-emerald-500/50 shadow-md shadow-emerald-500/10">
+                <span className="text-[10px] uppercase font-bold text-emerald-400 flex items-center gap-1.5">
+                  <PackageCheck className="w-4 h-4 text-emerald-400" />
+                  Kits Iniciales Entregados
+                </span>
+                <div className="flex items-baseline gap-1.5 mt-1">
+                  <span className="font-bebas text-3xl sm:text-4xl text-emerald-400">
+                    {String(checkinConfirmedCount).padStart(2, '0')}
+                  </span>
+                  <span className="text-[11px] text-emerald-500 font-bold">
+                    ({Math.round((checkinConfirmedCount / (totalCount || 1)) * 100)}%)
+                  </span>
+                </div>
+              </div>
+
+              <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-amber-500/40 shadow-md">
+                <span className="text-[10px] uppercase font-bold text-amber-400 flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-amber-400" />
+                  Pendientes de Kit
+                </span>
+                <div className="flex items-baseline gap-1.5 mt-1">
+                  <span className="font-bebas text-3xl sm:text-4xl text-amber-400">
+                    {String(checkinPendingCount).padStart(2, '0')}
+                  </span>
+                  <span className="text-[11px] text-neutral-500">en Plaza de Armas</span>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+
+            {/* Filter and Search Toolbar */}
+            <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-4 shadow-lg space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
+                {/* Search Box */}
+                <div className="relative flex-1 min-w-[280px] max-w-lg">
+                  <Search className="w-4 h-4 absolute left-3.5 top-3 text-neutral-500" />
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar por nombre, DNI, celular, ciudad o ID..."
+                    className="w-full pl-10 pr-4 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-lime-400 transition text-xs"
+                  />
+                </div>
+
+                {/* Filter Tabs */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Kit Delivery Filter */}
+                  <div className="flex items-center bg-neutral-950 p-1 rounded-xl border border-neutral-800">
+                    <button
+                      onClick={() => setFilterCheckin('all')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                        filterCheckin === 'all'
+                          ? 'bg-neutral-800 text-white font-bold'
+                          : 'text-neutral-400 hover:text-white'
+                      }`}
+                    >
+                      Todos ({totalCount})
+                    </button>
+                    <button
+                      onClick={() => setFilterCheckin('confirmed')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                        filterCheckin === 'confirmed'
+                          ? 'bg-emerald-950 border border-emerald-500/60 text-emerald-400 shadow-sm shadow-emerald-500/20'
+                          : 'text-neutral-400 hover:text-emerald-300'
+                      }`}
+                      title="Mostrar participantes con kit entregado"
+                    >
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>✓ Kit Entregado ({checkinConfirmedCount})</span>
+                    </button>
+                    <button
+                      onClick={() => setFilterCheckin('pending')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                        filterCheckin === 'pending'
+                          ? 'bg-amber-950 border border-amber-500/60 text-amber-400 shadow-sm shadow-amber-500/20'
+                          : 'text-neutral-400 hover:text-amber-300'
+                      }`}
+                      title="Mostrar participantes pendientes de entrega de kit"
+                    >
+                      <Clock className="w-3.5 h-3.5 text-amber-400" />
+                      <span>⏳ Pendiente de Kit ({checkinPendingCount})</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
 
         {/* Official Participant Table (No 'tallas', No 'meta / medalla', fluid view) */}
         <div className="w-full bg-neutral-900 border border-neutral-800 rounded-3xl shadow-2xl overflow-hidden">
@@ -606,14 +532,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <th className="py-3.5 px-3">Nombres y Apellidos</th>
                   <th className="py-3.5 px-3">Entrega de Kit Inicial (Check-in QR)</th>
                   <th className="py-3.5 px-3">DNI / Celular</th>
-                  <th className="py-3.5 px-3">Estado Pago</th>
                   <th className="py-3.5 px-3 text-right">Modalidad</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-800/60">
                 {filteredRegistrations.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-neutral-500 text-sm">
+                    <td colSpan={5} className="py-12 text-center text-neutral-500 text-sm">
                       No se encontraron participantes con los filtros seleccionados.
                     </td>
                   </tr>
@@ -722,21 +647,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           </div>
                         </td>
 
-                        {/* Payment Status */}
-                        <td className="py-3.5 px-3">
-                          <button
-                            onClick={() => handleTogglePayment(runner.id, runner.paymentStatus)}
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase transition cursor-pointer border flex items-center gap-1 ${
-                              runner.paymentStatus === 'Verificado'
-                                ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/40 hover:bg-emerald-900'
-                                : 'bg-amber-950/80 text-amber-400 border-amber-500/40 hover:bg-amber-900'
-                            }`}
-                          >
-                            <CheckCircle2 className="w-3 h-3" />
-                            {runner.paymentStatus === 'Verificado' ? 'Verificado' : 'Pendiente'}
-                          </button>
-                        </td>
-
                         {/* Modality at the VERY LAST column */}
                         <td className="py-3.5 px-3 text-right">
                           {isRunVirtual ? (
@@ -804,9 +714,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <span className="font-bold text-white">{scannedRunnerModal.city}</span>
               </div>
               <div>
-                <span className="text-[10px] uppercase font-bold text-neutral-500 block">Estado de Pago</span>
-                <span className={`font-bold ${scannedRunnerModal.paymentStatus === 'Verificado' ? 'text-emerald-400' : 'text-amber-400'}`}>
-                  {scannedRunnerModal.paymentStatus}
+                <span className="text-[10px] uppercase font-bold text-neutral-500 block">DNI</span>
+                <span className="font-bold text-lime-400 font-mono">
+                  {scannedRunnerModal.documentNumber}
                 </span>
               </div>
             </div>
@@ -847,74 +757,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 Cerrar
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal: View Payment Voucher */}
-      {viewingProof && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-          <div className="relative max-w-lg w-full bg-neutral-900 rounded-2xl p-4 border border-neutral-800">
-            <div className="flex items-center justify-between mb-3 border-b border-neutral-800 pb-2">
-              <h4 className="font-bebas text-xl text-white uppercase">Comprobante de Pago</h4>
-              <button
-                onClick={() => setViewingProof(null)}
-                className="p-1 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="rounded-xl overflow-hidden bg-black flex items-center justify-center max-h-[70vh]">
-              <img src={viewingProof} alt="Voucher" className="max-w-full max-h-[70vh] object-contain" />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal: Change Password */}
-      {showPasswordModal && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-          <div className="relative max-w-sm w-full bg-neutral-900 rounded-3xl p-6 border border-neutral-800 shadow-2xl">
-            <button
-              onClick={() => setShowPasswordModal(false)}
-              className="absolute top-4 right-4 p-1.5 rounded-full bg-neutral-800 text-neutral-400 hover:text-white"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <h4 className="font-bebas text-2xl text-white uppercase mb-3">Cambiar Clave de Acceso</h4>
-            <form onSubmit={handleUpdatePassword} className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold uppercase text-neutral-400 mb-1">Nueva Contraseña</label>
-                <input
-                  type="password"
-                  required
-                  value={newPassInput}
-                  onChange={(e) => setNewPassInput(e.target.value)}
-                  className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-lime-400"
-                  placeholder="Ingresa nueva contraseña"
-                />
-              </div>
-              {passSuccess && (
-                <div className="text-xs text-lime-400 flex items-center gap-1 font-bold">
-                  <Check className="w-3.5 h-3.5" /> Clave actualizada con éxito.
-                </div>
-              )}
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowPasswordModal(false)}
-                  className="px-3 py-1.5 rounded-xl bg-neutral-800 text-neutral-300 text-xs"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-lime-400 text-black font-bebas text-base uppercase"
-                >
-                  Guardar Clave
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

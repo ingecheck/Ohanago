@@ -38,6 +38,45 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
 
   const isVirtual = competitor.modality === 'Virtual';
 
+  const [isConfirming, setIsConfirming] = useState<boolean>(false);
+
+  const handleConfirmKitDirectly = async () => {
+    setIsConfirming(true);
+    setActionErrorMessage(null);
+    try {
+      const res = await fetch('/api/start-checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          runnerId: competitor.id,
+          dni: competitor.documentNumber,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setActionErrorMessage(data.error || 'Error al validar entrega de kit.');
+        setTimeout(() => setActionErrorMessage(null), 4000);
+        return;
+      }
+      const updated = data.runner || {
+        ...competitor,
+        confirmedAtStart: true,
+        startCheckinTime: new Date().toISOString(),
+      };
+      onUpdateCompetitor(updated);
+      try {
+        window.dispatchEvent(new CustomEvent('ohana-checkin', { detail: updated }));
+        confetti({ particleCount: 130, spread: 85, origin: { y: 0.6 } });
+      } catch (e) {}
+      setActionSuccessMessage('¡Kit Inicial Entregado y Asistencia Confirmada! Acreditado en el sistema.');
+      setTimeout(() => setActionSuccessMessage(null), 6000);
+    } catch (e) {
+      setActionErrorMessage('Error de conexión al registrar check-in.');
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
   const handleStartQRScan = async (scannedToken: string) => {
     try {
       const res = await fetch('/api/start-checkin', {
@@ -64,30 +103,17 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
       };
       
       onUpdateCompetitor(updated);
+      setIsScannerOpen(false);
 
       try {
         window.dispatchEvent(new CustomEvent('ohana-checkin', { detail: updated }));
-        localStorage.setItem('ohana_last_checkin', JSON.stringify({ id: updated.id, timestamp: Date.now() }));
         confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
       } catch (e) {}
 
       setActionSuccessMessage('¡Kit Inicial Entregado y Asistencia Confirmada! Prepárate para la carrera 🏃‍♂️💨');
       setTimeout(() => setActionSuccessMessage(null), 6000);
     } catch (err: any) {
-      // Offline fallback
-      const updated = {
-        ...competitor,
-        confirmedAtStart: true,
-        startCheckinTime: new Date().toISOString()
-      };
-      onUpdateCompetitor(updated);
-      try {
-        window.dispatchEvent(new CustomEvent('ohana-checkin', { detail: updated }));
-        localStorage.setItem('ohana_last_checkin', JSON.stringify({ id: updated.id, timestamp: Date.now() }));
-        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-      } catch (e) {}
-      setActionSuccessMessage('¡Kit Inicial Entregado y Asistencia Confirmada!');
-      setTimeout(() => setActionSuccessMessage(null), 6000);
+      setActionErrorMessage('Error al procesar el código.');
     }
   };
 
@@ -234,13 +260,24 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
                 </div>
               </div>
 
-              <div className="w-full md:w-auto shrink-0 flex justify-center">
+              <div className="w-full md:w-auto shrink-0 flex flex-col sm:flex-row items-center gap-3">
                 <button
-                  onClick={() => setIsScannerOpen(true)}
-                  className="w-full md:w-auto px-7 py-3.5 rounded-2xl bg-gradient-to-r from-lime-400 to-lime-300 hover:from-lime-300 hover:to-lime-200 text-black font-bebas text-xl sm:text-2xl uppercase tracking-wider transition shadow-xl shadow-lime-400/30 flex items-center justify-center gap-2.5 cursor-pointer ring-2 ring-lime-400/50 hover:scale-[1.02]"
+                  type="button"
+                  onClick={handleConfirmKitDirectly}
+                  disabled={isConfirming}
+                  className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-lime-400 hover:from-emerald-400 hover:to-lime-300 text-black font-bebas text-lg sm:text-xl uppercase tracking-wider transition shadow-xl shadow-lime-400/25 flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.02]"
                 >
-                  <Camera className="w-6 h-6 text-black" />
-                  <span>Escanear QR de Kit</span>
+                  <PackageCheck className="w-5 h-5 text-black" />
+                  <span>{isConfirming ? 'Confirmando...' : '✓ Confirmar Entrega de Kit'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsScannerOpen(true)}
+                  className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-neutral-800 hover:bg-neutral-700 text-white font-bebas text-lg sm:text-xl uppercase tracking-wider transition border border-neutral-700 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Camera className="w-5 h-5 text-lime-400" />
+                  <span>Escanear QR</span>
                 </button>
               </div>
             </div>

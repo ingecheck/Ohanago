@@ -8,10 +8,59 @@
     "horarios": 0,
     "reglamento": 0,
     "faq": 0,
-    "general": 3
+    "general": 4
   },
   "competitorAccesses": [],
   "activityLog": [
+    {
+      "id": "1793335902418-hprxja",
+      "type": "qr_scan",
+      "title": "Acreditación y Kit Entregado",
+      "description": "ANAHI Alexandra Pancca Suasaca (DNI: 75452617) confirmó su asistencia en Plaza de Armas.",
+      "timestamp": "2026-10-30T04:51:42.418Z"
+    },
+    {
+      "id": "1793335898411-k1sl14",
+      "type": "qr_scan",
+      "title": "Acreditación y Kit Entregado",
+      "description": "Jezer Daniel Chamoly Urtecho (DNI: 71583742) confirmó su asistencia en Plaza de Armas.",
+      "timestamp": "2026-10-30T04:51:38.411Z"
+    },
+    {
+      "id": "1793335804245-y2o1n3",
+      "type": "qr_scan",
+      "title": "Acreditación y Kit Entregado",
+      "description": "Jezer Daniel Chamoly Urtecho (DNI: 71583742) confirmó su asistencia en Plaza de Armas.",
+      "timestamp": "2026-10-30T04:50:04.245Z"
+    },
+    {
+      "id": "1793335684830-lckirc",
+      "type": "section_view",
+      "title": "¡Sorteo #1 Realizado!",
+      "description": "Ganador Ticket #164: Ticket Oficial #164 (Premio #1: Sorteo Oficial Ohana Go 5K)",
+      "timestamp": "2026-10-30T04:48:04.830Z"
+    },
+    {
+      "id": "1793335681146-ifpl9y",
+      "type": "qr_scan",
+      "title": "Acreditación y Kit Entregado",
+      "description": "ANAHI Alexandra Pancca Suasaca (DNI: 75452617) confirmó su asistencia en Plaza de Armas.",
+      "timestamp": "2026-10-30T04:48:01.146Z"
+    },
+    {
+      "id": "1793335677233-gcqin6",
+      "type": "qr_scan",
+      "title": "Acreditación y Kit Entregado",
+      "description": "Jezer Daniel Chamoly Urtecho (DNI: 71583742) confirmó su asistencia en Plaza de Armas.",
+      "timestamp": "2026-10-30T04:47:57.233Z"
+    },
+    {
+      "id": "1793335353132-giwgzr",
+      "type": "qr_scan",
+      "title": "Acreditación y Kit Entregado",
+      "description": "Jezer Daniel Chamoly Urtecho (DNI: 71583742) confirmó su asistencia en Plaza de Armas.",
+      "timestamp": "2026-10-30T04:42:33.132Z"
+    },
     {
       "id": "1793334210929-6aa3xn",
       "type": "section_view",

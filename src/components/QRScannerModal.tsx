@@ -213,36 +213,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
           </div>
         </form>
 
-        {/* Quick simulator buttons for easy testing */}
-        <div className="pt-3 border-t border-neutral-800 text-xs space-y-2">
-          <span className="text-[10px] uppercase font-bold text-neutral-400 block">
-            Accesos de Prueba Rápida en el Evento:
-          </span>
 
-          {expectedType === 'start_checkin' || expectedType === 'any' ? (
-            <button
-              type="button"
-              onClick={() => handleCodeFound(MASTER_START_QR_TOKEN)}
-              className="w-full p-2.5 rounded-xl bg-lime-400/10 hover:bg-lime-400/20 border border-lime-400/40 text-lime-400 text-left flex items-center justify-between text-xs font-bold transition cursor-pointer"
-            >
-              <span>🏁 Simular: QR Maestro de Partida (Plaza de Armas)</span>
-              <span className="text-[10px] bg-lime-400 text-black px-1.5 py-0.5 rounded font-black">Probar</span>
-            </button>
-          ) : null}
-
-          {/* Quick simulator for runner María Teresa */}
-          <button
-            type="button"
-            onClick={() => handleCodeFound('OHA-2026-0003')}
-            className="w-full p-2.5 rounded-xl bg-purple-950/60 hover:bg-purple-900/80 border border-purple-500/40 text-purple-200 text-left flex items-center justify-between text-xs font-bold transition cursor-pointer"
-          >
-            <span className="flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-lime-400" />
-              <span>Simular Pase: María Teresa (DNI: 47605471)</span>
-            </span>
-            <span className="text-[10px] bg-purple-500 text-white px-1.5 py-0.5 rounded font-black">Probar</span>
-          </button>
-        </div>
 
         {/* Bottom Back Button */}
         <div className="pt-3 border-t border-neutral-800 mt-2">

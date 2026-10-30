@@ -316,9 +316,18 @@ function findRunner(query: any, registrations: any[]): { runner: any; index: num
     if (raw.includes('?') || raw.includes('/')) {
       const url = new URL(raw.startsWith('http') ? raw : `http://dummy.com/${raw}`);
       extractedDni = url.searchParams.get('dni') || '';
-      extractedId = url.searchParams.get('runner') || url.searchParams.get('runnerId') || url.searchParams.get('id') || '';
     }
   } catch (e) {}
+
+  // Direct regex extraction for resilient matching from any scanned QR string
+  const dniMatch = raw.match(/[?&]dni=([0-9]{7,10})/i) || raw.match(/dni[:=\s]+([0-9]{7,10})/i);
+  if (dniMatch && dniMatch[1]) {
+    extractedDni = dniMatch[1];
+  }
+  const runnerMatch = raw.match(/[?&]runner=(OHA-[0-9]{4}-[0-9]{4})/i) || raw.match(/(OHA-[0-9]{4}-[0-9]{4})/i);
+  if (runnerMatch && runnerMatch[1]) {
+    extractedId = runnerMatch[1];
+  }
 
   // Extract from JSON if present
   let parsedJson: any = null;
@@ -480,6 +489,8 @@ app.post('/api/start-checkin', (req, res) => {
     description: `${updatedRunner.firstName} ${updatedRunner.lastName} (DNI: ${updatedRunner.documentNumber}) confirmó su asistencia en Plaza de Armas.`,
   });
 
+  broadcastCheckinUpdate(updatedRunner);
+
   res.json({
     success: true,
     message: '¡Asistencia Confirmada! Kit Inicial Entregado 🏃‍♂️💨',
@@ -589,13 +600,66 @@ app.post('/api/analytics/reset', (req, res) => {
   res.json({ success: true, message: 'Analítica reseteada' });
 });
 
+// SSE clients for zero-latency real-time synchronization
+let sseRouletteClients: any[] = [];
+let sseAdminClients: any[] = [];
+
+function broadcastRouletteUpdate(data: any) {
+  const payload = `data: ${JSON.stringify(data)}\n\n`;
+  sseRouletteClients.forEach((client) => {
+    try {
+      client.write(payload);
+    } catch (e) {}
+  });
+}
+
+function broadcastCheckinUpdate(runner: any) {
+  const payload = `data: ${JSON.stringify({ type: 'checkin', runner, timestamp: Date.now() })}\n\n`;
+  sseAdminClients.forEach((client) => {
+    try {
+      client.write(payload);
+    } catch (e) {}
+  });
+}
+
+// SSE endpoint for public roulette synchronization
+app.get('/api/roulette/stream', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.flushHeaders?.();
+
+  const data = readJSON<RouletteState>(ROULETTE_FILE, getInitialRoulette());
+  res.write(`data: ${JSON.stringify(data)}\n\n`);
+
+  sseRouletteClients.push(res);
+  req.on('close', () => {
+    sseRouletteClients = sseRouletteClients.filter((c) => c !== res);
+  });
+});
+
+// SSE endpoint for admin dashboard real-time updates
+app.get('/api/admin/stream', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.flushHeaders?.();
+
+  sseAdminClients.push(res);
+  req.on('close', () => {
+    sseAdminClients = sseAdminClients.filter((c) => c !== res);
+  });
+});
+
 // ================= 9. REAL-TIME ROULETTE / SORTEOS API (22 PREMIOS, 266 TICKETS) =================
 app.get('/api/roulette', (req, res) => {
   const data = readJSON<RouletteState>(ROULETTE_FILE, getInitialRoulette());
   // If spinning and duration elapsed, mark stopped
   if (data.isSpinning && data.spinStartTime > 0) {
     const elapsed = Date.now() - data.spinStartTime;
-    if (elapsed >= (data.spinDuration || 6000)) {
+    if (elapsed >= (data.spinDuration || 6000) + 4000) {
       data.isSpinning = false;
       writeJSON(ROULETTE_FILE, data);
     }
@@ -608,6 +672,7 @@ app.post('/api/roulette/toggle', (req, res) => {
   const data = readJSON<RouletteState>(ROULETTE_FILE, getInitialRoulette());
   data.isActive = isActive !== undefined ? !!isActive : !data.isActive;
   writeJSON(ROULETTE_FILE, data);
+  broadcastRouletteUpdate(data);
   logAnalyticsEvent({
     type: 'section_view',
     title: data.isActive ? 'Ruleta de Sorteos Activada' : 'Ruleta Ocultada',
@@ -669,17 +734,44 @@ app.post('/api/roulette/spin', (req, res) => {
   const fullSpins = (6 + Math.floor(Math.random() * 2)) * 360;
   const targetAngle = currentRot + fullSpins + diff;
 
+  const nextDrawIdx = Math.min(drawNum, 21);
+  const correlativePrizes = [
+    'Premio #1: Kit Oficial Ohana Go 5K + Zapatillas Running',
+    'Premio #2: Pack Nutricional + Pulseras Neón VIP',
+    'Premio #3: Pack Suplementación Deportiva',
+    'Premio #4: Smartwatch Deportivo 5K',
+    'Premio #5: Auriculares Bluetooth Deportivos',
+    'Premio #6: Mochila Hidratación 5K Tarapoto',
+    'Premio #7: Pack Sorpresa Halloween Ohana',
+    'Premio #8: Camiseta Conmemorativa Exclusiva',
+    'Premio #9: Pack Deportivo + Botilito Térmico',
+    'Premio #10: Vale de Consumo Entre Jarras S/ 100',
+    'Premio #11: Kit de Entrenamiento Funcional',
+    'Premio #12: Pack Gourmet + Hidratación',
+    'Premio #13: Cortavientos Impermeable 5K',
+    'Premio #14: Pack Nutrición Energética',
+    'Premio #15: Vale de Consumo Especial Entre Jarras',
+    'Premio #16: Lentes Deportivos UV400',
+    'Premio #17: Gorra Conmemorativa Ohana 5K',
+    'Premio #18: Pack Bienestar & Recuperación',
+    'Premio #19: Cinturón Porta Celular + Luces Neón',
+    'Premio #20: Pack Sorpresa de Auspiciadores',
+    'Premio #21: Premio Especial Halloween Finisher',
+    'Premio #22: Gran Premio Mayor: Trofeo Especial + Pack Ohana 5K',
+  ];
+
   data.isSpinning = true;
   data.spinStartTime = Date.now();
   data.spinDuration = 6000;
   data.targetTicket = targetTicket;
   data.targetAngle = targetAngle;
   data.currentDrawNumber = Math.min(drawNum + 1, 22);
-  data.currentPrizeName = `Sorteo #${Math.min(drawNum + 1, 22)}: Premio Oficial 5K`;
+  data.currentPrizeName = correlativePrizes[nextDrawIdx] || `Sorteo #${Math.min(drawNum + 1, 22)}: Premio Oficial 5K`;
   data.lastWinner = newWinner;
   data.winners.unshift(newWinner); // most recent first
 
   writeJSON(ROULETTE_FILE, data);
+  broadcastRouletteUpdate(data);
 
   logAnalyticsEvent({
     type: 'section_view',
@@ -694,6 +786,7 @@ app.post('/api/roulette/reset', (req, res) => {
   const initial = getInitialRoulette();
   initial.isActive = true;
   writeJSON(ROULETTE_FILE, initial);
+  broadcastRouletteUpdate(initial);
   res.json({ success: true, roulette: initial });
 });
 
@@ -702,8 +795,9 @@ app.post('/api/roulette/remove-winner', (req, res) => {
   const data = readJSON<RouletteState>(ROULETTE_FILE, getInitialRoulette());
   data.winners = data.winners.filter((w) => w.drawNumber !== drawNumber);
   data.currentDrawNumber = data.winners.length + 1;
-  data.currentPrizeName = `Sorteo #${data.currentDrawNumber}: Premio Oficial 5K`;
+  data.currentPrizeName = `Premio #${data.currentDrawNumber}: Sorteo Oficial Ohana Go 5K`;
   writeJSON(ROULETTE_FILE, data);
+  broadcastRouletteUpdate(data);
   res.json({ success: true, roulette: data });
 });
 
@@ -713,6 +807,7 @@ app.post('/api/roulette/update-prize', (req, res) => {
   if (currentPrizeName) {
     data.currentPrizeName = String(currentPrizeName).trim();
     writeJSON(ROULETTE_FILE, data);
+    broadcastRouletteUpdate(data);
   }
   res.json({ success: true, roulette: data });
 });

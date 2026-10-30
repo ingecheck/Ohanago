@@ -5,19 +5,10 @@ import { playWheelClickSound, playWinnerFanfare } from '../utils/rouletteAudio';
 import confetti from 'canvas-confetti';
 import {
   Trophy,
-  Award,
   Gift,
-  CheckCircle2,
   Volume2,
   VolumeX,
   History,
-  Search,
-  ChevronDown,
-  ChevronUp,
-  Sparkles,
-  Ticket as TicketIcon,
-  Flame,
-  Maximize2
 } from 'lucide-react';
 
 interface LiveRouletteSectionProps {
@@ -101,29 +92,31 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
   const soundRef = useRef(soundEnabled);
   soundRef.current = soundEnabled;
 
-  // Search & Explorer state for the 266 tickets
-  const [showTicketsDirectory, setShowTicketsDirectory] = useState<boolean>(false);
-  const [searchTicketQuery, setSearchTicketQuery] = useState<string>('');
-  const [filterTicketType, setFilterTicketType] = useState<'all' | 'available' | 'winners'>('all');
+
 
   const previousSpinTimeRef = useRef<number>(0);
   const tickerIntervalRef = useRef<any>(null);
 
-  // Poll roulette state every 1000ms for seamless real-time synchronization
+  const handleIncomingState = (data: RouletteState) => {
+    setState(data);
+
+    // If a spin is active or was started less than 8 seconds ago
+    const isRecentSpin = data.spinStartTime > 0 && (Date.now() - data.spinStartTime) < 8000;
+    if ((data.isSpinning || isRecentSpin) && data.spinStartTime !== previousSpinTimeRef.current) {
+      previousSpinTimeRef.current = data.spinStartTime;
+      triggerClientSpin(data);
+    } else if (!data.isSpinning && !isAnimating && data.lastWinner) {
+      setDisplayTicket(data.lastWinner.ticketNumber);
+    }
+  };
+
+  // Poll roulette state every 700ms for fallback synchronization
   const fetchRouletteState = async () => {
     try {
       const res = await fetch('/api/roulette');
       if (res.ok) {
         const data: RouletteState = await res.json();
-        setState(data);
-
-        // Check if a new spin just started from the server
-        if (data.isSpinning && data.spinStartTime !== previousSpinTimeRef.current) {
-          previousSpinTimeRef.current = data.spinStartTime;
-          triggerClientSpin(data);
-        } else if (!data.isSpinning && !isAnimating && data.lastWinner) {
-          setDisplayTicket(data.lastWinner.ticketNumber);
-        }
+        handleIncomingState(data);
       }
     } catch (e) {
       console.warn('Error fetching roulette state:', e);
@@ -132,8 +125,47 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
 
   useEffect(() => {
     fetchRouletteState();
-    const interval = setInterval(fetchRouletteState, 1000);
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchRouletteState, 700);
+
+    // Instant SSE Stream listener
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource('/api/roulette/stream');
+      eventSource.onmessage = (event) => {
+        try {
+          const parsed = JSON.parse(event.data);
+          if (parsed && typeof parsed === 'object') {
+            handleIncomingState(parsed);
+          }
+        } catch (e) {}
+      };
+    } catch (e) {}
+
+    // BroadcastChannel listener for same-browser tabs
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel('ohana_roulette_channel');
+      channel.onmessage = (e) => {
+        if (e.data && e.data.roulette) {
+          handleIncomingState(e.data.roulette);
+        }
+      };
+    } catch (e) {}
+
+    // Window custom event listener
+    const handleCustomSpinEvent = (e: any) => {
+      if (e?.detail) {
+        handleIncomingState(e.detail);
+      }
+    };
+    window.addEventListener('ohana-roulette-spin', handleCustomSpinEvent);
+
+    return () => {
+      clearInterval(interval);
+      if (eventSource) eventSource.close();
+      if (channel) channel.close();
+      window.removeEventListener('ohana-roulette-spin', handleCustomSpinEvent);
+    };
   }, [isAnimating]);
 
   const triggerClientSpin = (rouletteData: RouletteState) => {
@@ -213,22 +245,7 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
     return null;
   }
 
-  // Filtered tickets for the 266 directory explorer
-  const filteredTickets = PRECOMPUTED_SECTORS.filter((s) => {
-    const isWinner = winnersMap.has(s.ticketNumber);
-    if (filterTicketType === 'winners' && !isWinner) return false;
-    if (filterTicketType === 'available' && isWinner) return false;
 
-    if (searchTicketQuery.trim()) {
-      const q = searchTicketQuery.toLowerCase().trim();
-      const numStr = String(s.ticketNumber);
-      const runner = runnersMap.get(s.ticketNumber);
-      const runnerName = runner ? `${runner.firstName} ${runner.lastName}`.toLowerCase() : '';
-      const runnerDni = runner ? runner.documentNumber : '';
-      return numStr.includes(q) || runnerName.includes(q) || runnerDni.includes(q);
-    }
-    return true;
-  });
 
   return (
     <section id="ruleta-sorteo" className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-neutral-950 via-purple-950/40 to-neutral-950 relative overflow-hidden border-y-2 border-lime-400/50">
@@ -504,142 +521,6 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
           </div>
         </div>
 
-        {/* 266 TICKETS DIRECTORY & EXPLORER TOGGLE */}
-        <div className="bg-neutral-900/90 border-2 border-neutral-800 rounded-3xl p-5 sm:p-6 shadow-2xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-800 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-lime-400/20 text-lime-400 flex items-center justify-center font-bold text-lg">
-                <TicketIcon className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="font-bebas text-2xl text-white uppercase tracking-wide leading-none">
-                  Padrón de los 266 Tickets Participantes
-                </h4>
-                <p className="text-xs text-neutral-400 mt-0.5">
-                  Verifica tu número de ticket (#001 al #266) y el estado en el sorteo en tiempo real.
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setShowTicketsDirectory(!showTicketsDirectory)}
-              className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer self-start sm:self-auto"
-            >
-              <span>{showTicketsDirectory ? 'Ocultar Padrón de 266 Tickets' : 'Ver Padrón de 266 Tickets'}</span>
-              {showTicketsDirectory ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
-          </div>
-
-          {showTicketsDirectory && (
-            <div className="mt-5 space-y-4">
-              {/* Filter & Search Bar */}
-              <div className="flex flex-col sm:flex-row items-center gap-3">
-                <div className="relative flex-1 w-full">
-                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400" />
-                  <input
-                    type="text"
-                    value={searchTicketQuery}
-                    onChange={(e) => setSearchTicketQuery(e.target.value)}
-                    placeholder="Buscar por # de ticket (ej: 045, 120) o nombre de atleta..."
-                    className="w-full bg-neutral-950 border border-neutral-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-lime-400"
-                  />
-                </div>
-
-                <div className="flex items-center gap-1.5 w-full sm:w-auto">
-                  <button
-                    type="button"
-                    onClick={() => setFilterTicketType('all')}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex-1 sm:flex-initial ${
-                      filterTicketType === 'all'
-                        ? 'bg-lime-400 text-black'
-                        : 'bg-neutral-800 text-neutral-400 hover:text-white'
-                    }`}
-                  >
-                    Todos (266)
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFilterTicketType('available')}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex-1 sm:flex-initial ${
-                      filterTicketType === 'available'
-                        ? 'bg-lime-400 text-black'
-                        : 'bg-neutral-800 text-neutral-400 hover:text-white'
-                    }`}
-                  >
-                    En Juego ({266 - (state.winners.length || 0)})
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setFilterTicketType('winners')}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer flex-1 sm:flex-initial ${
-                      filterTicketType === 'winners'
-                        ? 'bg-lime-400 text-black'
-                        : 'bg-neutral-800 text-neutral-400 hover:text-white'
-                    }`}
-                  >
-                    Ganadores ({state.winners.length || 0})
-                  </button>
-                </div>
-              </div>
-
-              {/* Grid of the 266 Tickets */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 max-h-[380px] overflow-y-auto pr-1">
-                {filteredTickets.map((s) => {
-                  const winner = winnersMap.get(s.ticketNumber);
-                  const runner = runnersMap.get(s.ticketNumber);
-                  const isCurrent = displayTicket === s.ticketNumber;
-
-                  return (
-                    <div
-                      key={s.ticketNumber}
-                      className={`p-2.5 rounded-xl border transition-all text-xs flex flex-col justify-between ${
-                        winner
-                          ? 'bg-emerald-950/80 border-emerald-400 text-emerald-200 shadow-md'
-                          : isCurrent
-                          ? 'bg-purple-950/90 border-lime-400 text-white ring-2 ring-lime-400/50'
-                          : 'bg-neutral-950 border-neutral-800 text-neutral-300 hover:border-neutral-700'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className={`font-mono font-black ${winner ? 'text-lime-300' : 'text-lime-400'}`}>
-                          #{String(s.ticketNumber).padStart(3, '0')}
-                        </span>
-                        {winner ? (
-                          <span className="px-1.5 py-0.2 rounded bg-emerald-500/30 text-[9px] font-bold text-emerald-300 uppercase">
-                            🏆 Sorteo {winner.drawNumber}
-                          </span>
-                        ) : (
-                          <span className="text-[9px] text-neutral-500 font-mono">
-                            En Juego
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="mt-1 font-bold text-[11px] truncate text-white" title={winner?.runnerName || (runner ? `${runner.firstName} ${runner.lastName}` : 'Ticket Oficial')}>
-                        {winner?.runnerName || (runner ? `${runner.firstName} ${runner.lastName}` : `Ticket Oficial #${String(s.ticketNumber).padStart(3, '0')}`)}
-                      </div>
-
-                      {winner && (
-                        <div className="text-[9px] text-amber-300 truncate mt-0.5">
-                          {winner.prizeName}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {filteredTickets.length === 0 && (
-                <div className="py-8 text-center text-xs text-neutral-500">
-                  No se encontraron tickets con la búsqueda realizada.
-                </div>
-              )}
-            </div>
-          )}
-        </div>
       </div>
     </section>
   );

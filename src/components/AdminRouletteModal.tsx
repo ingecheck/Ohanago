@@ -75,10 +75,15 @@ export const AdminRouletteModal: React.FC<AdminRouletteModalProps> = ({
     }
   };
 
+  const [errorNotice, setErrorNotice] = useState<string | null>(null);
+  const [confirmResetOpen, setConfirmResetOpen] = useState<boolean>(false);
+  const [confirmRemoveDraw, setConfirmRemoveDraw] = useState<number | null>(null);
+
   const handleSpin = async () => {
     if (isSpinningLocal || rouletteState?.isSpinning) return;
     setIsSpinningLocal(true);
     setIsLoading(true);
+    setErrorNotice(null);
 
     try {
       const res = await fetch('/api/roulette/spin', {
@@ -91,7 +96,7 @@ export const AdminRouletteModal: React.FC<AdminRouletteModalProps> = ({
 
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || 'Error al girar la ruleta.');
+        setErrorNotice(data.error || 'Error al girar la ruleta.');
         setIsSpinningLocal(false);
         return;
       }
@@ -99,6 +104,16 @@ export const AdminRouletteModal: React.FC<AdminRouletteModalProps> = ({
       setRouletteState(data.roulette);
       setCustomPrizeInput(data.roulette.currentPrizeName || '');
       setNotice(`🎡 ¡Ruleta girando en vivo para todos los visitantes!`);
+
+      // Broadcast across tabs and same window
+      try {
+        const bc = new BroadcastChannel('ohana_roulette_channel');
+        bc.postMessage({ roulette: data.roulette, winner: data.winner });
+        bc.close();
+      } catch (e) {}
+      try {
+        window.dispatchEvent(new CustomEvent('ohana-roulette-spin', { detail: data.roulette }));
+      } catch (e) {}
 
       // 6 seconds spin animation
       setTimeout(() => {
@@ -108,16 +123,15 @@ export const AdminRouletteModal: React.FC<AdminRouletteModalProps> = ({
           confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 } });
         } catch (e) {}
       }, 6000);
-    } catch (e) {
+    } catch (e: any) {
       setIsSpinningLocal(false);
-      alert('Error de conexión al girar ruleta.');
+      setErrorNotice('Error de conexión al girar ruleta. Intenta nuevamente.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleRemoveWinner = async (drawNumber: number) => {
-    if (!window.confirm(`¿Deseas anular el sorteo #${drawNumber} para volver a sortearlo?`)) return;
     try {
       const res = await fetch('/api/roulette/remove-winner', {
         method: 'POST',
@@ -128,13 +142,15 @@ export const AdminRouletteModal: React.FC<AdminRouletteModalProps> = ({
       if (res.ok && data.roulette) {
         setRouletteState(data.roulette);
         setNotice(`✓ Sorteo #${drawNumber} anulado. Puedes volver a girar.`);
+        setConfirmRemoveDraw(null);
         setTimeout(() => setNotice(null), 4000);
       }
-    } catch (e) {}
+    } catch (e) {
+      setErrorNotice('Error al anular sorteo.');
+    }
   };
 
   const handleResetAll = async () => {
-    if (!window.confirm('¿Reiniciar TODOS los 22 sorteos a 0?')) return;
     try {
       const res = await fetch('/api/roulette/reset', { method: 'POST' });
       const data = await res.json();
@@ -142,9 +158,12 @@ export const AdminRouletteModal: React.FC<AdminRouletteModalProps> = ({
         setRouletteState(data.roulette);
         setCustomPrizeInput('Premio #1: Sorteo Oficial Ohana Go 5K');
         setNotice('✓ Ruleta reiniciada a 0.');
+        setConfirmResetOpen(false);
         setTimeout(() => setNotice(null), 4000);
       }
-    } catch (e) {}
+    } catch (e) {
+      setErrorNotice('Error al reiniciar sorteos.');
+    }
   };
 
   const winnersCount = rouletteState?.winners.length || 0;
@@ -182,6 +201,16 @@ export const AdminRouletteModal: React.FC<AdminRouletteModalProps> = ({
           <div className="mb-4 p-3 rounded-2xl bg-emerald-950/90 border border-emerald-400 text-emerald-200 text-xs font-bold flex items-center justify-between animate-pulse">
             <span>{notice}</span>
             <button onClick={() => setNotice(null)} className="text-emerald-400 hover:text-white p-1">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Error alert */}
+        {errorNotice && (
+          <div className="mb-4 p-3 rounded-2xl bg-red-950/90 border-2 border-red-500 text-red-200 text-xs font-bold flex items-center justify-between">
+            <span>⚠️ {errorNotice}</span>
+            <button onClick={() => setErrorNotice(null)} className="text-red-400 hover:text-white p-1">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -313,15 +342,37 @@ export const AdminRouletteModal: React.FC<AdminRouletteModalProps> = ({
               </div>
 
               {winnersCount > 0 && (
-                <button
-                  type="button"
-                  onClick={handleResetAll}
-                  className="px-2.5 py-1 text-[11px] rounded-lg bg-neutral-800 hover:bg-red-950 text-neutral-400 hover:text-red-300 font-bold transition flex items-center gap-1 cursor-pointer"
-                  title="Reiniciar todos los sorteos a 0"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Reiniciar</span>
-                </button>
+                <div>
+                  {confirmResetOpen ? (
+                    <div className="flex items-center gap-1.5 bg-red-950 p-1.5 rounded-lg border border-red-500/50">
+                      <span className="text-[10px] text-red-200">¿Reset 0?</span>
+                      <button
+                        type="button"
+                        onClick={handleResetAll}
+                        className="px-2 py-0.5 bg-red-600 text-white rounded text-[10px] font-bold"
+                      >
+                        Sí
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmResetOpen(false)}
+                        className="px-1.5 py-0.5 bg-neutral-800 text-neutral-300 rounded text-[10px]"
+                      >
+                        No
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmResetOpen(true)}
+                      className="px-2.5 py-1 text-[11px] rounded-lg bg-neutral-800 hover:bg-red-950 text-neutral-400 hover:text-red-300 font-bold transition flex items-center gap-1 cursor-pointer"
+                      title="Reiniciar todos los sorteos a 0"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Reiniciar</span>
+                    </button>
+                  )}
+                </div>
               )}
             </div>
 
@@ -354,14 +405,34 @@ export const AdminRouletteModal: React.FC<AdminRouletteModalProps> = ({
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveWinner(winner.drawNumber)}
-                      className="p-2 rounded-lg bg-neutral-800 hover:bg-red-950 text-neutral-400 hover:text-red-400 transition cursor-pointer"
-                      title="Anular este sorteo y volver a sortear"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {confirmRemoveDraw === winner.drawNumber ? (
+                      <div className="flex items-center gap-1 bg-red-950 p-1.5 rounded-lg border border-red-500/50">
+                        <span className="text-[10px] text-red-200">¿Anular?</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveWinner(winner.drawNumber)}
+                          className="px-2 py-0.5 bg-red-600 text-white rounded text-[10px] font-bold"
+                        >
+                          Sí
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmRemoveDraw(null)}
+                          className="px-1.5 py-0.5 bg-neutral-800 text-neutral-300 rounded text-[10px]"
+                        >
+                          No
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmRemoveDraw(winner.drawNumber)}
+                        className="p-2 rounded-lg bg-neutral-800 hover:bg-red-950 text-neutral-400 hover:text-red-400 transition cursor-pointer"
+                        title="Anular este sorteo y volver a sortear"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 ))
               )}

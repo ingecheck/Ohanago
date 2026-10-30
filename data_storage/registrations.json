@@ -85,13 +85,12 @@
     "paymentMethod": "Yape",
     "paymentReference": "YAPE-2026-0003",
     "paymentStatus": "Verificado",
-    "confirmedAtStart": true,
+    "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-28T01:47:39.611Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false,
-    "startCheckinTime": "2026-10-30T04:09:43.422Z"
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0004",
@@ -1047,13 +1046,12 @@
     "paymentMethod": "Yape",
     "paymentReference": "YAPE-2026-0034",
     "paymentStatus": "Verificado",
-    "confirmedAtStart": true,
+    "confirmedAtStart": false,
     "modality": "Presencial",
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false,
-    "startCheckinTime": "2026-10-30T04:17:43.522Z"
+    "medalDelivered": false
   },
   {
     "id": "OHA-2026-0035",

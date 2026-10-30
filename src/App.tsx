@@ -105,19 +105,26 @@ export const App: React.FC = () => {
       if (runnerParam || dniParam) {
         // Limpiar URL sin recargar
         window.history.replaceState({}, document.title, window.location.pathname);
-        fetch('/api/verify-runner', {
+        fetch('/api/start-checkin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: runnerParam || dniParam }),
+          body: JSON.stringify({
+            runnerId: runnerParam,
+            dni: dniParam,
+            code: runnerParam || dniParam,
+          }),
         })
           .then((r) => r.json())
           .then((data) => {
             if (data.runner) {
               setActiveCompetitor(data.runner);
               localStorage.setItem('ohana_active_competitor', JSON.stringify(data.runner));
-              setIsCompetitorPortalOpen(true);
+              setRegistrations((prev) =>
+                prev.map((r) => (r.id === data.runner.id ? data.runner : r))
+              );
+              setDirectCheckinSuccess(data.runner);
               try {
-                confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+                confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
               } catch (e) {}
             }
           })
