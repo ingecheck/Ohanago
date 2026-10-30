@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Sincronización en vivo de la ruleta oficial (lectura y giro en vivo para todos los celulares)
+    match /roulette/{docId} {
+      allow read, write: if true;
+    }
+
+    // Acreditación y entrega de kit en vivo
+    match /registrations/{registrationId} {
+      allow read, write: if true;
+    }
+
+    // Colección de prueba de conectividad
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

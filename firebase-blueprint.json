@@ -1,0 +1,55 @@
+{
+  "entities": {
+    "RouletteState": {
+      "title": "RouletteState",
+      "description": "Estado en tiempo real de la ruleta oficial de sorteos",
+      "type": "object",
+      "properties": {
+        "isActive": { "type": "boolean" },
+        "totalTickets": { "type": "number" },
+        "totalDraws": { "type": "number" },
+        "currentDrawNumber": { "type": "number" },
+        "currentPrizeName": { "type": "string" },
+        "isSpinning": { "type": "boolean" },
+        "spinStartTime": { "type": "number" },
+        "spinDuration": { "type": "number" },
+        "targetTicket": { "type": "number" },
+        "targetAngle": { "type": "number" },
+        "winners": { "type": "array" },
+        "lastWinner": { "type": "object" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["totalTickets", "totalDraws", "currentDrawNumber", "isSpinning"]
+    },
+    "RunnerRegistration": {
+      "title": "RunnerRegistration",
+      "description": "Ficha oficial de competidor y estado de entrega de kit",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "registrationNumber": { "type": "number" },
+        "bibNumber": { "type": "number" },
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "documentType": { "type": "string" },
+        "documentNumber": { "type": "string" },
+        "email": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "confirmedAtStart": { "type": "boolean" },
+        "startCheckinTime": { "type": "string" },
+        "paymentStatus": { "type": "string" }
+      },
+      "required": ["id", "firstName", "lastName", "documentNumber"]
+    }
+  },
+  "firestore": {
+    "/roulette/current": {
+      "schema": "RouletteState",
+      "description": "Documento único que sincroniza el giro y estado de la ruleta en vivo para todos los celulares"
+    },
+    "/registrations/{registrationId}": {
+      "schema": "RunnerRegistration",
+      "description": "Nómina de corredores y acreditaciones en tiempo real"
+    }
+  }
+}

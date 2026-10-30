@@ -1,5 +1,7 @@
 import { RunnerRegistration } from '../types/race';
 import { getStoredRegistrations, saveRegistrations } from '../data/initialRegistrations';
+import { doc, setDoc, collection, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const CHECKIN_CHANNEL_NAME = 'ohana_checkin_channel';
 
@@ -20,6 +22,34 @@ export function broadcastCheckinLocal(runner: RunnerRegistration) {
     window.dispatchEvent(new CustomEvent('ohana-checkin', { detail: runner }));
     window.dispatchEvent(new Event('storage'));
   } catch (e) {}
+
+  // Sync to Cloud Firestore so all admin phones across internet see it instantly
+  try {
+    setDoc(doc(db, 'registrations', runner.id), runner, { merge: true }).catch(() => {});
+  } catch (e) {}
+}
+
+export function subscribeToRegistrationsFirestore(callback: (runner: RunnerRegistration) => void): Unsubscribe {
+  try {
+    return onSnapshot(
+      collection(db, 'registrations'),
+      (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added' || change.type === 'modified') {
+            const runner = change.doc.data() as RunnerRegistration;
+            if (runner && runner.id) {
+              callback(runner);
+            }
+          }
+        });
+      },
+      (err) => {
+        console.warn('Notice: Firestore registrations fallback:', err);
+      }
+    );
+  } catch (e) {
+    return () => {};
+  }
 }
 
 export async function processStartCheckinSafe(params: {

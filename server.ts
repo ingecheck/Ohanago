@@ -606,7 +606,7 @@ let cachedRouletteState: RouletteState = readJSON<RouletteState>(ROULETTE_FILE, 
 function getActiveRouletteState(): RouletteState {
   if (cachedRouletteState.isSpinning && cachedRouletteState.spinStartTime > 0) {
     const elapsed = Date.now() - cachedRouletteState.spinStartTime;
-    if (elapsed >= (cachedRouletteState.spinDuration || 6000) + 4000) {
+    if (elapsed >= (cachedRouletteState.spinDuration || 6000)) {
       cachedRouletteState.isSpinning = false;
       writeJSON(ROULETTE_FILE, cachedRouletteState);
     }
@@ -801,6 +801,15 @@ app.post('/api/roulette/spin', (req, res) => {
   data.winners.unshift(newWinner); // most recent first
 
   saveAndBroadcastRoulette(data);
+
+  // Guarantee all connected clients receive isSpinning: false at exactly 6000ms
+  setTimeout(() => {
+    if (cachedRouletteState.spinStartTime === data.spinStartTime) {
+      cachedRouletteState.isSpinning = false;
+      writeJSON(ROULETTE_FILE, cachedRouletteState);
+      broadcastRouletteUpdate(cachedRouletteState);
+    }
+  }, 6000);
 
   logAnalyticsEvent({
     type: 'section_view',

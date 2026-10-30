@@ -26,6 +26,7 @@ import {
   toggleRouletteSafe,
   resetRouletteSafe,
   removeWinnerSafe,
+  subscribeToRouletteFirestore,
 } from '../utils/rouletteManager';
 
 interface AdminRouletteModalProps {
@@ -61,7 +62,21 @@ export const AdminRouletteModal: React.FC<AdminRouletteModalProps> = ({
   useEffect(() => {
     fetchState();
     const interval = setInterval(fetchState, 1500);
-    return () => clearInterval(interval);
+
+    let unsub: (() => void) | null = null;
+    try {
+      unsub = subscribeToRouletteFirestore((cloudState) => {
+        setRouletteState(cloudState);
+        if (!customPrizeInput && cloudState.currentPrizeName) {
+          setCustomPrizeInput(cloudState.currentPrizeName);
+        }
+      });
+    } catch (e) {}
+
+    return () => {
+      clearInterval(interval);
+      if (unsub) unsub();
+    };
   }, []);
 
   const handleToggleActive = async () => {
@@ -93,6 +108,7 @@ export const AdminRouletteModal: React.FC<AdminRouletteModalProps> = ({
       // 6 seconds spin animation
       setTimeout(() => {
         setIsSpinningLocal(false);
+        setRouletteState((prev) => (prev ? { ...prev, isSpinning: false } : prev));
         setNotice(`🎉 ¡Ganador del Sorteo #${result.winner.drawNumber}: Ticket #${String(result.winner.ticketNumber).padStart(3, '0')} (${result.winner.runnerName})!`);
         try {
           confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 } });

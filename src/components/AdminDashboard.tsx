@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { RunnerRegistration, PaymentStatus, RaceModality } from '../types/race';
 import { saveRegistrations, getStoredRegistrations } from '../data/initialRegistrations';
 import { adminLogout, updateAdminPassword } from '../data/auth';
-import { processStartCheckinSafe } from '../utils/checkinManager';
+import { processStartCheckinSafe, subscribeToRegistrationsFirestore } from '../utils/checkinManager';
 import QRCode from 'qrcode';
 import confetti from 'canvas-confetti';
 import { QRScannerModal } from './QRScannerModal';
@@ -223,10 +223,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       };
     } catch (e) {}
 
+    // Real-time Cloud Firestore check-in listener (updates admin phone when runner scans anywhere)
+    let unsubFirestore: (() => void) | null = null;
+    try {
+      unsubFirestore = subscribeToRegistrationsFirestore((runner) => {
+        fetchLiveRegistrations();
+        setLiveNotice(`🎉 ¡${runner.firstName} ${runner.lastName} confirmó entrega de kit inicial en vivo!`);
+        setTimeout(() => setLiveNotice(null), 5000);
+      });
+    } catch (e) {}
+
     window.addEventListener('ohana-checkin', handleCheckinEvent);
     window.addEventListener('storage', fetchLiveRegistrations);
     return () => {
       clearInterval(intervalId);
+      if (unsubFirestore) unsubFirestore();
       if (eventSource) eventSource.close();
       if (checkinChannel) checkinChannel.close();
       window.removeEventListener('ohana-checkin', handleCheckinEvent);

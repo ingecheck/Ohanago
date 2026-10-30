@@ -1,5 +1,7 @@
 import { RouletteState, RouletteWinner } from '../types/roulette';
 import { RunnerRegistration } from '../types/race';
+import { doc, getDoc, setDoc, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { db } from '../firebase';
 
 export const OFFICIAL_22_PRIZES = [
   'Premio #1: Kit Oficial Ohana Go 5K + Zapatillas Running',
@@ -27,6 +29,7 @@ export const OFFICIAL_22_PRIZES = [
 ];
 
 const ROULETTE_STORAGE_KEY = 'ohana_roulette_state_v2';
+const FIRESTORE_ROULETTE_DOC = 'current';
 
 export function getDefaultRouletteState(): RouletteState {
   return {
@@ -51,15 +54,83 @@ export function getStoredRouletteState(): RouletteState {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === 'object') {
-        return {
+        const state: RouletteState = {
           ...getDefaultRouletteState(),
           ...parsed,
           winners: Array.isArray(parsed.winners) ? parsed.winners : [],
         };
+        // Auto-conclude spin if 6 seconds elapsed
+        if (state.isSpinning && state.spinStartTime > 0 && Date.now() - state.spinStartTime >= 6000) {
+          state.isSpinning = false;
+          try {
+            localStorage.setItem(ROULETTE_STORAGE_KEY, JSON.stringify(state));
+          } catch (e) {}
+        }
+        return state;
       }
     }
   } catch (e) {}
   return getDefaultRouletteState();
+}
+
+/**
+ * Sync state to Firestore so all mobile phones in the world see the spin in real time
+ */
+export async function syncRouletteToFirestore(state: RouletteState) {
+  try {
+    const ref = doc(db, 'roulette', FIRESTORE_ROULETTE_DOC);
+    await setDoc(
+      ref,
+      {
+        ...state,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
+  } catch (e) {
+    console.warn('Notice: Firestore sync fallback active:', e);
+  }
+}
+
+/**
+ * Real-time listener for Firestore roulette updates across all devices
+ */
+export function subscribeToRouletteFirestore(callback: (state: RouletteState) => void): Unsubscribe {
+  try {
+    const ref = doc(db, 'roulette', FIRESTORE_ROULETTE_DOC);
+    return onSnapshot(
+      ref,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data() as RouletteState;
+          if (data && typeof data === 'object') {
+            const normalized: RouletteState = {
+              ...getDefaultRouletteState(),
+              ...data,
+              winners: Array.isArray(data.winners) ? data.winners : [],
+            };
+            // Normalize spin finish
+            if (
+              normalized.isSpinning &&
+              normalized.spinStartTime > 0 &&
+              Date.now() - normalized.spinStartTime >= 6000
+            ) {
+              normalized.isSpinning = false;
+            }
+            try {
+              localStorage.setItem(ROULETTE_STORAGE_KEY, JSON.stringify(normalized));
+            } catch (e) {}
+            callback(normalized);
+          }
+        }
+      },
+      (error) => {
+        console.warn('Firestore subscription fallback:', error);
+      }
+    );
+  } catch (e) {
+    return () => {};
+  }
 }
 
 export function broadcastRouletteLocal(state: RouletteState, winner?: RouletteWinner | null) {
@@ -76,9 +147,19 @@ export function broadcastRouletteLocal(state: RouletteState, winner?: RouletteWi
   try {
     window.dispatchEvent(new CustomEvent('ohana-roulette-spin', { detail: state }));
   } catch (e) {}
+
+  // Sync to Cloud Firestore
+  syncRouletteToFirestore(state);
 }
 
 export async function fetchRouletteStateSafe(): Promise<RouletteState> {
+  // 1. Return freshest state from local memory/storage (already continuously synced by onSnapshot)
+  const localCached = getStoredRouletteState();
+  if (localCached && localCached.winners && localCached.winners.length > 0) {
+    return localCached;
+  }
+
+  // 2. Try Node server endpoint if running
   try {
     const res = await fetch('/api/roulette');
     const contentType = res.headers.get('content-type') || '';
@@ -89,9 +170,9 @@ export async function fetchRouletteStateSafe(): Promise<RouletteState> {
         return serverData;
       }
     }
-  } catch (e) {
-    // Backend unreachable (Hostinger static / offline)
-  }
+  } catch (e) {}
+
+  // 3. Fallback to local storage (0 Firestore reads)
   return getStoredRouletteState();
 }
 
@@ -99,28 +180,8 @@ export async function spinRouletteSafe(
   prizeName: string,
   registrations: RunnerRegistration[]
 ): Promise<{ success: boolean; roulette: RouletteState; winner: RouletteWinner }> {
-  // 1. Try server endpoint first
-  try {
-    const res = await fetch('/api/roulette/spin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prizeName }),
-    });
-
-    const contentType = res.headers.get('content-type') || '';
-    if (res.ok && contentType.includes('application/json')) {
-      const data = await res.json();
-      if (data && data.roulette && data.winner) {
-        broadcastRouletteLocal(data.roulette, data.winner);
-        return { success: true, roulette: data.roulette, winner: data.winner };
-      }
-    }
-  } catch (e) {
-    console.warn('Backend spin endpoint unavailable, executing client-side spin fallback for Hostinger:', e);
-  }
-
-  // 2. Client-Side Fallback for Hostinger or Offline: Guaranteed 100% success without errors
-  const currentState = getStoredRouletteState();
+  // 1. Fetch freshest state from Firestore / Server / Local
+  const currentState = await fetchRouletteStateSafe();
 
   if (currentState.winners.length >= (currentState.totalDraws || 22)) {
     throw new Error('Ya se completaron los 22 sorteos programados.');
@@ -190,51 +251,61 @@ export async function spinRouletteSafe(
     winners: [newWinner, ...currentState.winners],
   };
 
+  // Broadcast to Cloud Firestore (so ALL users & phones see it spinning instantly) + local
   broadcastRouletteLocal(newState, newWinner);
+
+  // Also notify backend server if running
+  try {
+    fetch('/api/roulette/spin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prizeName: actualPrize }),
+    }).catch(() => {});
+  } catch (e) {}
+
+  // Guarantee stopping state broadcast precisely at 6000ms
+  setTimeout(() => {
+    try {
+      const current = getStoredRouletteState();
+      if (current.spinStartTime === newState.spinStartTime) {
+        const finishedState: RouletteState = {
+          ...current,
+          isSpinning: false,
+        };
+        broadcastRouletteLocal(finishedState);
+      }
+    } catch (e) {}
+  }, 6000);
+
   return { success: true, roulette: newState, winner: newWinner };
 }
 
 export async function toggleRouletteSafe(isActive?: boolean): Promise<RouletteState> {
   const currentState = getStoredRouletteState();
   const nextActive = isActive !== undefined ? isActive : !currentState.isActive;
+  const newState: RouletteState = { ...currentState, isActive: nextActive };
+
+  broadcastRouletteLocal(newState);
 
   try {
-    const res = await fetch('/api/roulette/toggle', {
+    fetch('/api/roulette/toggle', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isActive: nextActive }),
-    });
-    const contentType = res.headers.get('content-type') || '';
-    if (res.ok && contentType.includes('application/json')) {
-      const data = await res.json();
-      if (data && data.roulette) {
-        broadcastRouletteLocal(data.roulette);
-        return data.roulette;
-      }
-    }
+    }).catch(() => {});
   } catch (e) {}
 
-  const newState: RouletteState = { ...currentState, isActive: nextActive };
-  broadcastRouletteLocal(newState);
   return newState;
 }
 
 export async function resetRouletteSafe(): Promise<RouletteState> {
   const defaultState = getDefaultRouletteState();
+  broadcastRouletteLocal(defaultState);
 
   try {
-    const res = await fetch('/api/roulette/reset', { method: 'POST' });
-    const contentType = res.headers.get('content-type') || '';
-    if (res.ok && contentType.includes('application/json')) {
-      const data = await res.json();
-      if (data && data.roulette) {
-        broadcastRouletteLocal(data.roulette);
-        return data.roulette;
-      }
-    }
+    fetch('/api/roulette/reset', { method: 'POST' }).catch(() => {});
   } catch (e) {}
 
-  broadcastRouletteLocal(defaultState);
   return defaultState;
 }
 
@@ -251,22 +322,15 @@ export async function removeWinnerSafe(drawNumber: number): Promise<RouletteStat
     currentPrizeName: nextPrize,
   };
 
+  broadcastRouletteLocal(updatedState);
+
   try {
-    const res = await fetch('/api/roulette/remove-winner', {
+    fetch('/api/roulette/remove-winner', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ drawNumber }),
-    });
-    const contentType = res.headers.get('content-type') || '';
-    if (res.ok && contentType.includes('application/json')) {
-      const data = await res.json();
-      if (data && data.roulette) {
-        broadcastRouletteLocal(data.roulette);
-        return data.roulette;
-      }
-    }
+    }).catch(() => {});
   } catch (e) {}
 
-  broadcastRouletteLocal(updatedState);
   return updatedState;
 }

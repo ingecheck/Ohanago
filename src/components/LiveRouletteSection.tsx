@@ -11,7 +11,11 @@ import {
   History,
 } from 'lucide-react';
 
-import { fetchRouletteStateSafe, getStoredRouletteState } from '../utils/rouletteManager';
+import {
+  fetchRouletteStateSafe,
+  getStoredRouletteState,
+  subscribeToRouletteFirestore,
+} from '../utils/rouletteManager';
 
 interface LiveRouletteSectionProps {
   onClose?: () => void;
@@ -142,6 +146,14 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
       };
     } catch (e) {}
 
+    // Real-time Cloud Firestore listener: Sincroniza el giro a todos los celulares en el mundo
+    let unsubFirestore: (() => void) | null = null;
+    try {
+      unsubFirestore = subscribeToRouletteFirestore((cloudState) => {
+        handleIncomingState(cloudState);
+      });
+    } catch (e) {}
+
     // BroadcastChannel listener for same-browser tabs
     let channel: BroadcastChannel | null = null;
     try {
@@ -163,11 +175,12 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
 
     return () => {
       clearInterval(interval);
+      if (unsubFirestore) unsubFirestore();
       if (eventSource) eventSource.close();
       if (channel) channel.close();
       window.removeEventListener('ohana-roulette-spin', handleCustomSpinEvent);
     };
-  }, [isAnimating]);
+  }, []);
 
   const triggerClientSpin = (rouletteData: RouletteState) => {
     setIsAnimating(true);
@@ -189,11 +202,16 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
     const targetDeg = rouletteData.targetAngle || 2160 + (rouletteData.targetTicket * (360 / TOTAL_TICKETS));
     setWheelRotation(targetDeg);
 
-    // After 6 seconds, conclude spin and announce winner
+    // Exactly after 6 seconds, conclude spin and announce winner
     setTimeout(() => {
       if (tickerIntervalRef.current) clearInterval(tickerIntervalRef.current);
       setDisplayTicket(rouletteData.targetTicket);
       setIsAnimating(false);
+      setState((prev) => ({
+        ...prev,
+        isSpinning: false,
+        lastWinner: rouletteData.lastWinner || prev.lastWinner,
+      }));
 
       if (soundRef.current) {
         playWinnerFanfare();
@@ -361,8 +379,9 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
               className="w-[305px] sm:w-[395px] md:w-[435px] h-[305px] sm:h-[395px] md:h-[435px] rounded-full relative overflow-hidden transition-transform shadow-2xl"
               style={{
                 transform: `rotate(${wheelRotation}deg)`,
-                transitionDuration: isAnimating ? '6000ms' : '0ms',
-                transitionTimingFunction: 'cubic-bezier(0.12, 0.8, 0.22, 1)',
+                transition: isAnimating
+                  ? 'transform 6000ms cubic-bezier(0.12, 0.8, 0.22, 1)'
+                  : 'transform 800ms cubic-bezier(0.2, 0.8, 0.2, 1)',
               }}
             >
               <svg
