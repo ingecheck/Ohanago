@@ -11,6 +11,8 @@ import {
   History,
 } from 'lucide-react';
 
+import { fetchRouletteStateSafe, getStoredRouletteState } from '../utils/rouletteManager';
+
 interface LiveRouletteSectionProps {
   onClose?: () => void;
   isAdmin?: boolean;
@@ -71,28 +73,13 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
   onOpenAdminControls,
   registrations = [],
 }) => {
-  const [state, setState] = useState<RouletteState>({
-    isActive: true,
-    totalTickets: 266,
-    totalDraws: 22,
-    currentDrawNumber: 1,
-    currentPrizeName: 'Premio #1: Sorteo Oficial Ohana Go 5K',
-    isSpinning: false,
-    spinStartTime: 0,
-    spinDuration: 6000,
-    targetTicket: 1,
-    targetAngle: 0,
-    winners: [],
-    lastWinner: null,
-  });
+  const [state, setState] = useState<RouletteState>(() => getStoredRouletteState());
   const [displayTicket, setDisplayTicket] = useState<number>(1);
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
   const [wheelRotation, setWheelRotation] = useState<number>(0);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const soundRef = useRef(soundEnabled);
   soundRef.current = soundEnabled;
-
-
 
   const previousSpinTimeRef = useRef<number>(0);
   const tickerIntervalRef = useRef<any>(null);
@@ -113,11 +100,8 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
   // Fetch roulette state on mount and fallback
   const fetchRouletteState = async () => {
     try {
-      const res = await fetch('/api/roulette');
-      if (res.ok) {
-        const data: RouletteState = await res.json();
-        handleIncomingState(data);
-      }
+      const data = await fetchRouletteStateSafe();
+      handleIncomingState(data);
     } catch (e) {
       console.warn('Error fetching roulette state:', e);
     }

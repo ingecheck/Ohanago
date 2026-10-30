@@ -20,6 +20,14 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+import {
+  fetchRouletteStateSafe,
+  spinRouletteSafe,
+  toggleRouletteSafe,
+  resetRouletteSafe,
+  removeWinnerSafe,
+} from '../utils/rouletteManager';
+
 interface AdminRouletteModalProps {
   onClose: () => void;
   registrations: RunnerRegistration[];
@@ -34,19 +42,19 @@ export const AdminRouletteModal: React.FC<AdminRouletteModalProps> = ({
   const [customPrizeInput, setCustomPrizeInput] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [errorNotice, setErrorNotice] = useState<string | null>(null);
+  const [confirmResetOpen, setConfirmResetOpen] = useState<boolean>(false);
+  const [confirmRemoveDraw, setConfirmRemoveDraw] = useState<number | null>(null);
 
   const fetchState = async () => {
     try {
-      const res = await fetch('/api/roulette');
-      if (res.ok) {
-        const data: RouletteState = await res.json();
-        setRouletteState(data);
-        if (!customPrizeInput && data.currentPrizeName) {
-          setCustomPrizeInput(data.currentPrizeName);
-        }
+      const data = await fetchRouletteStateSafe();
+      setRouletteState(data);
+      if (!customPrizeInput && data.currentPrizeName) {
+        setCustomPrizeInput(data.currentPrizeName);
       }
     } catch (e) {
-      console.warn('Error fetching roulette in admin:', e);
+      console.warn('Error fetching roulette state:', e);
     }
   };
 
@@ -59,25 +67,16 @@ export const AdminRouletteModal: React.FC<AdminRouletteModalProps> = ({
   const handleToggleActive = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/roulette/toggle', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isActive: !rouletteState?.isActive }),
-      });
-      const data = await res.json();
-      if (res.ok && data.roulette) {
-        setRouletteState(data.roulette);
-        setNotice(data.roulette.isActive ? '✓ Ruleta activada en la página principal.' : '✓ Ruleta ocultada de la página principal.');
-        setTimeout(() => setNotice(null), 4000);
-      }
+      const data = await toggleRouletteSafe(!rouletteState?.isActive);
+      setRouletteState(data);
+      setNotice(data.isActive ? '✓ Ruleta activada en la página principal.' : '✓ Ruleta ocultada de la página principal.');
+      setTimeout(() => setNotice(null), 4000);
+    } catch (e) {
+      setErrorNotice('Error al alternar estado de la ruleta.');
     } finally {
       setIsLoading(false);
     }
   };
-
-  const [errorNotice, setErrorNotice] = useState<string | null>(null);
-  const [confirmResetOpen, setConfirmResetOpen] = useState<boolean>(false);
-  const [confirmRemoveDraw, setConfirmRemoveDraw] = useState<number | null>(null);
 
   const handleSpin = async () => {
     if (isSpinningLocal || rouletteState?.isSpinning) return;
@@ -86,46 +85,22 @@ export const AdminRouletteModal: React.FC<AdminRouletteModalProps> = ({
     setErrorNotice(null);
 
     try {
-      const res = await fetch('/api/roulette/spin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prizeName: customPrizeInput.trim() || `Sorteo #${(rouletteState?.winners.length || 0) + 1}: Premio Oficial`,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setErrorNotice(data.error || 'Error al girar la ruleta.');
-        setIsSpinningLocal(false);
-        return;
-      }
-
-      setRouletteState(data.roulette);
-      setCustomPrizeInput(data.roulette.currentPrizeName || '');
+      const result = await spinRouletteSafe(customPrizeInput.trim(), registrations);
+      setRouletteState(result.roulette);
+      setCustomPrizeInput(result.roulette.currentPrizeName || '');
       setNotice(`🎡 ¡Ruleta girando en vivo para todos los visitantes!`);
-
-      // Broadcast across tabs and same window
-      try {
-        const bc = new BroadcastChannel('ohana_roulette_channel');
-        bc.postMessage({ roulette: data.roulette, winner: data.winner });
-        bc.close();
-      } catch (e) {}
-      try {
-        window.dispatchEvent(new CustomEvent('ohana-roulette-spin', { detail: data.roulette }));
-      } catch (e) {}
 
       // 6 seconds spin animation
       setTimeout(() => {
         setIsSpinningLocal(false);
-        setNotice(`🎉 ¡Ganador del Sorteo #${data.winner?.drawNumber}: Ticket #${String(data.winner?.ticketNumber).padStart(3, '0')} (${data.winner?.runnerName})!`);
+        setNotice(`🎉 ¡Ganador del Sorteo #${result.winner.drawNumber}: Ticket #${String(result.winner.ticketNumber).padStart(3, '0')} (${result.winner.runnerName})!`);
         try {
           confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 } });
         } catch (e) {}
       }, 6000);
     } catch (e: any) {
       setIsSpinningLocal(false);
-      setErrorNotice('Error de conexión al girar ruleta. Intenta nuevamente.');
+      setErrorNotice(e?.message || 'Error al girar la ruleta.');
     } finally {
       setIsLoading(false);
     }
@@ -133,18 +108,11 @@ export const AdminRouletteModal: React.FC<AdminRouletteModalProps> = ({
 
   const handleRemoveWinner = async (drawNumber: number) => {
     try {
-      const res = await fetch('/api/roulette/remove-winner', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ drawNumber }),
-      });
-      const data = await res.json();
-      if (res.ok && data.roulette) {
-        setRouletteState(data.roulette);
-        setNotice(`✓ Sorteo #${drawNumber} anulado. Puedes volver a girar.`);
-        setConfirmRemoveDraw(null);
-        setTimeout(() => setNotice(null), 4000);
-      }
+      const updated = await removeWinnerSafe(drawNumber);
+      setRouletteState(updated);
+      setNotice(`✓ Sorteo #${drawNumber} anulado. Puedes volver a girar.`);
+      setConfirmRemoveDraw(null);
+      setTimeout(() => setNotice(null), 4000);
     } catch (e) {
       setErrorNotice('Error al anular sorteo.');
     }
@@ -152,15 +120,12 @@ export const AdminRouletteModal: React.FC<AdminRouletteModalProps> = ({
 
   const handleResetAll = async () => {
     try {
-      const res = await fetch('/api/roulette/reset', { method: 'POST' });
-      const data = await res.json();
-      if (res.ok && data.roulette) {
-        setRouletteState(data.roulette);
-        setCustomPrizeInput('Premio #1: Sorteo Oficial Ohana Go 5K');
-        setNotice('✓ Ruleta reiniciada a 0.');
-        setConfirmResetOpen(false);
-        setTimeout(() => setNotice(null), 4000);
-      }
+      const resetState = await resetRouletteSafe();
+      setRouletteState(resetState);
+      setCustomPrizeInput(resetState.currentPrizeName || 'Premio #1: Sorteo Oficial Ohana Go 5K');
+      setNotice('✓ Ruleta reiniciada a 0.');
+      setConfirmResetOpen(false);
+      setTimeout(() => setNotice(null), 4000);
     } catch (e) {
       setErrorNotice('Error al reiniciar sorteos.');
     }

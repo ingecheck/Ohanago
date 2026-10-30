@@ -14,6 +14,7 @@ import { Footer } from './components/Footer';
 import { RunnerRegistration } from './types/race';
 import { getStoredRegistrations } from './data/initialRegistrations';
 import { isAdminAuthenticated } from './data/auth';
+import { processStartCheckinSafe } from './utils/checkinManager';
 import { HelpCircle, ChevronDown, ChevronUp, CheckCircle2, AlertCircle, X, Sparkles, MapPin, QrCode } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { trackPageView, trackMiEspacioClick } from './utils/analytics';
@@ -56,7 +57,7 @@ export const App: React.FC = () => {
     const initialLocal = getStoredRegistrations();
     setRegistrations(initialLocal);
 
-    // 2. Sincronización en tiempo real con el servidor para todos los navegadores
+    // 2. Sincronización en tiempo real con el servidor o local (Hostinger static fallback)
     const syncRegistrations = () => {
       fetch('/api/registrations')
         .then((res) => {
@@ -78,7 +79,21 @@ export const App: React.FC = () => {
             }
           }
         })
-        .catch(() => {});
+        .catch(() => {
+          // Fallback resiliente para Hostinger www.ohanago.pro sin backend Node activo
+          const localData = getStoredRegistrations();
+          if (Array.isArray(localData) && localData.length > 0) {
+            setRegistrations(localData);
+            const currentComp = activeCompetitorRef.current;
+            if (currentComp) {
+              const found = localData.find((r: RunnerRegistration) => r.id === currentComp.id || r.documentNumber === currentComp.documentNumber);
+              if (found) {
+                setActiveCompetitor(found);
+                localStorage.setItem('ohana_active_competitor', JSON.stringify(found));
+              }
+            }
+          }
+        });
     };
 
     syncRegistrations();
@@ -86,6 +101,15 @@ export const App: React.FC = () => {
     window.addEventListener('focus', syncRegistrations);
     window.addEventListener('storage', syncRegistrations);
     window.addEventListener('ohana-checkin', syncRegistrations);
+
+    // BroadcastChannel listener para sincronización instantánea entre pestañas en Hostinger
+    let checkinChan: BroadcastChannel | null = null;
+    try {
+      checkinChan = new BroadcastChannel('ohana_checkin_channel');
+      checkinChan.onmessage = () => {
+        syncRegistrations();
+      };
+    } catch (e) {}
 
     // Atajo de teclado discreto para el organizador (Alt + A)
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -105,30 +129,23 @@ export const App: React.FC = () => {
       if (runnerParam || dniParam) {
         // Limpiar URL sin recargar
         window.history.replaceState({}, document.title, window.location.pathname);
-        fetch('/api/start-checkin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            runnerId: runnerParam,
-            dni: dniParam,
-            code: runnerParam || dniParam,
-          }),
-        })
-          .then((r) => r.json())
-          .then((data) => {
-            if (data.runner) {
-              setActiveCompetitor(data.runner);
-              localStorage.setItem('ohana_active_competitor', JSON.stringify(data.runner));
-              setRegistrations((prev) =>
-                prev.map((r) => (r.id === data.runner.id ? data.runner : r))
-              );
-              setDirectCheckinSuccess(data.runner);
-              try {
-                confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-              } catch (e) {}
-            }
-          })
-          .catch(() => {});
+        processStartCheckinSafe({
+          runnerId: runnerParam || undefined,
+          dni: dniParam || undefined,
+          code: runnerParam || dniParam || undefined,
+        }).then((result) => {
+          if (result.runner) {
+            setActiveCompetitor(result.runner);
+            localStorage.setItem('ohana_active_competitor', JSON.stringify(result.runner));
+            setRegistrations((prev) =>
+              prev.map((r) => (r.id === result.runner!.id ? result.runner! : r))
+            );
+            setDirectCheckinSuccess(result.runner);
+            try {
+              confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+            } catch (e) {}
+          }
+        });
       } else if (urlParams.get('checkin') === 'start') {
         const tokenFromUrl = urlParams.get('token') || 'OHANA-START-LINE-TARAPOTO-2026';
         setDirectCheckinToken(tokenFromUrl);
@@ -142,28 +159,21 @@ export const App: React.FC = () => {
           try {
             const runnerObj = JSON.parse(savedComp);
             if (runnerObj && runnerObj.id) {
-              fetch('/api/start-checkin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  runnerId: runnerObj.id,
-                  token: tokenFromUrl,
-                }),
-              })
-                .then((r) => r.json())
-                .then((resData) => {
-                  if (resData.runner) {
-                    setActiveCompetitor(resData.runner);
-                    localStorage.setItem('ohana_active_competitor', JSON.stringify(resData.runner));
-                    setDirectCheckinSuccess(resData.runner);
-                    try {
-                      confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
-                    } catch (e) {}
-                  } else {
-                    setDirectCheckinOpen(true);
-                  }
-                })
-                .catch(() => setDirectCheckinOpen(true));
+              processStartCheckinSafe({
+                runnerId: runnerObj.id,
+                token: tokenFromUrl,
+              }).then((result) => {
+                if (result.runner) {
+                  setActiveCompetitor(result.runner);
+                  localStorage.setItem('ohana_active_competitor', JSON.stringify(result.runner));
+                  setDirectCheckinSuccess(result.runner);
+                  try {
+                    confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
+                  } catch (e) {}
+                } else {
+                  setDirectCheckinOpen(true);
+                }
+              }).catch(() => setDirectCheckinOpen(true));
               return;
             }
           } catch (e) {}
@@ -177,7 +187,10 @@ export const App: React.FC = () => {
     return () => {
       clearInterval(intervalId);
       window.removeEventListener('focus', syncRegistrations);
+      window.removeEventListener('storage', syncRegistrations);
+      window.removeEventListener('ohana-checkin', syncRegistrations);
       window.removeEventListener('keydown', handleKeyDown);
+      if (checkinChan) checkinChan.close();
     };
   }, []);
 
@@ -192,28 +205,23 @@ export const App: React.FC = () => {
     setDirectCheckinError(null);
 
     try {
-      const res = await fetch('/api/start-checkin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          dni: directCheckinQuery.trim(),
-          token: directCheckinToken,
-        }),
+      const result = await processStartCheckinSafe({
+        dni: directCheckinQuery.trim(),
+        token: directCheckinToken,
       });
 
-      const data = await res.json();
-      if (!res.ok || !data.runner) {
-        setDirectCheckinError(data.error || 'No se encontró un competidor registrado con ese documento.');
+      if (!result.success || !result.runner) {
+        setDirectCheckinError(result.error || 'No se encontró un competidor registrado con ese documento.');
         return;
       }
 
       // Éxito: actualiza estados y guarda sesión de competidor
-      setActiveCompetitor(data.runner);
-      localStorage.setItem('ohana_active_competitor', JSON.stringify(data.runner));
+      setActiveCompetitor(result.runner);
+      localStorage.setItem('ohana_active_competitor', JSON.stringify(result.runner));
       setRegistrations((prev) =>
-        prev.map((r) => (r.id === data.runner.id ? data.runner : r))
+        prev.map((r) => (r.id === result.runner!.id ? result.runner! : r))
       );
-      setDirectCheckinSuccess(data.runner);
+      setDirectCheckinSuccess(result.runner);
       setDirectCheckinOpen(false);
 
       try {
@@ -221,7 +229,7 @@ export const App: React.FC = () => {
         confetti({ particleCount: 100, spread: 75, origin: { y: 0.6 } });
       } catch (err) {}
     } catch (err) {
-      setDirectCheckinError('Error de conexión al procesar tu check-in.');
+      setDirectCheckinError('Error al procesar tu check-in.');
     } finally {
       setDirectCheckinLoading(false);
     }

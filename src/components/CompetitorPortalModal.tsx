@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { RunnerRegistration } from '../types/race';
 import { QRScannerModal } from './QRScannerModal';
+import { processStartCheckinSafe } from '../utils/checkinManager';
 
 interface CompetitorPortalModalProps {
   competitor: RunnerRegistration;
@@ -55,39 +56,26 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
 
   const handleStartQRScan = async (scannedToken: string) => {
     try {
-      const res = await fetch('/api/start-checkin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          runnerId: competitor.id,
-          dni: competitor.documentNumber,
-          token: scannedToken,
-        }),
+      const result = await processStartCheckinSafe({
+        runnerId: competitor.id,
+        dni: competitor.documentNumber,
+        token: scannedToken,
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        setActionErrorMessage(data.error || 'Código QR no válido para entrega de kit.');
+      if (result.success && result.runner) {
+        onUpdateCompetitor(result.runner);
+        setIsScannerOpen(false);
+
+        try {
+          confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+        } catch (e) {}
+
+        setActionSuccessMessage('¡Kit Inicial Entregado y Asistencia Confirmada! Prepárate para la carrera 🏃‍♂️💨');
+        setTimeout(() => setActionSuccessMessage(null), 6000);
+      } else {
+        setActionErrorMessage(result.error || 'Código QR no válido para entrega de kit.');
         setTimeout(() => setActionErrorMessage(null), 4000);
-        return;
       }
-
-      const updated = data.runner || {
-        ...competitor,
-        confirmedAtStart: true,
-        startCheckinTime: new Date().toISOString()
-      };
-      
-      onUpdateCompetitor(updated);
-      setIsScannerOpen(false);
-
-      try {
-        window.dispatchEvent(new CustomEvent('ohana-checkin', { detail: updated }));
-        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-      } catch (e) {}
-
-      setActionSuccessMessage('¡Kit Inicial Entregado y Asistencia Confirmada! Prepárate para la carrera 🏃‍♂️💨');
-      setTimeout(() => setActionSuccessMessage(null), 6000);
     } catch (err: any) {
       setActionErrorMessage('Error al procesar el código.');
     }

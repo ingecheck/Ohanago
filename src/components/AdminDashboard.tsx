@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { RunnerRegistration, PaymentStatus, RaceModality } from '../types/race';
-import { saveRegistrations } from '../data/initialRegistrations';
+import { saveRegistrations, getStoredRegistrations } from '../data/initialRegistrations';
 import { adminLogout, updateAdminPassword } from '../data/auth';
+import { processStartCheckinSafe } from '../utils/checkinManager';
 import QRCode from 'qrcode';
 import confetti from 'canvas-confetti';
 import { QRScannerModal } from './QRScannerModal';
@@ -153,16 +154,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     loadAnalytics();
     try {
       const res = await fetch('/api/registrations');
-      if (res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
         const serverList: RunnerRegistration[] = await res.json();
         if (Array.isArray(serverList) && serverList.length > 0) {
           onUpdateRegistrations(serverList);
+          saveRegistrations(serverList);
+          return;
         }
       }
     } catch (err) {
-      console.warn('Error fetching registrations:', err);
+      // Backend unavailable (Hostinger static hosting)
     } finally {
       setTimeout(() => setIsRefreshing(false), 400);
+    }
+
+    // Hostinger static or offline fallback: load from persistent local store
+    const local = getStoredRegistrations();
+    if (local && local.length > 0) {
+      onUpdateRegistrations(local);
     }
   };
 
@@ -172,7 +182,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const intervalId = setInterval(() => {
       fetchLiveRegistrations();
       loadAnalytics();
-    }, 1000);
+    }, 1500);
 
     const handleCheckinEvent = (e: any) => {
       fetchLiveRegistrations();
@@ -182,17 +192,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       }
     };
 
+    // BroadcastChannel listener for check-ins across browser windows/tabs on Hostinger
+    let checkinChannel: BroadcastChannel | null = null;
+    try {
+      checkinChannel = new BroadcastChannel('ohana_checkin_channel');
+      checkinChannel.onmessage = (event) => {
+        if (event.data && event.data.runner) {
+          fetchLiveRegistrations();
+          setLiveNotice(`🎉 ¡${event.data.runner.firstName} ${event.data.runner.lastName} confirmó entrega de kit inicial en vivo!`);
+          setTimeout(() => setLiveNotice(null), 5000);
+        }
+      };
+    } catch (e) {}
+
     // Instant SSE listener for real-time check-in updates
     let eventSource: EventSource | null = null;
     try {
       eventSource = new EventSource('/api/admin/stream');
       eventSource.onmessage = (event) => {
         try {
-          const parsed = JSON.parse(event.data);
-          if (parsed && parsed.type === 'checkin' && parsed.runner) {
-            fetchLiveRegistrations();
-            setLiveNotice(`🎉 ¡${parsed.runner.firstName} ${parsed.runner.lastName} confirmó entrega de kit inicial en vivo!`);
-            setTimeout(() => setLiveNotice(null), 5000);
+          if (event.data && event.data.startsWith('{')) {
+            const parsed = JSON.parse(event.data);
+            if (parsed && parsed.type === 'checkin' && parsed.runner) {
+              fetchLiveRegistrations();
+              setLiveNotice(`🎉 ¡${parsed.runner.firstName} ${parsed.runner.lastName} confirmó entrega de kit inicial en vivo!`);
+              setTimeout(() => setLiveNotice(null), 5000);
+            }
           }
         } catch (e) {}
       };
@@ -203,6 +228,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     return () => {
       clearInterval(intervalId);
       if (eventSource) eventSource.close();
+      if (checkinChannel) checkinChannel.close();
       window.removeEventListener('ohana-checkin', handleCheckinEvent);
       window.removeEventListener('storage', fetchLiveRegistrations);
     };
@@ -929,21 +955,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           onScanSuccess={async (scannedText) => {
             setShowStaffScanner(false);
             try {
-              // Directly confirm kit delivery on server
-              const checkRes = await fetch('/api/start-checkin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  runnerId: scannedText,
-                  dni: scannedText,
-                  code: scannedText,
-                  token: 'ADMIN_CHECKIN_OVERRIDE',
-                }),
+              const checkData = await processStartCheckinSafe({
+                runnerId: scannedText,
+                dni: scannedText,
+                code: scannedText,
+                token: 'ADMIN_CHECKIN_OVERRIDE',
               });
-              const checkData = await checkRes.json();
-              if (checkRes.ok && checkData.runner) {
+              if (checkData.success && checkData.runner) {
                 const updatedList = registrations.map((r) =>
-                  r.id === checkData.runner.id ? checkData.runner : r
+                  r.id === checkData.runner!.id ? checkData.runner! : r
                 );
                 onUpdateRegistrations(updatedList);
                 saveRegistrations(updatedList);
@@ -958,7 +978,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 setTimeout(() => setLiveNotice(null), 5000);
               }
             } catch (err) {
-              setLiveNotice('❌ Error de conexión al validar código.');
+              setLiveNotice('❌ Error al procesar acreditación.');
               setTimeout(() => setLiveNotice(null), 4000);
             }
           }}
