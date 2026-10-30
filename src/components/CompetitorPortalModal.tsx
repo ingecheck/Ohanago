@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import {
   User,
@@ -14,7 +14,10 @@ import {
   Camera,
   Phone,
   Calendar,
-  PackageCheck
+  PackageCheck,
+  Award,
+  Trophy,
+  Timer
 } from 'lucide-react';
 import { RunnerRegistration } from '../types/race';
 import { QRScannerModal } from './QRScannerModal';
@@ -38,44 +41,17 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
 
   const isVirtual = competitor.modality === 'Virtual';
 
-  const [isConfirming, setIsConfirming] = useState<boolean>(false);
+  // Live time tracking for the 7:15 PM milestone
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
-  const handleConfirmKitDirectly = async () => {
-    setIsConfirming(true);
-    setActionErrorMessage(null);
-    try {
-      const res = await fetch('/api/start-checkin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          runnerId: competitor.id,
-          dni: competitor.documentNumber,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setActionErrorMessage(data.error || 'Error al validar entrega de kit.');
-        setTimeout(() => setActionErrorMessage(null), 4000);
-        return;
-      }
-      const updated = data.runner || {
-        ...competitor,
-        confirmedAtStart: true,
-        startCheckinTime: new Date().toISOString(),
-      };
-      onUpdateCompetitor(updated);
-      try {
-        window.dispatchEvent(new CustomEvent('ohana-checkin', { detail: updated }));
-        confetti({ particleCount: 130, spread: 85, origin: { y: 0.6 } });
-      } catch (e) {}
-      setActionSuccessMessage('¡Kit Inicial Entregado y Asistencia Confirmada! Acreditado en el sistema.');
-      setTimeout(() => setActionSuccessMessage(null), 6000);
-    } catch (e) {
-      setActionErrorMessage('Error de conexión al registrar check-in.');
-    } finally {
-      setIsConfirming(false);
-    }
-  };
+  const currentHours = currentTime.getHours();
+  const currentMinutes = currentTime.getMinutes();
+  // 7:15 PM is 19:15
+  const isPost715PM = (currentHours > 19) || (currentHours === 19 && currentMinutes >= 15);
 
   const handleStartQRScan = async (scannedToken: string) => {
     try {
@@ -260,28 +236,113 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
                 </div>
               </div>
 
-              <div className="w-full md:w-auto shrink-0 flex flex-col sm:flex-row items-center gap-3">
-                <button
-                  type="button"
-                  onClick={handleConfirmKitDirectly}
-                  disabled={isConfirming}
-                  className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-lime-400 hover:from-emerald-400 hover:to-lime-300 text-black font-bebas text-lg sm:text-xl uppercase tracking-wider transition shadow-xl shadow-lime-400/25 flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.02]"
-                >
-                  <PackageCheck className="w-5 h-5 text-black" />
-                  <span>{isConfirming ? 'Confirmando...' : '✓ Confirmar Entrega de Kit'}</span>
-                </button>
-
+              <div className="w-full md:w-auto shrink-0 flex items-center">
                 <button
                   type="button"
                   onClick={() => setIsScannerOpen(true)}
-                  className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-neutral-800 hover:bg-neutral-700 text-white font-bebas text-lg sm:text-xl uppercase tracking-wider transition border border-neutral-700 flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-gradient-to-r from-lime-400 to-emerald-400 hover:from-lime-300 hover:to-emerald-300 text-black font-bebas text-lg sm:text-xl uppercase tracking-wider transition shadow-xl shadow-lime-400/25 flex items-center justify-center gap-2.5 cursor-pointer hover:scale-[1.02]"
                 >
-                  <Camera className="w-5 h-5 text-lime-400" />
-                  <span>Escanear QR</span>
+                  <Camera className="w-5 h-5 text-black stroke-[2.5]" />
+                  <span>Escanear QR de Acreditación</span>
                 </button>
               </div>
             </div>
           )}
+        </div>
+
+        {/* APARTADO OFICIAL 7:15 PM: LLEGADA A META & MEDALLA FINISHER EN ENTRE JARRAS */}
+        <div className={`p-6 sm:p-7 rounded-3xl border-2 transition-all shadow-2xl space-y-4 ${
+          isPost715PM || competitor.finishedAtMeta
+            ? 'bg-gradient-to-br from-neutral-900 via-amber-950/40 to-neutral-900 border-amber-400 shadow-amber-500/20'
+            : 'bg-neutral-900/90 border-neutral-800'
+        }`}>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-800 pb-3">
+            <div className="flex items-center gap-3">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl shrink-0 shadow-lg ${
+                isPost715PM || competitor.finishedAtMeta
+                  ? 'bg-gradient-to-br from-amber-400 to-yellow-500 text-black shadow-amber-500/30'
+                  : 'bg-neutral-800 text-neutral-400'
+              }`}>
+                <Award className="w-6 h-6 stroke-[2.2]" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                    isPost715PM || competitor.finishedAtMeta
+                      ? 'bg-amber-400/20 text-amber-300 border-amber-400/40 animate-pulse'
+                      : 'bg-neutral-800 text-neutral-400 border-neutral-700'
+                  }`}>
+                    {isPost715PM || competitor.finishedAtMeta ? '🔴 Apartado Activo • 7:15 PM' : 'Apartado Programado • 7:15 PM'}
+                  </span>
+                  <span className="text-[11px] text-neutral-400 font-mono hidden sm:inline">
+                    Hora actual: {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  </span>
+                </div>
+                <h3 className="font-bebas text-2xl sm:text-3xl text-white uppercase tracking-wide leading-none mt-1">
+                  Apartado 7:15 PM • Meta Oficial & Medalla Finisher
+                </h3>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold text-amber-300 bg-neutral-950 px-3 py-1.5 rounded-xl border border-amber-500/30">
+                📍 Entre Jarras (Av. Lima 1230)
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-center">
+            {/* Left: Medal Image */}
+            <div className="flex flex-col items-center justify-center bg-black/60 rounded-2xl p-4 border border-neutral-800">
+              <div className="relative w-32 h-32 sm:w-36 sm:h-36 flex items-center justify-center">
+                <img
+                  src="/official-medal.png"
+                  alt="Medalla Finisher Oficial OHANA GO 5K"
+                  className="w-full h-full object-contain filter drop-shadow-[0_10px_20px_rgba(234,179,8,0.3)] hover:scale-105 transition-transform"
+                />
+              </div>
+              <span className="text-[10px] font-black uppercase text-amber-400 mt-2 tracking-wider">
+                Medalla Finisher 5K Oficial
+              </span>
+            </div>
+
+            {/* Right: Info and state */}
+            <div className="md:col-span-2 space-y-3 text-xs">
+              {isPost715PM || competitor.finishedAtMeta ? (
+                <div className="p-4 rounded-2xl bg-amber-950/60 border border-amber-500/40 space-y-2.5">
+                  <div className="flex items-center gap-2 text-amber-300 font-bold text-sm">
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span>¡Punto de Meta & Entrega de Medalla Habilitado!</span>
+                  </div>
+                  <p className="text-neutral-200 leading-relaxed text-xs">
+                    ¡Felicitaciones, <strong>{competitor.firstName} {competitor.lastName}</strong>! Has completado el recorrido nocturno de los 5K. Dirígete a la carpa de acreditación en <strong>Entre Jarras</strong> para recibir tu <strong>Medalla Oficial Finisher</strong> y disfrutar del after-race junto a la <strong>Ruleta de los 22 Premios</strong>.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] font-mono text-amber-300">
+                    <span className="bg-black/50 px-2.5 py-1 rounded-lg border border-amber-500/30">
+                      ✓ Atleta: {competitor.firstName} {competitor.lastName}
+                    </span>
+                    <span className="bg-black/50 px-2.5 py-1 rounded-lg border border-amber-500/30">
+                      Ticket Ruleta #{competitor.registrationNumber || competitor.bibNumber || 1}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-2.5">
+                  <div className="flex items-center gap-2 text-lime-400 font-bold text-sm">
+                    <Clock className="w-4 h-4 text-lime-400" />
+                    <span>Se activa automáticamente a las 7:15 PM</span>
+                  </div>
+                  <p className="text-neutral-300 leading-relaxed text-xs">
+                    Al cruzar la meta en Entre Jarras a partir de las <strong>7:15 PM</strong>, este apartado confirmará tu acreditación como Finisher oficial. En este punto recibirás tu medalla conmemorativa de metal y se dará inicio al sorteo de los 22 premios oficiales con la Ruleta.
+                  </p>
+                  <div className="text-[11px] text-neutral-400 flex items-center gap-2 font-mono">
+                    <Timer className="w-3.5 h-3.5 text-lime-400" />
+                    <span>Itinerario: 5:30 PM (Plaza de Armas) → 7:00 PM (Partida) → 7:15 PM (Meta Entre Jarras)</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Clean Official Verification Card */}
@@ -378,6 +439,7 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
           title="Escáner QR • Entrega de Kit Inicial"
           subtitle="Apunta la cámara al código QR oficial en el stand de acreditación de la Plaza de Armas."
           expectedType="start_checkin"
+          allowManualInput={false}
           onScanSuccess={(token) => {
             setIsScannerOpen(false);
             handleStartQRScan(token);

@@ -7,6 +7,7 @@ interface QRScannerModalProps {
   title: string;
   subtitle?: string;
   expectedType?: 'start_checkin' | 'any';
+  allowManualInput?: boolean;
   onScanSuccess: (decodedText: string) => void;
   onClose: () => void;
 }
@@ -15,6 +16,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   title,
   subtitle,
   expectedType = 'any',
+  allowManualInput = false,
   onScanSuccess,
   onClose,
 }) => {
@@ -57,7 +59,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
       } catch (err: any) {
         console.warn('Camera error:', err);
         setCameraError(
-          'No se pudo acceder a la cámara o el navegador no otorgó permisos. Puedes ingresar el código o usar los accesos de prueba abajo.'
+          'No se pudo acceder a la cámara o el navegador no otorgó permisos. Por favor concede permisos de cámara en tu navegador para escanear el código QR.'
         );
         setIsScanning(false);
       }
@@ -183,35 +185,39 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
             <div className="absolute inset-0 bg-neutral-950/95 flex flex-col items-center justify-center p-6 text-center text-xs text-neutral-400 z-30">
               <AlertCircle className="w-10 h-10 text-amber-400 mb-2" />
               <p className="mb-2 text-neutral-300 font-medium">{cameraError}</p>
-              <span className="text-xs text-lime-400 font-bold">
-                Puedes ingresar el número de DNI manualmente abajo:
-              </span>
+              {allowManualInput && (
+                <span className="text-xs text-lime-400 font-bold">
+                  Puedes ingresar el número de DNI manualmente abajo:
+                </span>
+              )}
             </div>
           )}
         </div>
 
-        {/* Manual code input */}
-        <form onSubmit={handleManualSubmit} className="mb-4">
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-1">
-            Ingreso manual de código QR o DNI
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={manualCode}
-              onChange={(e) => setManualCode(e.target.value)}
-              placeholder="Ej: 47605471 o OHA-2026-0003"
-              className="flex-1 bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-lime-400"
-            />
-            <button
-              type="submit"
-              disabled={!manualCode.trim()}
-              className="px-4 py-2 bg-lime-400 hover:bg-lime-300 disabled:opacity-50 text-black font-bebas text-base uppercase rounded-xl transition cursor-pointer"
-            >
-              Validar
-            </button>
-          </div>
-        </form>
+        {/* Manual code input (only for authorized staff if allowManualInput is true, strictly hidden for competitors) */}
+        {allowManualInput && (
+          <form onSubmit={handleManualSubmit} className="mb-4">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-1">
+              Ingreso manual de código QR o DNI
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={manualCode}
+                onChange={(e) => setManualCode(e.target.value)}
+                placeholder="Ej: 47605471 o OHA-2026-0003"
+                className="flex-1 bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-lime-400"
+              />
+              <button
+                type="submit"
+                disabled={!manualCode.trim()}
+                className="px-4 py-2 bg-lime-400 hover:bg-lime-300 disabled:opacity-50 text-black font-bebas text-base uppercase rounded-xl transition cursor-pointer"
+              >
+                Validar
+              </button>
+            </div>
+          </form>
+        )}
 
 
 

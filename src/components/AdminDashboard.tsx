@@ -31,7 +31,8 @@ import {
   Eye,
   Activity,
   MousePointerClick,
-  Trophy
+  Trophy,
+  Download
 } from 'lucide-react';
 import { AdminAnalyticsTab } from './AdminAnalyticsTab';
 import { AdminRouletteModal } from './AdminRouletteModal';
@@ -899,6 +900,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <Printer className="w-4 h-4" />
                   Imprimir Cartel de Acreditación
                 </button>
+
+                {/* Download High-Res QR Button */}
+                {startQrDataUrl && (
+                  <a
+                    href={startQrDataUrl}
+                    download="QR_Entrega_Kit_Ohana_Tarapoto_5K.png"
+                    className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-lime-400 hover:text-white font-bebas text-base uppercase tracking-wider transition flex items-center gap-1.5 cursor-pointer border border-lime-400/40 shadow-md"
+                    title="Descargar imagen oficial del código QR en formato PNG para imprimir"
+                  >
+                    <Download className="w-4 h-4 text-lime-400" />
+                    Descargar QR (PNG)
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -911,6 +925,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           title="Acreditación de Corredor • Entrega de Kit"
           subtitle="Apunta la cámara al código del participante o ingresa su DNI."
           expectedType="any"
+          allowManualInput={true}
           onScanSuccess={async (scannedText) => {
             setShowStaffScanner(false);
             try {

@@ -110,7 +110,7 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
     }
   };
 
-  // Poll roulette state every 700ms for fallback synchronization
+  // Fetch roulette state on mount and fallback
   const fetchRouletteState = async () => {
     try {
       const res = await fetch('/api/roulette');
@@ -125,19 +125,36 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
 
   useEffect(() => {
     fetchRouletteState();
-    const interval = setInterval(fetchRouletteState, 700);
 
-    // Instant SSE Stream listener
+    // Gentle heartbeat fallback interval (12s when SSE is active, avoids server overload with 200+ users)
+    let fallbackIntervalTime = 12000;
+    let interval = setInterval(fetchRouletteState, fallbackIntervalTime);
+
+    // Instant SSE Stream listener (real-time zero-delay server push)
     let eventSource: EventSource | null = null;
     try {
       eventSource = new EventSource('/api/roulette/stream');
       eventSource.onmessage = (event) => {
         try {
-          const parsed = JSON.parse(event.data);
-          if (parsed && typeof parsed === 'object') {
-            handleIncomingState(parsed);
+          // ignore heartbeat comments
+          if (event.data && event.data.startsWith('{')) {
+            const parsed = JSON.parse(event.data);
+            if (parsed && typeof parsed === 'object') {
+              handleIncomingState(parsed);
+            }
           }
         } catch (e) {}
+      };
+
+      eventSource.onerror = () => {
+        // If SSE temporarily drops, speed up polling to 3.5s until reconnected
+        clearInterval(interval);
+        interval = setInterval(fetchRouletteState, 3500);
+      };
+
+      eventSource.onopen = () => {
+        clearInterval(interval);
+        interval = setInterval(fetchRouletteState, 12000);
       };
     } catch (e) {}
 
