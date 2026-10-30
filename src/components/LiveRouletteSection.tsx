@@ -261,7 +261,21 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
   }, [displayTicket]);
 
   if (state && state.isActive === false && !isAdmin) {
-    return null;
+    return (
+      <section id="ruleta-sorteo" className="py-8 px-4 bg-neutral-950/90 border-y border-purple-500/30 text-center">
+        <div className="max-w-xl mx-auto p-5 rounded-3xl bg-neutral-900 border border-neutral-800 space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 text-amber-400 border border-amber-400/30 text-xs font-bold font-mono">
+            <span>🎡 Ruleta Oficial 5K • 22 Sorteos (266 Tickets)</span>
+          </div>
+          <h3 className="font-bebas text-2xl text-white uppercase tracking-wider">
+            Sorteos en Vivo • Meta Entre Jarras
+          </h3>
+          <p className="text-xs text-neutral-400">
+            La ruleta se activará automáticamente en tu pantalla cuando el organizador inicie el sorteo. ¡Conexión en vivo activa sin necesidad de actualizar la página!
+          </p>
+        </div>
+      </section>
+    );
   }
 
 

@@ -227,7 +227,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     let unsubFirestore: (() => void) | null = null;
     try {
       unsubFirestore = subscribeToRegistrationsFirestore((runner) => {
-        fetchLiveRegistrations();
+        const currentList = getStoredRegistrations();
+        const updated = currentList.map((r) => (r.id === runner.id ? { ...r, ...runner, confirmedAtStart: true } : r));
+        onUpdateRegistrations(updated);
+        saveRegistrations(updated);
         setLiveNotice(`🎉 ¡${runner.firstName} ${runner.lastName} confirmó entrega de kit inicial en vivo!`);
         setTimeout(() => setLiveNotice(null), 5000);
       });

@@ -3,12 +3,13 @@
   "totalTickets": 266,
   "totalDraws": 22,
   "currentDrawNumber": 1,
-  "currentPrizeName": "Premio #1: Sorteo Oficial Ohana Go 5K",
+  "currentPrizeName": "Premio #1: Kit Oficial Ohana Go 5K + Zapatillas Running",
   "isSpinning": false,
   "spinStartTime": 0,
   "spinDuration": 6000,
   "targetTicket": 1,
   "targetAngle": 0,
   "winners": [],
-  "lastWinner": null
+  "lastWinner": null,
+  "updatedAt": "2026-10-30T18:26:14.735Z"
 }

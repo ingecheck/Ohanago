@@ -73,20 +73,32 @@ export function getStoredRouletteState(): RouletteState {
   return getDefaultRouletteState();
 }
 
+function cleanObject<T>(data: T): T {
+  if (data === null || data === undefined) return null as any;
+  if (Array.isArray(data)) return data.map(cleanObject).filter((v) => v !== undefined) as any;
+  if (typeof data === 'object') {
+    const res: any = {};
+    for (const [k, v] of Object.entries(data)) {
+      if (v !== undefined) {
+        res[k] = cleanObject(v);
+      }
+    }
+    return res;
+  }
+  return data;
+}
+
 /**
  * Sync state to Firestore so all mobile phones in the world see the spin in real time
  */
 export async function syncRouletteToFirestore(state: RouletteState) {
   try {
     const ref = doc(db, 'roulette', FIRESTORE_ROULETTE_DOC);
-    await setDoc(
-      ref,
-      {
-        ...state,
-        updatedAt: new Date().toISOString(),
-      },
-      { merge: true }
-    );
+    const cleaned = cleanObject({
+      ...state,
+      updatedAt: new Date().toISOString(),
+    });
+    await setDoc(ref, cleaned, { merge: true });
   } catch (e) {
     console.warn('Notice: Firestore sync fallback active:', e);
   }

@@ -14,7 +14,7 @@ import { Footer } from './components/Footer';
 import { RunnerRegistration } from './types/race';
 import { getStoredRegistrations } from './data/initialRegistrations';
 import { isAdminAuthenticated } from './data/auth';
-import { processStartCheckinSafe } from './utils/checkinManager';
+import { processStartCheckinSafe, subscribeToRegistrationsFirestore } from './utils/checkinManager';
 import { HelpCircle, ChevronDown, ChevronUp, CheckCircle2, AlertCircle, X, Sparkles, MapPin, QrCode } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { trackPageView, trackMiEspacioClick } from './utils/analytics';
@@ -111,6 +111,25 @@ export const App: React.FC = () => {
       };
     } catch (e) {}
 
+    // Cloud Firestore real-time listener para acreditación y entrega de kit entre todos los celulares
+    let unsubCheckins: (() => void) | null = null;
+    try {
+      unsubCheckins = subscribeToRegistrationsFirestore((runner) => {
+        setRegistrations((prev) => {
+          const next = prev.map((r) => (r.id === runner.id ? { ...r, ...runner, confirmedAtStart: true } : r));
+          return next;
+        });
+
+        // Actualizar sesión si el corredor activo es este participante
+        const currentComp = activeCompetitorRef.current;
+        if (currentComp && (currentComp.id === runner.id || currentComp.documentNumber === runner.documentNumber)) {
+          const updatedComp = { ...currentComp, ...runner, confirmedAtStart: true };
+          setActiveCompetitor(updatedComp);
+          localStorage.setItem('ohana_active_competitor', JSON.stringify(updatedComp));
+        }
+      });
+    } catch (e) {}
+
     // Atajo de teclado discreto para el organizador (Alt + A)
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey && (e.key === 'a' || e.key === 'A')) {
@@ -186,6 +205,7 @@ export const App: React.FC = () => {
 
     return () => {
       clearInterval(intervalId);
+      if (unsubCheckins) unsubCheckins();
       window.removeEventListener('focus', syncRegistrations);
       window.removeEventListener('storage', syncRegistrations);
       window.removeEventListener('ohana-checkin', syncRegistrations);

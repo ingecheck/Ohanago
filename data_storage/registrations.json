@@ -28,7 +28,9 @@
     "createdAt": "2026-10-28T01:47:39.611Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0002",
@@ -59,7 +61,9 @@
     "createdAt": "2026-10-28T01:47:39.611Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0003",
@@ -90,7 +94,9 @@
     "createdAt": "2026-10-28T01:47:39.611Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0004",
@@ -121,7 +127,9 @@
     "createdAt": "2026-10-28T01:47:39.611Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0005",
@@ -152,7 +160,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0006",
@@ -183,7 +193,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0007",
@@ -214,7 +226,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0008",
@@ -245,7 +259,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0009",
@@ -276,7 +292,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0010",
@@ -307,7 +325,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0011",
@@ -338,7 +358,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0012",
@@ -369,7 +391,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0013",
@@ -400,7 +424,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0014",
@@ -431,7 +457,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0015",
@@ -462,7 +490,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0016",
@@ -493,7 +523,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0017",
@@ -524,7 +556,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0018",
@@ -555,7 +589,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0019",
@@ -586,7 +622,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0020",
@@ -617,7 +655,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0021",
@@ -648,7 +688,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0022",
@@ -679,7 +721,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0023",
@@ -710,7 +754,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0024",
@@ -741,7 +787,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0025",
@@ -772,7 +820,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0026",
@@ -803,7 +853,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0027",
@@ -834,7 +886,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0028",
@@ -865,7 +919,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0029",
@@ -896,7 +952,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0030",
@@ -927,7 +985,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0031",
@@ -958,7 +1018,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0032",
@@ -989,7 +1051,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0033",
@@ -1020,7 +1084,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0034",
@@ -1051,7 +1117,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0035",
@@ -1082,7 +1150,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0036",
@@ -1113,7 +1183,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0037",
@@ -1144,7 +1216,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0038",
@@ -1175,7 +1249,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0039",
@@ -1206,7 +1282,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0040",
@@ -1237,7 +1315,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0041",
@@ -1268,7 +1348,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0042",
@@ -1299,7 +1381,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0043",
@@ -1330,7 +1414,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0044",
@@ -1361,7 +1447,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0045",
@@ -1392,7 +1480,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0046",
@@ -1423,7 +1513,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0047",
@@ -1454,7 +1546,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0048",
@@ -1485,7 +1579,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0049",
@@ -1516,7 +1612,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0050",
@@ -1547,7 +1645,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0051",
@@ -1578,7 +1678,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0052",
@@ -1609,7 +1711,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0053",
@@ -1640,7 +1744,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0054",
@@ -1671,7 +1777,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0055",
@@ -1702,7 +1810,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0056",
@@ -1733,7 +1843,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0057",
@@ -1764,7 +1876,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0058",
@@ -1795,7 +1909,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0059",
@@ -1826,7 +1942,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0060",
@@ -1857,7 +1975,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0061",
@@ -1888,7 +2008,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0062",
@@ -1919,7 +2041,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0063",
@@ -1950,7 +2074,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0064",
@@ -1981,7 +2107,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0065",
@@ -2012,7 +2140,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0066",
@@ -2043,7 +2173,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0067",
@@ -2074,7 +2206,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0068",
@@ -2105,7 +2239,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0069",
@@ -2136,7 +2272,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0070",
@@ -2167,7 +2305,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0071",
@@ -2198,7 +2338,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0072",
@@ -2229,7 +2371,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0073",
@@ -2260,7 +2404,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0074",
@@ -2291,7 +2437,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0075",
@@ -2322,7 +2470,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0076",
@@ -2353,7 +2503,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0077",
@@ -2384,7 +2536,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0078",
@@ -2415,7 +2569,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0079",
@@ -2446,7 +2602,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0080",
@@ -2477,7 +2635,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0081",
@@ -2508,7 +2668,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0082",
@@ -2539,7 +2701,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0083",
@@ -2570,7 +2734,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0084",
@@ -2601,7 +2767,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0085",
@@ -2632,7 +2800,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0086",
@@ -2663,7 +2833,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0087",
@@ -2694,7 +2866,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0088",
@@ -2725,7 +2899,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0089",
@@ -2756,7 +2932,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0090",
@@ -2787,7 +2965,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0091",
@@ -2818,7 +2998,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0092",
@@ -2849,7 +3031,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0093",
@@ -2880,7 +3064,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0094",
@@ -2911,7 +3097,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0095",
@@ -2942,7 +3130,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0096",
@@ -2973,7 +3163,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0097",
@@ -3004,7 +3196,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0098",
@@ -3035,7 +3229,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0099",
@@ -3066,7 +3262,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0100",
@@ -3097,7 +3295,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0101",
@@ -3128,7 +3328,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0102",
@@ -3159,7 +3361,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0103",
@@ -3190,7 +3394,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0104",
@@ -3221,7 +3427,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0105",
@@ -3252,7 +3460,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0106",
@@ -3283,7 +3493,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0107",
@@ -3314,7 +3526,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0108",
@@ -3345,7 +3559,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0109",
@@ -3376,7 +3592,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0110",
@@ -3407,7 +3625,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0111",
@@ -3438,7 +3658,9 @@
     "createdAt": "2026-10-28T01:47:39.612Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0112",
@@ -3469,7 +3691,9 @@
     "createdAt": "2026-10-29T23:49:18.273Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0113",
@@ -3500,7 +3724,9 @@
     "createdAt": "2026-10-29T23:49:18.273Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0114",
@@ -3531,7 +3757,9 @@
     "createdAt": "2026-10-29T23:49:18.273Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0115",
@@ -3562,7 +3790,9 @@
     "createdAt": "2026-10-29T23:49:18.273Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0116",
@@ -3593,7 +3823,9 @@
     "createdAt": "2026-10-29T23:49:18.274Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0117",
@@ -3624,7 +3856,9 @@
     "createdAt": "2026-10-29T23:49:18.274Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0118",
@@ -3655,7 +3889,9 @@
     "createdAt": "2026-10-29T23:49:18.274Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0119",
@@ -3686,7 +3922,9 @@
     "createdAt": "2026-10-29T23:49:18.274Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0120",
@@ -3717,7 +3955,9 @@
     "createdAt": "2026-10-29T23:49:18.274Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0121",
@@ -3748,7 +3988,9 @@
     "createdAt": "2026-10-29T23:49:18.274Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0122",
@@ -3779,7 +4021,9 @@
     "createdAt": "2026-10-29T23:49:18.274Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0123",
@@ -3810,7 +4054,9 @@
     "createdAt": "2026-10-29T23:49:18.274Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0124",
@@ -3841,7 +4087,9 @@
     "createdAt": "2026-10-29T23:49:18.274Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0125",
@@ -3872,7 +4120,9 @@
     "createdAt": "2026-10-29T23:49:18.274Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0126",
@@ -3903,7 +4153,9 @@
     "createdAt": "2026-10-29T23:49:18.274Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0127",
@@ -3934,7 +4186,9 @@
     "createdAt": "2026-10-29T23:49:18.274Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   },
   {
     "id": "OHA-2026-0128",
@@ -3965,6 +4219,8 @@
     "createdAt": "2026-10-29T23:49:18.274Z",
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
-    "medalDelivered": false
+    "medalDelivered": false,
+    "startCheckinTime": null,
+    "finishCheckinTime": null
   }
 ]

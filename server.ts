@@ -53,7 +53,7 @@ export interface RouletteState {
 
 function getInitialRoulette(): RouletteState {
   return {
-    isActive: false,
+    isActive: true,
     totalTickets: 266,
     totalDraws: 22,
     currentDrawNumber: 1,

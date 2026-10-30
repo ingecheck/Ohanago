@@ -5,6 +5,21 @@ import { db } from '../firebase';
 
 const CHECKIN_CHANNEL_NAME = 'ohana_checkin_channel';
 
+export function cleanFirestoreData<T>(data: T): T {
+  if (data === null || data === undefined) return null as any;
+  if (Array.isArray(data)) return data.map(cleanFirestoreData).filter((v) => v !== undefined) as any;
+  if (typeof data === 'object') {
+    const res: any = {};
+    for (const [k, v] of Object.entries(data)) {
+      if (v !== undefined) {
+        res[k] = cleanFirestoreData(v);
+      }
+    }
+    return res;
+  }
+  return data;
+}
+
 export function broadcastCheckinLocal(runner: RunnerRegistration) {
   try {
     const currentList = getStoredRegistrations();
@@ -23,10 +38,15 @@ export function broadcastCheckinLocal(runner: RunnerRegistration) {
     window.dispatchEvent(new Event('storage'));
   } catch (e) {}
 
-  // Sync to Cloud Firestore so all admin phones across internet see it instantly
+  // Sync to Cloud Firestore (sanitizing undefined fields)
   try {
-    setDoc(doc(db, 'registrations', runner.id), runner, { merge: true }).catch(() => {});
-  } catch (e) {}
+    const cleaned = cleanFirestoreData(runner);
+    setDoc(doc(db, 'registrations', runner.id), cleaned, { merge: true })
+      .then(() => console.log(`[Firestore] Registered check-in for ${runner.firstName} ${runner.lastName} (${runner.id})`))
+      .catch((err) => console.error('Firestore checkin write error:', err));
+  } catch (e) {
+    console.error('Firestore checkin dispatch error:', e);
+  }
 }
 
 export function subscribeToRegistrationsFirestore(callback: (runner: RunnerRegistration) => void): Unsubscribe {
@@ -34,12 +54,10 @@ export function subscribeToRegistrationsFirestore(callback: (runner: RunnerRegis
     return onSnapshot(
       collection(db, 'registrations'),
       (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === 'added' || change.type === 'modified') {
-            const runner = change.doc.data() as RunnerRegistration;
-            if (runner && runner.id) {
-              callback(runner);
-            }
+        snapshot.docs.forEach((docSnap) => {
+          const runner = docSnap.data() as RunnerRegistration;
+          if (runner && runner.id) {
+            callback(runner);
           }
         });
       },
