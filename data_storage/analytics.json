@@ -7,8 +7,38 @@
     "kit_oficial": 0,
     "horarios": 0,
     "reglamento": 0,
-    "faq": 0
+    "faq": 0,
+    "general": 3
   },
   "competitorAccesses": [],
-  "activityLog": []
+  "activityLog": [
+    {
+      "id": "1793334210929-6aa3xn",
+      "type": "section_view",
+      "title": "¡Sorteo #1 Realizado!",
+      "description": "Ganador Ticket #245: Ticket Oficial #245 (Test Premio 1)",
+      "timestamp": "2026-10-30T04:23:30.929Z"
+    },
+    {
+      "id": "1793333863523-p1srhg",
+      "type": "qr_scan",
+      "title": "Acreditación y Kit Entregado",
+      "description": "Geraldine Betsabeth Mucha Aguilar (DNI: 72363492) confirmó su asistencia en Plaza de Armas.",
+      "timestamp": "2026-10-30T04:17:43.523Z"
+    },
+    {
+      "id": "1793333863517-mgbefw",
+      "type": "section_view",
+      "title": "¡Sorteo #1 Realizado!",
+      "description": "Ganador Ticket #082: Tifanny Cubas (Premio 1: Vale de S/ 100 en Entre Jarras)",
+      "timestamp": "2026-10-30T04:17:43.517Z"
+    },
+    {
+      "id": "1793333863512-4b1cl6",
+      "type": "section_view",
+      "title": "Ruleta de Sorteos Activada",
+      "description": "El organizador activó la ruleta en la página principal",
+      "timestamp": "2026-10-30T04:17:43.512Z"
+    }
+  ]
 }

@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
 // Body parser with 50mb limit to handle medal photo uploads cleanly
 app.use(express.json({ limit: '50mb' }));
@@ -25,6 +25,48 @@ if (!fs.existsSync(DATA_DIR)) {
 const MEDAL_FILE = path.join(DATA_DIR, 'medal.json');
 const REGISTRATIONS_FILE = path.join(DATA_DIR, 'registrations.json');
 const ANALYTICS_FILE = path.join(DATA_DIR, 'analytics.json');
+const ROULETTE_FILE = path.join(DATA_DIR, 'roulette.json');
+
+export interface RouletteWinner {
+  drawNumber: number;
+  ticketNumber: number;
+  prizeName: string;
+  wonAt: string;
+  runnerName?: string;
+  runnerDni?: string;
+}
+
+export interface RouletteState {
+  isActive: boolean;
+  totalTickets: number;
+  totalDraws: number;
+  currentDrawNumber: number;
+  currentPrizeName: string;
+  isSpinning: boolean;
+  spinStartTime: number;
+  spinDuration: number;
+  targetTicket: number;
+  targetAngle: number;
+  winners: RouletteWinner[];
+  lastWinner: RouletteWinner | null;
+}
+
+function getInitialRoulette(): RouletteState {
+  return {
+    isActive: false,
+    totalTickets: 266,
+    totalDraws: 22,
+    currentDrawNumber: 1,
+    currentPrizeName: 'Premio #1: Sorteo Oficial Ohana Go 5K',
+    isSpinning: false,
+    spinStartTime: 0,
+    spinDuration: 6000,
+    targetTicket: 1,
+    targetAngle: 0,
+    winners: [],
+    lastWinner: null,
+  };
+}
 
 export interface CompetitorAccessRecord {
   runnerId: string;
@@ -407,32 +449,15 @@ app.post('/api/verify-runner', (req, res) => {
 
 // 5. Start Line QR Check-in: Verification of attendance when arriving at starting arch
 app.post('/api/start-checkin', (req, res) => {
-  const { runnerId, dorsal, dni, token, qrData } = req.body;
-
-  const cleanToken = typeof token === 'string' ? token.trim() : '';
-  const isValid =
-    cleanToken === MASTER_START_TOKEN ||
-    cleanToken === 'ADMIN_CHECKIN_OVERRIDE' ||
-    cleanToken.includes(MASTER_START_TOKEN) ||
-    cleanToken.includes('OHANA-START-LINE') ||
-    cleanToken.includes('checkin=start');
-
-  if (!isValid) {
-    return res.status(400).json({
-      error: 'Código QR de partida no válido. Escanea el QR oficial mostrado en la Plaza de Armas.',
-    });
-  }
+  const { runnerId, dorsal, dni, token, qrData, code } = req.body;
 
   const registrations = readJSON<any[]>(REGISTRATIONS_FILE, []);
-  const match =
-    findRunner(runnerId, registrations) ||
-    findRunner(dni, registrations) ||
-    findRunner(qrData, registrations) ||
-    findRunner(dorsal, registrations);
+  const inputToMatch = code || runnerId || dni || qrData || dorsal || '';
+  const match = findRunner(inputToMatch, registrations);
 
   if (!match) {
     return res.status(404).json({
-      error: 'Competidor no encontrado para confirmación de asistencia.',
+      error: 'Competidor no encontrado para confirmación de asistencia. Verifica el DNI o código.',
     });
   }
 
@@ -445,12 +470,19 @@ app.post('/api/start-checkin', (req, res) => {
   writeJSON(REGISTRATIONS_FILE, registrations);
 
   console.log(
-    `[Check-in Realtime] Participante ${updatedRunner.firstName} ${updatedRunner.lastName} (DNI: ${updatedRunner.documentNumber}) confirmó asistencia a las ${updatedRunner.startCheckinTime}`
+    `[Check-in Realtime] Participante ${updatedRunner.firstName} ${updatedRunner.lastName} (DNI: ${updatedRunner.documentNumber}) confirmó entrega de kit a las ${updatedRunner.startCheckinTime}`
   );
+
+  logAnalyticsEvent({
+    type: 'qr_scan',
+    runner: updatedRunner,
+    title: 'Acreditación y Kit Entregado',
+    description: `${updatedRunner.firstName} ${updatedRunner.lastName} (DNI: ${updatedRunner.documentNumber}) confirmó su asistencia en Plaza de Armas.`,
+  });
 
   res.json({
     success: true,
-    message: '¡Asistencia Confirmada! Prepárate para la carrera 🏃‍♂️💨',
+    message: '¡Asistencia Confirmada! Kit Inicial Entregado 🏃‍♂️💨',
     runner: updatedRunner,
   });
 });
@@ -555,6 +587,134 @@ app.post('/api/analytics/track', (req, res) => {
 app.post('/api/analytics/reset', (req, res) => {
   writeJSON(ANALYTICS_FILE, getInitialAnalytics());
   res.json({ success: true, message: 'Analítica reseteada' });
+});
+
+// ================= 9. REAL-TIME ROULETTE / SORTEOS API (22 PREMIOS, 266 TICKETS) =================
+app.get('/api/roulette', (req, res) => {
+  const data = readJSON<RouletteState>(ROULETTE_FILE, getInitialRoulette());
+  // If spinning and duration elapsed, mark stopped
+  if (data.isSpinning && data.spinStartTime > 0) {
+    const elapsed = Date.now() - data.spinStartTime;
+    if (elapsed >= (data.spinDuration || 6000)) {
+      data.isSpinning = false;
+      writeJSON(ROULETTE_FILE, data);
+    }
+  }
+  res.json(data);
+});
+
+app.post('/api/roulette/toggle', (req, res) => {
+  const { isActive } = req.body;
+  const data = readJSON<RouletteState>(ROULETTE_FILE, getInitialRoulette());
+  data.isActive = isActive !== undefined ? !!isActive : !data.isActive;
+  writeJSON(ROULETTE_FILE, data);
+  logAnalyticsEvent({
+    type: 'section_view',
+    title: data.isActive ? 'Ruleta de Sorteos Activada' : 'Ruleta Ocultada',
+    description: `El organizador ${data.isActive ? 'activó la ruleta en la página principal' : 'ocultó la ruleta'}`,
+  });
+  res.json({ success: true, roulette: data });
+});
+
+app.post('/api/roulette/spin', (req, res) => {
+  const { prizeName } = req.body;
+  const data = readJSON<RouletteState>(ROULETTE_FILE, getInitialRoulette());
+
+  if (data.winners.length >= (data.totalDraws || 22)) {
+    return res.status(400).json({ error: 'Ya se completaron los 22 sorteos programados.' });
+  }
+
+  // Determine available tickets from 1 to 266 that haven't won yet
+  const wonTickets = new Set(data.winners.map((w) => w.ticketNumber));
+  const availableTickets: number[] = [];
+  for (let i = 1; i <= 266; i++) {
+    if (!wonTickets.has(i)) {
+      availableTickets.push(i);
+    }
+  }
+
+  if (availableTickets.length === 0) {
+    return res.status(400).json({ error: 'No quedan tickets disponibles para el sorteo.' });
+  }
+
+  // Randomly select winning ticket
+  const randomIndex = Math.floor(Math.random() * availableTickets.length);
+  const targetTicket = availableTickets[randomIndex];
+
+  // Try to match ticket with registered runner (by registrationNumber or index)
+  const registrations = readJSON<any[]>(REGISTRATIONS_FILE, []);
+  const matchingRunner = registrations.find(
+    (r) => r.registrationNumber === targetTicket || r.bibNumber === targetTicket
+  ) || (targetTicket <= registrations.length ? registrations[targetTicket - 1] : null);
+
+  const drawNum = data.winners.length + 1;
+  const prize = prizeName || data.currentPrizeName || `Sorteo #${drawNum}: Premio Oficial 5K`;
+
+  const newWinner: RouletteWinner = {
+    drawNumber: drawNum,
+    ticketNumber: targetTicket,
+    prizeName: prize,
+    wonAt: new Date().toISOString(),
+    runnerName: matchingRunner ? `${matchingRunner.firstName} ${matchingRunner.lastName}` : `Ticket Oficial #${String(targetTicket).padStart(3, '0')}`,
+    runnerDni: matchingRunner ? matchingRunner.documentNumber : undefined,
+  };
+
+  // Calculate target rotation angle so that sector `targetTicket` lands EXACTLY under top pointer at 12 o'clock (0 deg)
+  const currentRot = data.targetAngle || 0;
+  const sectorAngle = (targetTicket - 1) * (360 / 266) + (180 / 266);
+  const desiredMod = (360 - (sectorAngle % 360) + 360) % 360;
+  const currentMod = ((currentRot % 360) + 360) % 360;
+  let diff = desiredMod - currentMod;
+  if (diff < 0) diff += 360;
+  const fullSpins = (6 + Math.floor(Math.random() * 2)) * 360;
+  const targetAngle = currentRot + fullSpins + diff;
+
+  data.isSpinning = true;
+  data.spinStartTime = Date.now();
+  data.spinDuration = 6000;
+  data.targetTicket = targetTicket;
+  data.targetAngle = targetAngle;
+  data.currentDrawNumber = Math.min(drawNum + 1, 22);
+  data.currentPrizeName = `Sorteo #${Math.min(drawNum + 1, 22)}: Premio Oficial 5K`;
+  data.lastWinner = newWinner;
+  data.winners.unshift(newWinner); // most recent first
+
+  writeJSON(ROULETTE_FILE, data);
+
+  logAnalyticsEvent({
+    type: 'section_view',
+    title: `¡Sorteo #${drawNum} Realizado!`,
+    description: `Ganador Ticket #${String(targetTicket).padStart(3, '0')}: ${newWinner.runnerName || ''} (${prize})`,
+  });
+
+  res.json({ success: true, roulette: data, winner: newWinner });
+});
+
+app.post('/api/roulette/reset', (req, res) => {
+  const initial = getInitialRoulette();
+  initial.isActive = true;
+  writeJSON(ROULETTE_FILE, initial);
+  res.json({ success: true, roulette: initial });
+});
+
+app.post('/api/roulette/remove-winner', (req, res) => {
+  const { drawNumber } = req.body;
+  const data = readJSON<RouletteState>(ROULETTE_FILE, getInitialRoulette());
+  data.winners = data.winners.filter((w) => w.drawNumber !== drawNumber);
+  data.currentDrawNumber = data.winners.length + 1;
+  data.currentPrizeName = `Sorteo #${data.currentDrawNumber}: Premio Oficial 5K`;
+  writeJSON(ROULETTE_FILE, data);
+  res.json({ success: true, roulette: data });
+});
+
+app.post('/api/roulette/update-prize', (req, res) => {
+  const { currentPrizeName } = req.body;
+  const data = readJSON<RouletteState>(ROULETTE_FILE, getInitialRoulette());
+  if (currentPrizeName) {
+    data.currentPrizeName = String(currentPrizeName).trim();
+    writeJSON(ROULETTE_FILE, data);
+  }
+  res.json({ success: true, roulette: data });
 });
 
 // ================= FRONTEND SERVING =================

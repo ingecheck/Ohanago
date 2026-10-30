@@ -9,6 +9,7 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { CompetitorLoginModal } from './components/CompetitorLoginModal';
 import { CompetitorPortalModal } from './components/CompetitorPortalModal';
+import { LiveRouletteSection } from './components/LiveRouletteSection';
 import { Footer } from './components/Footer';
 import { RunnerRegistration } from './types/race';
 import { getStoredRegistrations } from './data/initialRegistrations';
@@ -360,6 +361,13 @@ export const App: React.FC = () => {
           ))}
         </div>
       </section>
+
+      {/* Live Roulette / Sorteos Oficial 5K (22 Premios, 266 Tickets) */}
+      <LiveRouletteSection
+        isAdmin={isAdminAuthenticated()}
+        onOpenAdminControls={handleAdminAccess}
+        registrations={registrations}
+      />
 
       {/* Footer */}
       <Footer onOpenAdmin={handleAdminAccess} />

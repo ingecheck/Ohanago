@@ -1,0 +1,14 @@
+{
+  "isActive": true,
+  "totalTickets": 266,
+  "totalDraws": 22,
+  "currentDrawNumber": 1,
+  "currentPrizeName": "Premio #1: Sorteo Oficial Ohana Go 5K",
+  "isSpinning": false,
+  "spinStartTime": 0,
+  "spinDuration": 6000,
+  "targetTicket": 1,
+  "targetAngle": 0,
+  "winners": [],
+  "lastWinner": null
+}

@@ -34,8 +34,12 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
         scannerRef.current = html5QrCode;
 
         const config = {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
+          fps: 15,
+          qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+            const edge = Math.floor(minEdge * 0.88);
+            return { width: Math.max(edge, 280), height: Math.max(edge, 280) };
+          },
           aspectRatio: 1.0,
         };
 
@@ -104,17 +108,21 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-      <div className="relative w-full max-w-md bg-neutral-900 border border-neutral-700 rounded-3xl p-6 shadow-2xl flex flex-col max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-70 flex items-center justify-center p-3 sm:p-4 bg-black/95 backdrop-blur-md">
+      <div className="relative w-full max-w-xl bg-neutral-900 border-2 border-lime-400/40 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col max-h-[94vh] overflow-y-auto">
         {/* Header navigation bar with Volver button */}
         <div className="flex items-center justify-between mb-3 border-b border-neutral-800 pb-2">
           <button
             onClick={onClose}
-            className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-lime-400 hover:text-white text-xs font-bold transition flex items-center gap-1.5 border border-lime-400/30 cursor-pointer shadow-sm"
+            className="px-3.5 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-lime-400 hover:text-white text-xs font-bold transition flex items-center gap-1.5 border border-lime-400/40 cursor-pointer shadow-sm"
           >
             <ArrowLeft className="w-4 h-4 text-lime-400" />
             <span>← Volver</span>
           </button>
+
+          <span className="text-[10px] font-black uppercase tracking-wider text-lime-400 bg-lime-400/10 px-2.5 py-1 rounded-full border border-lime-400/30">
+            Escaneo Rápido de Kit
+          </span>
 
           <button
             onClick={onClose}
@@ -127,37 +135,56 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
 
         {/* Title */}
         <div className="text-center mb-3">
-          <div className="w-12 h-12 mx-auto rounded-2xl bg-lime-400/10 border border-lime-400/30 text-lime-400 flex items-center justify-center mb-2">
-            <Camera className="w-6 h-6" />
-          </div>
-          <h3 className="font-bebas text-2xl sm:text-3xl text-white tracking-wider uppercase">
+          <h3 className="font-bebas text-2xl sm:text-3xl text-white tracking-wider uppercase leading-none">
             {title}
           </h3>
           {subtitle && (
-            <p className="text-xs text-neutral-400 mt-1 max-w-xs mx-auto">
+            <p className="text-xs text-neutral-400 mt-1 max-w-sm mx-auto">
               {subtitle}
             </p>
           )}
         </div>
 
-        {/* Camera Viewport */}
-        <div className="relative rounded-2xl overflow-hidden bg-black border border-neutral-800 mb-4 flex flex-col items-center justify-center min-h-[260px]">
-          <div id={containerId} className="w-full h-full min-h-[260px]" />
+        {/* Camera Viewport (Large, Spacious Square Viewfinder) */}
+        <div className="relative rounded-3xl overflow-hidden bg-black border-2 border-neutral-800 mb-4 flex flex-col items-center justify-center min-h-[340px] sm:min-h-[400px] w-full aspect-square max-h-[440px] shadow-inner">
+          <div id={containerId} className="w-full h-full min-h-[340px] sm:min-h-[400px]" />
+
+          {/* Visual Target Frame Overlay with Lime Corners */}
+          <div className="absolute inset-4 sm:inset-6 pointer-events-none border-2 border-dashed border-lime-400/30 rounded-2xl flex flex-col justify-between p-2">
+            {/* Top Corners */}
+            <div className="flex justify-between">
+              <div className="w-8 h-8 border-t-4 border-l-4 border-lime-400 rounded-tl-xl shadow-[0_0_15px_rgba(163,230,53,0.8)]" />
+              <div className="w-8 h-8 border-t-4 border-r-4 border-lime-400 rounded-tr-xl shadow-[0_0_15px_rgba(163,230,53,0.8)]" />
+            </div>
+
+            {/* Pulsing center guideline */}
+            <div className="w-full text-center py-2 bg-black/60 backdrop-blur-sm rounded-xl border border-lime-400/30 mx-auto max-w-[280px]">
+              <span className="text-[11px] font-bold text-lime-400 tracking-wide">
+                Centra el código QR en este cuadro
+              </span>
+            </div>
+
+            {/* Bottom Corners */}
+            <div className="flex justify-between">
+              <div className="w-8 h-8 border-b-4 border-l-4 border-lime-400 rounded-bl-xl shadow-[0_0_15px_rgba(163,230,53,0.8)]" />
+              <div className="w-8 h-8 border-b-4 border-r-4 border-lime-400 rounded-br-xl shadow-[0_0_15px_rgba(163,230,53,0.8)]" />
+            </div>
+          </div>
 
           {successScanned && (
-            <div className="absolute inset-0 bg-lime-950/90 flex flex-col items-center justify-center text-lime-400 p-4 text-center z-20">
-              <CheckCircle2 className="w-16 h-16 mb-2 animate-bounce" />
-              <span className="font-bebas text-2xl text-white">¡Código QR Detectado!</span>
-              <span className="text-xs text-lime-300">Procesando información...</span>
+            <div className="absolute inset-0 bg-lime-950/95 flex flex-col items-center justify-center text-lime-400 p-6 text-center z-30">
+              <CheckCircle2 className="w-20 h-20 mb-2 animate-bounce text-lime-400" />
+              <span className="font-bebas text-3xl text-white">¡Código QR Detectado!</span>
+              <span className="text-sm text-lime-300 font-semibold mt-1">Registrando entrega de kit en tiempo real...</span>
             </div>
           )}
 
           {cameraError && !successScanned && (
-            <div className="absolute inset-0 bg-neutral-950/95 flex flex-col items-center justify-center p-6 text-center text-xs text-neutral-400">
-              <AlertCircle className="w-8 h-8 text-amber-400 mb-2" />
-              <p className="mb-2 text-neutral-300">{cameraError}</p>
-              <span className="text-[11px] text-lime-400 font-bold">
-                Usa el selector o ingresa el código manual abajo:
+            <div className="absolute inset-0 bg-neutral-950/95 flex flex-col items-center justify-center p-6 text-center text-xs text-neutral-400 z-30">
+              <AlertCircle className="w-10 h-10 text-amber-400 mb-2" />
+              <p className="mb-2 text-neutral-300 font-medium">{cameraError}</p>
+              <span className="text-xs text-lime-400 font-bold">
+                Puedes ingresar el número de DNI manualmente abajo:
               </span>
             </div>
           )}

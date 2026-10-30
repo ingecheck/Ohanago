@@ -30,9 +30,11 @@ import {
   BarChart3,
   Eye,
   Activity,
-  MousePointerClick
+  MousePointerClick,
+  Trophy
 } from 'lucide-react';
 import { AdminAnalyticsTab } from './AdminAnalyticsTab';
+import { AdminRouletteModal } from './AdminRouletteModal';
 import { fetchAnalytics, AnalyticsSummary } from '../utils/analytics';
 
 interface AdminDashboardProps {
@@ -108,6 +110,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Active Tab: Roster table vs Traffic/Analytics
   const [activeAdminTab, setActiveAdminTab] = useState<'roster' | 'analytics'>('roster');
+  const [showRouletteModal, setShowRouletteModal] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<AnalyticsSummary | null>(null);
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false);
 
@@ -173,7 +176,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const intervalId = setInterval(() => {
       fetchLiveRegistrations();
       loadAnalytics();
-    }, 2800);
+    }, 1200);
 
     const handleCheckinEvent = (e: any) => {
       fetchLiveRegistrations();
@@ -302,6 +305,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* Action Buttons Toolbar */}
           <div className="flex flex-wrap items-center gap-2">
+            {/* Ruleta de Sorteos (22 Premios) */}
+            <button
+              onClick={() => setShowRouletteModal(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 text-black rounded-xl text-xs font-black transition shadow-lg shadow-amber-500/25 cursor-pointer ring-2 ring-yellow-400/50 hover:scale-[1.02]"
+              title="Controlar y Girar Ruleta de Sorteos en Vivo (22 Premios / 266 Tickets)"
+            >
+              <Trophy className="w-4 h-4 text-black" />
+              <span>🎡 Sorteos (22 Premios)</span>
+            </button>
+
             {/* Kit Delivery QR Projector Button */}
             <button
               onClick={() => setShowStartQRModal(true)}
@@ -407,6 +420,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   {analyticsData.totalPageViews} visitas
                 </span>
               )}
+            </button>
+
+            <button
+              onClick={() => setShowRouletteModal(true)}
+              className="px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition flex items-center gap-2 cursor-pointer bg-neutral-900 text-amber-400 hover:text-white hover:bg-neutral-800 border border-amber-500/30 hover:border-amber-400 shadow-sm"
+              title="Abrir Ruleta y Sorteos Oficiales"
+            >
+              <Trophy className="w-4 h-4 text-amber-400" />
+              <span>🎡 Ruleta & Sorteos</span>
             </button>
           </div>
 
@@ -1050,37 +1072,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           onScanSuccess={async (scannedText) => {
             setShowStaffScanner(false);
             try {
-              // Verify runner lookup
-              const res = await fetch('/api/verify-runner', {
+              // Directly confirm kit delivery on server
+              const checkRes = await fetch('/api/start-checkin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: scannedText }),
+                body: JSON.stringify({
+                  runnerId: scannedText,
+                  dni: scannedText,
+                  code: scannedText,
+                  token: 'ADMIN_CHECKIN_OVERRIDE',
+                }),
               });
-              const data = await res.json();
-              if (res.ok && data.runner) {
-                setScannedRunnerModal(data.runner);
-                setLiveNotice(`🏃‍♂️ Corredor identificado: ${data.runner.firstName} ${data.runner.lastName} (DNI: ${data.runner.documentNumber})`);
-                setTimeout(() => setLiveNotice(null), 5000);
+              const checkData = await checkRes.json();
+              if (checkRes.ok && checkData.runner) {
+                const updatedList = registrations.map((r) =>
+                  r.id === checkData.runner.id ? checkData.runner : r
+                );
+                onUpdateRegistrations(updatedList);
+                saveRegistrations(updatedList);
+                setScannedRunnerModal(checkData.runner);
+                setLiveNotice(`🎉 ¡${checkData.runner.firstName} ${checkData.runner.lastName} (DNI: ${checkData.runner.documentNumber}) kit entregado y asistencia confirmada!`);
+                try {
+                  confetti({ particleCount: 110, spread: 70, origin: { y: 0.6 } });
+                } catch (e) {}
+                setTimeout(() => setLiveNotice(null), 6000);
               } else {
-                // If not found by verify-runner, try direct checkin
-                const checkRes = await fetch('/api/start-checkin', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    runnerId: scannedText,
-                    dni: scannedText,
-                    token: 'ADMIN_CHECKIN_OVERRIDE',
-                  }),
-                });
-                const checkData = await checkRes.json();
-                if (checkRes.ok && checkData.runner) {
-                  setScannedRunnerModal(checkData.runner);
-                  setLiveNotice(`🎉 ¡${checkData.runner.firstName} ${checkData.runner.lastName} entrega de kit confirmada!`);
-                  setTimeout(() => setLiveNotice(null), 5000);
-                } else {
-                  setLiveNotice(`❌ ${checkData.error || 'No se encontró un competidor registrado con ese código.'}`);
-                  setTimeout(() => setLiveNotice(null), 5000);
-                }
+                setLiveNotice(`❌ ${checkData.error || 'No se encontró un competidor registrado con ese código.'}`);
+                setTimeout(() => setLiveNotice(null), 5000);
               }
             } catch (err) {
               setLiveNotice('❌ Error de conexión al validar código.');
@@ -1161,6 +1179,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* Modal: Admin Live Roulette Controls (22 Sorteos / 266 Tickets) */}
+      {showRouletteModal && (
+        <AdminRouletteModal
+          onClose={() => setShowRouletteModal(false)}
+          registrations={registrations}
+        />
       )}
     </div>
   );
