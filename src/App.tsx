@@ -306,6 +306,22 @@ export const App: React.FC = () => {
         onExploreKitClick={() => scrollToSection('ruta-5k')}
       />
 
+      {/* Live Roulette / Sorteos Oficial 5K (22 Premios, 266 Tickets) - Prominent Stage */}
+      <LiveRouletteSection
+        isAdmin={isAdminAuthenticated()}
+        onOpenAdminControls={handleAdminAccess}
+        registrations={registrations}
+      />
+
+      {/* Floating Shortcut to Live Roulette */}
+      <button
+        onClick={() => scrollToSection('ruleta-sorteo')}
+        className="fixed bottom-5 left-5 z-40 px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 text-white font-bebas text-sm sm:text-base uppercase tracking-wider shadow-2xl shadow-red-600/40 hover:scale-105 active:scale-95 transition flex items-center gap-2 cursor-pointer border border-amber-300/40"
+      >
+        <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
+        <span>🎡 Ruleta en Vivo (266)</span>
+      </button>
+
       {/* Kit & Medal Section */}
       <EventKitSection
         onGoToRegister={handleCompetitorAccess}
@@ -361,13 +377,6 @@ export const App: React.FC = () => {
           ))}
         </div>
       </section>
-
-      {/* Live Roulette / Sorteos Oficial 5K (22 Premios, 266 Tickets) */}
-      <LiveRouletteSection
-        isAdmin={isAdminAuthenticated()}
-        onOpenAdminControls={handleAdminAccess}
-        registrations={registrations}
-      />
 
       {/* Footer */}
       <Footer onOpenAdmin={handleAdminAccess} />

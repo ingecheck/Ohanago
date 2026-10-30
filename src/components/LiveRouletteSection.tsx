@@ -80,7 +80,20 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
   onOpenAdminControls,
   registrations = [],
 }) => {
-  const [state, setState] = useState<RouletteState | null>(null);
+  const [state, setState] = useState<RouletteState>({
+    isActive: true,
+    totalTickets: 266,
+    totalDraws: 22,
+    currentDrawNumber: 1,
+    currentPrizeName: 'Premio #1: Sorteo Oficial Ohana Go 5K',
+    isSpinning: false,
+    spinStartTime: 0,
+    spinDuration: 6000,
+    targetTicket: 1,
+    targetAngle: 0,
+    winners: [],
+    lastWinner: null,
+  });
   const [displayTicket, setDisplayTicket] = useState<number>(1);
   const [isAnimating, setIsAnimating] = useState<boolean>(false);
   const [wheelRotation, setWheelRotation] = useState<number>(0);
@@ -196,7 +209,7 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
     return arr;
   }, [displayTicket]);
 
-  if (!state || !state.isActive) {
+  if (state && state.isActive === false && !isAdmin) {
     return null;
   }
 

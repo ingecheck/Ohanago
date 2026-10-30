@@ -63,6 +63,13 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             Ruta 5K
           </button>
+          <button
+            onClick={() => handleNavClick('ruleta-sorteo', 'Ruleta 266 Tickets')}
+            className="text-amber-400 hover:text-amber-300 transition cursor-pointer flex items-center gap-1 font-black"
+          >
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+            🎡 Ruleta (266 Tickets)
+          </button>
         </div>
 
         {/* Right Action Buttons */}
@@ -151,6 +158,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-neutral-200 border-b border-neutral-900"
           >
             🗺️ Ruta Oficial 5K Tarapoto
+          </button>
+          <button
+            onClick={() => handleNavClick('ruleta-sorteo', 'Ruleta 266 Tickets')}
+            className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-amber-400 border-b border-neutral-900 flex items-center justify-between"
+          >
+            <span className="flex items-center gap-2">
+              <span>🎡 Ruleta Oficial (266 Tickets)</span>
+            </span>
+            <span className="text-[10px] bg-red-600 text-white px-2 py-0.5 rounded-full font-black animate-pulse">
+              EN VIVO
+            </span>
           </button>
 
           <a
