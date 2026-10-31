@@ -310,7 +310,7 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
                       ✓ Atleta: {competitor.firstName} {competitor.lastName}
                     </span>
                     <span className="bg-black/50 px-2.5 py-1 rounded-lg border border-amber-500/30">
-                      Ticket Ruleta #{competitor.registrationNumber || competitor.bibNumber || 1}
+                      ✓ Dorsal Oficial #{competitor.bibNumber || competitor.registrationNumber}
                     </span>
                   </div>
                 </div>

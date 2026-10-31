@@ -3968,6 +3968,99 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "disclaimerAccepted": true,
     "finishedAtMeta": false,
     "medalDelivered": false
+  },
+  {
+    "id": "OHA-2026-0129",
+    "registrationNumber": 129,
+    "bibNumber": 129,
+    "firstName": "Joana Dennis",
+    "lastName": "Coronel Sempertegui",
+    "documentType": "DNI",
+    "documentNumber": "76159270",
+    "email": "joanadenniscoronel@gmail.com",
+    "whatsapp": "947639079",
+    "age": 26,
+    "gender": "Femenino",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Tarapoto",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "947639079",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-2026-0129",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-29T18:59:39.000Z",
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
+  },
+  {
+    "id": "OHA-2026-0130",
+    "registrationNumber": 130,
+    "bibNumber": 130,
+    "firstName": "Jhosep Jhunior",
+    "lastName": "Torres Gonzales",
+    "documentType": "DNI",
+    "documentNumber": "90467812",
+    "email": "jhosepjhuniortorres@gmail.com",
+    "whatsapp": "925081901",
+    "age": 16,
+    "gender": "Masculino",
+    "department": "San Martín",
+    "city": "Tarapoto",
+    "district": "Tarapoto",
+    "runningClub": "Tarapoto",
+    "tShirtSize": "M",
+    "emergencyContactName": "Yurico Liz Gonzales",
+    "emergencyContactPhone": "925081901",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-2026-0130",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-29T22:25:58.000Z",
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
+  },
+  {
+    "id": "OHA-2026-0131",
+    "registrationNumber": 131,
+    "bibNumber": 131,
+    "firstName": "Leandro Heber",
+    "lastName": "Carrión López",
+    "documentType": "DNI",
+    "documentNumber": "77903865",
+    "email": "leandrohebercarrion@gmail.com",
+    "whatsapp": "989284226",
+    "age": 25,
+    "gender": "Masculino",
+    "department": "San Martín",
+    "city": "Bellavista",
+    "district": "Bellavista",
+    "runningClub": "Bellavista",
+    "tShirtSize": "M",
+    "emergencyContactName": "Contacto de Emergencia",
+    "emergencyContactPhone": "989284226",
+    "willWearCostume": false,
+    "costumeName": "",
+    "paymentMethod": "Yape",
+    "paymentReference": "YAPE-2026-0131",
+    "paymentStatus": "Verificado",
+    "confirmedAtStart": false,
+    "modality": "Presencial",
+    "createdAt": "2026-10-30T21:35:02.000Z",
+    "disclaimerAccepted": true,
+    "finishedAtMeta": false,
+    "medalDelivered": false
   }
 ];
 
@@ -3976,7 +4069,17 @@ export const getStoredRegistrations = (): RunnerRegistration[] => {
     const stored = localStorage.getItem("ohana_registrations");
     if (stored) {
       const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length >= INITIAL_REGISTRATIONS.length) {
+      if (Array.isArray(parsed)) {
+        // Asegurar que cualquier corredor nuevo agregado al formulario oficial se incorpore automáticamente
+        const existingIds = new Set(parsed.map((r: any) => r.id));
+        const missingRunners = INITIAL_REGISTRATIONS.filter((r) => !existingIds.has(r.id));
+        if (missingRunners.length > 0) {
+          const merged = [...parsed, ...missingRunners];
+          try {
+            localStorage.setItem("ohana_registrations", JSON.stringify(merged));
+          } catch (e) {}
+          return merged;
+        }
         return parsed;
       }
     }
