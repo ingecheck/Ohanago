@@ -191,7 +191,7 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
                     ¡Kit Inicial Entregado y Asistencia Confirmada!
                   </h3>
                   <p className="text-xs sm:text-sm text-emerald-200/90 mt-1 max-w-xl leading-relaxed">
-                    Tu entrega de kit inicial (pulseras neón, número, hidratación y acreditación) ya está registrada en el sistema del organizador en tiempo real.
+                    Tu entrega de kit inicial (pulseras neón, hidratación y acreditación) ya está registrada en el sistema del organizador en tiempo real.
                     {competitor.startCheckinTime && (
                       <span className="font-mono ml-1 text-emerald-300 font-bold block sm:inline mt-0.5 sm:mt-0">
                         • {new Date(competitor.startCheckinTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -219,7 +219,7 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
                     Entrega de Kit Inicial (Check-in QR)
                   </h3>
                   <p className="text-xs sm:text-sm text-neutral-300 mt-1 max-w-xl leading-relaxed">
-                    Al llegar a la Plaza de Armas a las <strong>5:30 PM</strong>, apunta con tu cámara al código QR oficial para confirmar tu asistencia y recibir tu Kit Inicial (pulseras neón, número, hidratación).
+                    Al llegar a la Plaza de Armas a las <strong>5:30 PM</strong>, apunta con tu cámara al código QR oficial para confirmar tu asistencia y recibir tu Kit Inicial (pulseras neón e hidratación).
                   </p>
                 </div>
               </div>
@@ -310,7 +310,7 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
                       ✓ Atleta: {competitor.firstName} {competitor.lastName}
                     </span>
                     <span className="bg-black/50 px-2.5 py-1 rounded-lg border border-amber-500/30">
-                      ✓ Suerte 
+                      ✓ {competitor.modality || 'Presencial 5K'}
                     </span>
                   </div>
                 </div>

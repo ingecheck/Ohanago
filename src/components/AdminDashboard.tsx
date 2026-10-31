@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { RunnerRegistration, PaymentStatus, RaceModality } from '../types/race';
 import { saveRegistrations, getStoredRegistrations } from '../data/initialRegistrations';
 import { adminLogout, updateAdminPassword } from '../data/auth';
-import { processStartCheckinSafe, subscribeToRegistrationsFirestore } from '../utils/checkinManager';
+import { processStartCheckinSafe, subscribeToRegistrationsFirestore, cleanFirestoreData } from '../utils/checkinManager';
+import { resetAnalyticsSafe } from '../utils/analytics';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import QRCode from 'qrcode';
 import confetti from 'canvas-confetti';
 import { QRScannerModal } from './QRScannerModal';
@@ -68,33 +71,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     e.preventDefault();
     if (!editingRunner) return;
     setIsSavingEdit(true);
+
+    const newDni = editDniValue.trim();
+    const newPhone = editPhoneValue.trim();
+    const updatedRunner: RunnerRegistration = {
+      ...editingRunner,
+      documentNumber: newDni,
+      whatsapp: newPhone,
+    };
+
+    const updatedList = registrations.map((r) =>
+      r.id === editingRunner.id ? updatedRunner : r
+    );
+
+    // 1. Inmediato en estado y localStorage
+    onUpdateRegistrations(updatedList);
+    saveRegistrations(updatedList);
+
+    // 2. Sincronización en la nube (Firestore) para que funcione 100% en Hostinger
     try {
-      const res = await fetch('/api/runner/update', {
+      const cleaned = cleanFirestoreData(updatedRunner);
+      setDoc(doc(db, 'registrations', editingRunner.id), cleaned, { merge: true }).catch(() => {});
+    } catch (e) {}
+
+    // 3. Notificación opcional al servidor si está disponible
+    try {
+      fetch('/api/runner/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           runnerId: editingRunner.id,
-          documentNumber: editDniValue.trim(),
-          whatsapp: editPhoneValue.trim(),
+          documentNumber: newDni,
+          whatsapp: newPhone,
         }),
-      });
-      if (res.ok) {
-        const updatedList = registrations.map((r) =>
-          r.id === editingRunner.id
-            ? { ...r, documentNumber: editDniValue.trim(), whatsapp: editPhoneValue.trim() }
-            : r
-        );
-        onUpdateRegistrations(updatedList);
-        saveRegistrations(updatedList);
-        setEditingRunner(null);
-        setLiveNotice(`✓ DNI de ${editingRunner.firstName} actualizado correctamente.`);
-        setTimeout(() => setLiveNotice(null), 4000);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsSavingEdit(false);
-    }
+      }).catch(() => {});
+    } catch (e) {}
+
+    setEditingRunner(null);
+    setIsSavingEdit(false);
+    setLiveNotice(`✓ DNI de ${editingRunner.firstName} ${editingRunner.lastName} actualizado a: ${newDni}`);
+    setTimeout(() => setLiveNotice(null), 4500);
   };
 
   // Official Kit Delivery QR and Staff Scanner
@@ -127,12 +143,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const handleResetAnalytics = async () => {
     try {
-      const res = await fetch('/api/analytics/reset', { method: 'POST' });
-      if (res.ok) {
-        loadAnalytics();
-        setLiveNotice('✓ Contadores de analítica reiniciados correctamente.');
-        setTimeout(() => setLiveNotice(null), 3500);
-      }
+      await resetAnalyticsSafe();
+      loadAnalytics();
+      setLiveNotice('✓ Contadores y accesos de analítica reiniciados correctamente.');
+      setTimeout(() => setLiveNotice(null), 3500);
     } catch (e) {}
   };
 
@@ -408,7 +422,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </button>
 
             <button
-              onClick={() => setActiveAdminTab('analytics')}
+              onClick={() => {
+                setActiveAdminTab('analytics');
+                loadAnalytics();
+              }}
               className={`px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition flex items-center gap-2 cursor-pointer ${
                 activeAdminTab === 'analytics'
                   ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30 font-black'

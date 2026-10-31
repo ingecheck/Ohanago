@@ -17,7 +17,7 @@ import { isAdminAuthenticated } from './data/auth';
 import { processStartCheckinSafe, subscribeToRegistrationsFirestore } from './utils/checkinManager';
 import { HelpCircle, ChevronDown, ChevronUp, CheckCircle2, AlertCircle, X, Sparkles, MapPin, QrCode } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { trackPageView, trackMiEspacioClick } from './utils/analytics';
+import { trackPageView, trackMiEspacioClick, trackRunnerLogin } from './utils/analytics';
 
 export const App: React.FC = () => {
   const [registrations, setRegistrations] = useState<RunnerRegistration[]>([]);
@@ -276,6 +276,7 @@ export const App: React.FC = () => {
   const handleCompetitorAccess = () => {
     trackMiEspacioClick(activeCompetitor ? 'Mi Espacio Activo' : 'Portal Competidor');
     if (activeCompetitor) {
+      trackRunnerLogin(activeCompetitor);
       setIsCompetitorPortalOpen(true);
     } else {
       setIsCompetitorLoginOpen(true);
@@ -428,6 +429,7 @@ export const App: React.FC = () => {
           onSuccess={(runner) => {
             setActiveCompetitor(runner);
             localStorage.setItem('ohana_active_competitor', JSON.stringify(runner));
+            trackRunnerLogin(runner);
             setIsCompetitorLoginOpen(false);
             setIsCompetitorPortalOpen(true);
           }}

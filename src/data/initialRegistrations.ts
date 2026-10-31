@@ -8,7 +8,7 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "firstName": "Rafael",
     "lastName": "Vásquez Chumbe",
     "documentType": "DNI",
-    "documentNumber": "Pendiente (Ingresó correo)",
+    "documentNumber": "47372037",
     "email": "rafael_09_21@hotmail.com",
     "whatsapp": "993778180",
     "age": 26,
@@ -4070,17 +4070,28 @@ export const getStoredRegistrations = (): RunnerRegistration[] => {
     if (stored) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed)) {
+        let hasChanges = false;
+        const initialMap = new Map(INITIAL_REGISTRATIONS.map((r) => [r.id, r]));
+        const updated = parsed.map((r: any) => {
+          const init = initialMap.get(r.id);
+          if (init && init.documentNumber !== r.documentNumber && r.documentNumber?.includes('Pendiente')) {
+            hasChanges = true;
+            return { ...r, documentNumber: init.documentNumber };
+          }
+          return r;
+        });
+
         // Asegurar que cualquier corredor nuevo agregado al formulario oficial se incorpore automáticamente
-        const existingIds = new Set(parsed.map((r: any) => r.id));
+        const existingIds = new Set(updated.map((r: any) => r.id));
         const missingRunners = INITIAL_REGISTRATIONS.filter((r) => !existingIds.has(r.id));
-        if (missingRunners.length > 0) {
-          const merged = [...parsed, ...missingRunners];
+        if (missingRunners.length > 0 || hasChanges) {
+          const merged = [...updated, ...missingRunners];
           try {
             localStorage.setItem("ohana_registrations", JSON.stringify(merged));
           } catch (e) {}
           return merged;
         }
-        return parsed;
+        return updated;
       }
     }
   } catch (e) {

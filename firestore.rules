@@ -15,5 +15,15 @@ service cloud.firestore {
     match /test/{docId} {
       allow read, write: if true;
     }
+
+    // Métricas y analíticas de visitas en vivo
+    match /analytics/{docId} {
+      allow read, write: if true;
+    }
+
+    // Registro de atletas que ingresaron a Mi Espacio
+    match /competitor_logins/{loginId} {
+      allow read, write: if true;
+    }
   }
 }
