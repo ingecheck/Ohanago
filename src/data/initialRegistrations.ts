@@ -656,12 +656,12 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "id": "OHA-2026-0022",
     "registrationNumber": 22,
     "bibNumber": 22,
-    "firstName": "ANAHI Alexandra",
-    "lastName": "Pancca Suasaca",
+    "firstName": "Chanith",
+    "lastName": "García Sinarahua",
     "documentType": "DNI",
-    "documentNumber": "75452617",
-    "email": "anahialexandrapanccasuasaca@gmail.com",
-    "whatsapp": "946943150",
+    "documentNumber": "70831492",
+    "email": "Chanithgs24@outlook.com",
+    "whatsapp": "972453194",
     "age": 26,
     "gender": "Mixto",
     "department": "San Martín",
@@ -670,7 +670,7 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "runningClub": "Tarapoto",
     "tShirtSize": "M",
     "emergencyContactName": "Contacto de Emergencia",
-    "emergencyContactPhone": "946943150",
+    "emergencyContactPhone": "972453194",
     "willWearCostume": false,
     "costumeName": "",
     "paymentMethod": "Yape",
@@ -4074,9 +4074,22 @@ export const getStoredRegistrations = (): RunnerRegistration[] => {
         const initialMap = new Map(INITIAL_REGISTRATIONS.map((r) => [r.id, r]));
         const updated = parsed.map((r: any) => {
           const init = initialMap.get(r.id);
-          if (init && init.documentNumber !== r.documentNumber && r.documentNumber?.includes('Pendiente')) {
-            hasChanges = true;
-            return { ...r, documentNumber: init.documentNumber };
+          if (init) {
+            if (
+              init.documentNumber !== r.documentNumber ||
+              init.firstName !== r.firstName ||
+              init.lastName !== r.lastName
+            ) {
+              hasChanges = true;
+              return {
+                ...r,
+                firstName: init.firstName,
+                lastName: init.lastName,
+                documentNumber: init.documentNumber,
+                email: init.email,
+                whatsapp: init.whatsapp,
+              };
+            }
           }
           return r;
         });

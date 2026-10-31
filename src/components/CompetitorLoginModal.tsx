@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Sparkles, User, AlertCircle, X, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
 import { RunnerRegistration } from '../types/race';
-import { INITIAL_REGISTRATIONS } from '../data/initialRegistrations';
+import { INITIAL_REGISTRATIONS, getStoredRegistrations } from '../data/initialRegistrations';
 import { trackEvent } from '../utils/analytics';
 
 interface CompetitorLoginModalProps {
@@ -55,26 +55,19 @@ export const CompetitorLoginModal: React.FC<CompetitorLoginModalProps> = ({
       // Continue to local fallback
     }
 
-    // 2. Client-side fallback from INITIAL_REGISTRATIONS & localStorage
+    // 2. Client-side fallback from getStoredRegistrations (syncs replacements & additions)
     try {
-      let allList: RunnerRegistration[] = INITIAL_REGISTRATIONS;
-      const stored = localStorage.getItem('ohana_registrations');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            allList = parsed;
-          }
-        } catch (e) {}
-      }
+      const allList: RunnerRegistration[] = getStoredRegistrations();
 
       const match = allList.find((r) => {
         const rDni = String(r.documentNumber || '').trim().toLowerCase().replace(/[\s\.\-#]/g, '');
         const rDigits = String(r.documentNumber || '').replace(/\D/g, '');
+        const rEmail = String(r.email || '').trim().toLowerCase();
 
         return (
           (clean && rDni === clean) ||
           (cleanDigits && rDigits === cleanDigits) ||
+          (clean && rEmail === clean) ||
           (cleanDigits && cleanDigits.length >= 7 && rDigits.endsWith(cleanDigits))
         );
       });
