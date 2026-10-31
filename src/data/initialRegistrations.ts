@@ -39,7 +39,7 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "firstName": "Greys",
     "lastName": "Ríos Lozano",
     "documentType": "DNI",
-    "documentNumber": "Pendiente (Ingresó correo)",
+    "documentNumber": "42722711",
     "email": "grlgreys@gmail.com",
     "whatsapp": "957342934",
     "age": 26,
