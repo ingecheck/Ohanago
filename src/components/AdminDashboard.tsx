@@ -36,11 +36,14 @@ import {
   Activity,
   MousePointerClick,
   Trophy,
-  Download
+  Download,
+  FileSpreadsheet,
+  Database
 } from 'lucide-react';
 import { AdminAnalyticsTab } from './AdminAnalyticsTab';
 import { AdminRouletteModal } from './AdminRouletteModal';
 import { fetchAnalytics, AnalyticsSummary } from '../utils/analytics';
+import { getStoredRouletteState } from '../utils/rouletteManager';
 
 interface AdminDashboardProps {
   registrations: RunnerRegistration[];
@@ -148,6 +151,100 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setLiveNotice('✓ Contadores y accesos de analítica reiniciados correctamente.');
       setTimeout(() => setLiveNotice(null), 3500);
     } catch (e) {}
+  };
+
+  // Respaldo y Exportación de Datos del Evento (Post-Evento)
+  const [showExportModal, setShowExportModal] = useState(false);
+
+  const downloadFile = (filename: string, content: string, mimeType: string) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportRunnersCSV = () => {
+    const headers = [
+      'N°',
+      'Código',
+      'Nombres',
+      'Apellidos',
+      'DNI',
+      'WhatsApp',
+      'Modalidad',
+      'Ciudad',
+      'Club / Team',
+      'Kit Entregado (Check-in)',
+      'Hora Check-in',
+      'Llegó a Meta',
+      'Estado Pago',
+    ];
+
+    const rows = registrations.map((r, i) => [
+      i + 1,
+      `"${r.id}"`,
+      `"${r.firstName.replace(/"/g, '""')}"`,
+      `"${r.lastName.replace(/"/g, '""')}"`,
+      `"${r.documentNumber}"`,
+      `"${r.whatsapp}"`,
+      `"${r.modality}"`,
+      `"${r.city || ''}"`,
+      `"${r.runningClub || ''}"`,
+      r.confirmedAtStart ? 'SÍ (Entregado)' : 'NO (Pendiente)',
+      r.startCheckinTime ? `"${new Date(r.startCheckinTime).toLocaleString('es-PE')}"` : '""',
+      r.finishedAtMeta ? 'SÍ' : 'NO',
+      `"${r.paymentStatus}"`,
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+    downloadFile(`OhanaGo5K_Nomina_Corredores_${new Date().toISOString().slice(0, 10)}.csv`, csvContent, 'text/csv;charset=utf-8;');
+  };
+
+  const handleExportWinnersCSV = () => {
+    const rState = getStoredRouletteState();
+    const winners = rState.winners || [];
+
+    if (winners.length === 0) {
+      alert('Aún no hay ganadores registrados en la ruleta.');
+      return;
+    }
+
+    const headers = ['N° Sorteo', 'Premio', 'Ticket Ganador', 'Nombre Ganador', 'DNI Ganador', 'Hora Sorteo'];
+    const rows = winners.map((w) => [
+      w.drawNumber,
+      `"${(w.prizeName || '').replace(/"/g, '""')}"`,
+      w.ticketNumber,
+      `"${(w.runnerName || '').replace(/"/g, '""')}"`,
+      `"${w.runnerDni || ''}"`,
+      `"${new Date(w.wonAt).toLocaleString('es-PE')}"`,
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+    downloadFile(`OhanaGo5K_Ganadores_Ruleta_${new Date().toISOString().slice(0, 10)}.csv`, csvContent, 'text/csv;charset=utf-8;');
+  };
+
+  const handleExportFullJSON = () => {
+    const rState = getStoredRouletteState();
+    const fullBackup = {
+      event: 'OHANA GO Social Run 5K Halloween Tarapoto',
+      exportDate: new Date().toISOString(),
+      totalAthletes: registrations.length,
+      kitsDeliveredCount: registrations.filter((r) => r.confirmedAtStart).length,
+      roulette: rState,
+      registrations: registrations,
+      analytics: analyticsData,
+    };
+
+    downloadFile(
+      `OhanaGo5K_Respaldo_Completo_Oficial_${new Date().toISOString().slice(0, 10)}.json`,
+      JSON.stringify(fullBackup, null, 2),
+      'application/json;charset=utf-8;'
+    );
   };
 
   useEffect(() => {

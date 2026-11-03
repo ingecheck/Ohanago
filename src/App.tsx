@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { EventHero } from './components/EventHero';
+import { UpcomingRaceTeaser } from './components/UpcomingRaceTeaser';
+import { SocialRunSection } from './components/SocialRunSection';
+import { PastEditionsArchive } from './components/PastEditionsArchive';
+import { OhanaMerchSection } from './components/OhanaMerchSection';
 import { EventKitSection } from './components/EventKitSection';
 import { RaceRouteSection } from './components/RaceRouteSection';
 import { RegistrationForm } from './components/RegistrationForm';
@@ -296,94 +300,76 @@ export const App: React.FC = () => {
 
   const faqs = [
     {
-      q: '¿Cuál es la diferencia entre la Modalidad Presencial y la Modalidad Virtual?',
-      a: 'En la modalidad Presencial, corres en vivo el sábado 31 de Octubre con concentración desde las 5:30 PM y largada a las 7:00 PM desde la Plaza de Armas de Tarapoto hasta Entre Jarras, con hidratación en ruta, pulseras neón y entrega de tu Medalla Finisher física al cruzar la meta. En la modalidad Virtual, puedes correr o caminar tus 5K desde cualquier ciudad del Perú o del mundo entre el 28 de Octubre y el 2 de Noviembre con tu app favorita (Strava, Nike, Garmin), subes tu captura en Mi Espacio 🎒 y te enviamos tu Medalla Finisher física y kit oficial a domicilio o agencia.',
+      q: '¿Qué es OHANA GO y cómo puedo sumarme a los Social Runs semanales?',
+      a: 'OHANA GO es una comunidad atlética y productora de eventos deportivos con sede en Tarapoto. Nos reunimos todos los martes y jueves a las 6:30 PM en la Plaza Mayor de Tarapoto para trotar en grupo de manera 100% libre y gratuita. No necesitas experiencia previa, solo tus zapatillas y las ganas de moverte.',
     },
     {
-      q: '¿Qué incluye exactamente el valor de mi inscripción (S/ 50.00)?',
-      a: 'Ambas modalidades reciben la Medalla Finisher 5K Oficial en relieve metálico de colección. Los corredores presenciales cuentan con artículo luminoso neón para la noche, hidratación con Agua Nativa y participación en sorteos en Entre Jarras. Los corredores virtuales reciben el envío de su medalla física y kit a su localidad. Ambos obtienen su Pase Digital Oficial con número de registro y acceso a su cuenta.',
+      q: '¿Cuándo se anunciará la próxima carrera oficial de OHANA GO?',
+      a: 'La siguiente gran edición se encuentra actualmente en fase confidencial de diseño y preparación. Los circuitos, distancias y preventa de inscripciones se revelarán primero a los inscritos en nuestra lista de espera VIP de WhatsApp.',
     },
     {
-      q: 'Si elijo la modalidad Virtual, ¿cómo y cuándo registro mi tiempo?',
-      a: 'Podrás completar tus 5 kilómetros en cualquier momento entre el 28 de Octubre y el 2 de Noviembre. Al finalizar, ingresa a la web en el botón "Mi Espacio 🎒" con tu DNI, haz clic en "Subir Evidencia 5K", registra tu tiempo y sube una captura de pantalla de Strava, Nike Run Club, Garmin, Apple Watch o foto de la pantalla de tu trotadora.',
+      q: '¿Cómo consulto mi medalla y credencial de ediciones pasadas (ej. Halloween 5K)?',
+      a: 'En la barra superior presiona el botón "Mi Espacio 🎒" e ingresa tu número de DNI. El sistema cargará de inmediato tu credencial oficial, tu estado de acreditación y tu registro de participación en nuestras carreras.',
     },
     {
-      q: '¿Es obligatorio correr con disfraz de Halloween?',
-      a: 'No es obligatorio. Puedes participar con tu ropa deportiva favorita. Sin embargo, si deseas sumarte al concurso de disfraces en la llegada de Entre Jarras, habrá premios en efectivo y regalos sorpresa de aliados estratégicos para los mejores atuendos runner.',
+      q: '¿Qué ritmos de entrenamiento manejan en las salidas del club?',
+      a: 'Contamos con tres grupos de ritmo guiados por capitanes: Grupo Iniciación (6:45 a 7:15 min/km), Grupo Intermedio (5:50 a 6:20 min/km) y Grupo Avanzado (5:00 a 5:30 min/km). La filosofía Ohana es que nadie corre solo ni se queda atrás.',
     },
     {
-      q: '¿Puedo caminar o trotar a mi propio ritmo si soy principiante?',
-      a: '¡Por supuesto! El circuito de 5K está pensado para que deportistas experimentados, aficionados, familias y principiantes puedan disfrutar de una noche de deporte y diversión a su propio ritmo.',
-    },
-    {
-      q: '¿Cómo se entregan las medallas y kits en cada modalidad?',
-      a: 'En la modalidad Presencial, las pulseras neón se entregan antes de la largada en la Plaza de Armas a partir de las 5:30 PM (hora de concentración) y la medalla se entrega en el arco de meta en Entre Jarras. En la modalidad Virtual, la medalla física y kit se despachan por agencia o courier (Olva / Shalom) a la dirección indicada en tu ficha de registro.',
+      q: '¿Cómo puedo adquirir los polos técnicos y merch oficial de Ohana Go?',
+      a: 'En la sección Merch Oficial puedes ver nuestro catálogo de polos técnicos microperforados, viseras running y calcetines deportivos. Escríbenos directamente a nuestro WhatsApp oficial (+51 957 342 934) para coordinar tallas y entrega inmediata en Tarapoto o envíos a nivel nacional.',
     },
   ];
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-col font-sans selection:bg-lime-400 selection:text-black">
-      {/* Top Banner */}
-      <div className="bg-gradient-to-r from-orange-600 via-amber-500 to-lime-500 py-1.5 px-4 text-center text-black font-bebas text-sm sm:text-base tracking-wider uppercase shadow-md relative z-40">
-        Carrera 5K Tarapoto • 31 Octubre • 5:30 PM Concentración en Plaza de Armas • Presencial & Virtual
+    <div className="min-h-screen bg-black text-neutral-100 flex flex-col font-sans selection:bg-lime-400 selection:text-black">
+      {/* Top Brand Notification Banner */}
+      <div className="bg-neutral-950 border-b border-lime-400/30 py-2 px-4 text-center text-xs sm:text-sm font-mono tracking-wider uppercase text-neutral-300 relative z-40 flex items-center justify-center gap-2">
+        <span className="w-2 h-2 rounded-full bg-lime-400 animate-ping shrink-0" />
+        <span className="text-white font-bold">OHANA GO • RUN CLUB & RACING</span>
+        <span className="hidden sm:inline text-neutral-500">|</span>
+        <span className="hidden sm:inline text-lime-400 font-bold">PRÓXIMA EDICIÓN EN PREPARACIÓN</span>
       </div>
 
       {/* Main Navbar */}
       <Navbar
         onOpenAdmin={handleAdminAccess}
-        onOpenCompetitorLogin={handleCompetitorAccess}
         onGoToSection={scrollToSection}
       />
 
       {/* Hero Section */}
       <EventHero
         registeredCount={registrations.length}
-        onRegisterClick={handleCompetitorAccess}
-        onExploreKitClick={() => scrollToSection('ruta-5k')}
+        onExploreUpcoming={() => scrollToSection('ediciones')}
+        onExploreCommunity={() => scrollToSection('comunidad-social-run')}
       />
 
-      {/* Live Roulette / Sorteos Oficial 5K (22 Premios, 266 Tickets) - Prominent Stage */}
-      <LiveRouletteSection
-        isAdmin={isAdminAuthenticated()}
-        onOpenAdminControls={handleAdminAccess}
+      {/* Upcoming Race Teaser (Próxima carrera) */}
+      <UpcomingRaceTeaser />
+
+      {/* Social Run Club (Comunidad & Entrenamientos semanales) */}
+      <SocialRunSection />
+
+      {/* Ohana Merch Section (Indumentaria oficial) */}
+      <OhanaMerchSection />
+
+      {/* Past Editions Archive (Preserva Halloween 5K y nómina de 131 atletas) */}
+      <PastEditionsArchive
         registrations={registrations}
       />
 
-      {/* Floating Shortcut to Live Roulette */}
-      <button
-        onClick={() => scrollToSection('ruleta-sorteo')}
-        className="fixed bottom-5 left-5 z-40 px-3.5 py-2.5 rounded-2xl bg-gradient-to-r from-red-600 via-orange-600 to-amber-500 text-white font-bebas text-sm sm:text-base uppercase tracking-wider shadow-2xl shadow-red-600/40 hover:scale-105 active:scale-95 transition flex items-center gap-2 cursor-pointer border border-amber-300/40"
-      >
-        <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
-        <span>🎡 Ruleta en Vivo (266)</span>
-      </button>
-
-      {/* Kit & Medal Section */}
-      <EventKitSection
-        onGoToRegister={handleCompetitorAccess}
-      />
-
-      {/* Route & Map Section */}
-      <RaceRouteSection />
-
-      {/* Registration Section: Closed Status & Runner Guidance */}
-      <RegistrationForm
-        onOpenCompetitorLogin={handleCompetitorAccess}
-        onGoToRoute={() => scrollToSection('ruta-5k')}
-      />
-
       {/* Frequently Asked Questions */}
-      <section id="preguntas-frecuentes" className="pt-6 pb-12 px-4 max-w-4xl mx-auto w-full scroll-mt-20">
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-900/40 text-purple-300 text-xs font-bold uppercase tracking-wider mb-2 border border-purple-500/30">
+      <section id="preguntas-frecuentes" className="py-12 sm:py-16 px-4 max-w-4xl mx-auto w-full scroll-mt-20 border-t border-neutral-900">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-lime-950/60 border border-lime-400/40 text-lime-400 text-xs font-mono font-bold uppercase tracking-wider mb-2">
             <HelpCircle className="w-3.5 h-3.5" />
-            Preguntas Frecuentes
+            <span>Preguntas Frecuentes</span>
           </div>
-          <h3 className="font-bebas text-4xl sm:text-5xl text-white uppercase tracking-wider">
-            Todo lo que necesitas saber
+          <h3 className="font-bebas text-3xl sm:text-4xl md:text-5xl text-white uppercase tracking-wider">
+            RESPUESTAS CLARAS PARA <span className="text-lime-400">CORREDORES</span>
           </h3>
-          <p className="text-xs text-neutral-400 mt-1">
-            Información oficial sobre las modalidades Presencial y Virtual de la OHANA GO 5K.
+          <p className="text-xs sm:text-sm text-neutral-400 mt-1">
+            Conoce cómo funciona nuestra comunidad de running, los entrenamientos y las carreras oficiales.
           </p>
         </div>
 
@@ -391,11 +377,11 @@ export const App: React.FC = () => {
           {faqs.map((faq, idx) => (
             <div
               key={idx}
-              className="bg-neutral-900/80 border border-neutral-800 rounded-2xl overflow-hidden transition hover:border-neutral-700"
+              className="bg-neutral-900/80 border border-neutral-800 rounded-2xl overflow-hidden transition hover:border-lime-400/40"
             >
               <button
                 onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                className="w-full p-4 text-left font-bold text-sm text-neutral-200 flex items-center justify-between gap-4 hover:text-lime-400 transition cursor-pointer"
+                className="w-full p-4 sm:p-5 text-left font-bold text-sm text-neutral-200 flex items-center justify-between gap-4 hover:text-lime-400 transition cursor-pointer"
               >
                 <span>{faq.q}</span>
                 {openFaq === idx ? (
@@ -405,7 +391,7 @@ export const App: React.FC = () => {
                 )}
               </button>
               {openFaq === idx && (
-                <div className="px-4 pb-4 text-xs text-neutral-300 leading-relaxed border-t border-neutral-800/60 pt-3">
+                <div className="px-4 sm:px-5 pb-5 text-xs sm:text-sm text-neutral-300 leading-relaxed border-t border-neutral-800/60 pt-3.5">
                   {faq.a}
                 </div>
               )}
