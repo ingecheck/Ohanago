@@ -36,12 +36,9 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
           OHANA
         </span>
 
-        {/* GO in electric neon chartreuse with athletic italic wedge */}
+        {/* GO in clean athletic neon lime */}
         <span
-          className={`font-bebas ${sizeClasses[size]} ml-1.5 sm:ml-2 text-lime-400 tracking-wider uppercase transform -skew-x-12 inline-block drop-shadow-[0_0_20px_rgba(163,230,53,0.6)]`}
-          style={{
-            textShadow: '0 0 25px rgba(163, 230, 53, 0.75), 0 0 10px rgba(163, 230, 53, 0.9)',
-          }}
+          className={`font-bebas ${sizeClasses[size]} ml-1.5 sm:ml-2 text-lime-400 tracking-wider uppercase transform -skew-x-12 inline-block drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]`}
         >
           GO
         </span>
@@ -49,7 +46,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
 
       {showSubtitle && (
         <span className="font-mono text-[9px] sm:text-[11px] tracking-[0.25em] text-neutral-400 uppercase mt-1 text-center font-bold">
-          RUN CLUB <span className="text-lime-400">·</span> TARAPOTO
+          RUN CLUB
         </span>
       )}
     </div>

@@ -22,16 +22,16 @@ export const UpcomingRaceTeaser: React.FC<UpcomingRaceTeaserProps> = () => {
 
   return (
     <section id="ediciones" className="py-12 sm:py-16 px-4 max-w-6xl mx-auto w-full scroll-mt-20">
-      <div className="relative rounded-3xl p-6 sm:p-10 md:p-12 bg-gradient-to-b from-neutral-900 via-black to-neutral-950 border-2 border-lime-400/40 shadow-[0_0_60px_rgba(163,230,53,0.12)] overflow-hidden">
-        {/* Glow ambient background */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-lime-400/10 rounded-full blur-[140px] pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-lime-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="relative rounded-3xl p-6 sm:p-10 md:p-12 bg-gradient-to-b from-neutral-900 via-black to-neutral-950 border border-neutral-800 shadow-2xl shadow-black/80 overflow-hidden">
+        {/* Glow ambient background (Subtle) */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-lime-400/[0.03] rounded-full blur-[140px] pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-72 h-72 bg-lime-500/[0.02] rounded-full blur-[120px] pointer-events-none" />
 
         <div className="relative z-10">
           {/* Tag & Status */}
           <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-lime-950/80 border border-lime-400/40 text-lime-400 text-xs font-mono font-bold uppercase tracking-wider">
-              <span className="w-2.5 h-2.5 rounded-full bg-lime-400 animate-ping" />
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-300 text-xs font-mono font-bold uppercase tracking-wider">
+              <span className="w-2 h-2 rounded-full bg-lime-400" />
               <span>Próxima Gran Carrera • Edición en Preparación</span>
             </div>
 
@@ -43,7 +43,7 @@ export const UpcomingRaceTeaser: React.FC<UpcomingRaceTeaserProps> = () => {
           {/* Headline */}
           <div className="max-w-3xl space-y-3 mb-8">
             <h2 className="font-bebas text-4xl sm:text-5xl md:text-6xl text-white tracking-wide uppercase leading-tight">
-              ALGO GRANDE SE ESTÁ <span className="text-lime-400 underline decoration-lime-400/40 underline-offset-4">COCINANDO</span>
+              LO QUE VIENE SERÁ <span className="text-lime-400 underline decoration-lime-400/40 underline-offset-4">INCREÍBLE</span>
             </h2>
             <p className="text-sm sm:text-base text-neutral-300 leading-relaxed max-w-2xl">
               Aún no revelamos la fecha exacta ni el circuito final, pero prepárate: la siguiente edición oficial de <strong>OHANA GO</strong> subirá el listón con una experiencia nocturna/sunset que no olvidarás.

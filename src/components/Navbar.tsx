@@ -46,12 +46,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             Carreras & Ediciones
           </button>
           <button
-            onClick={() => handleNavClick('comunidad-social-run', 'Social Run Club')}
-            className="hover:text-lime-400 transition cursor-pointer"
-          >
-            Comunidad Social Run
-          </button>
-          <button
             onClick={() => handleNavClick('merch-oficial', 'Merch Oficial')}
             className="hover:text-lime-400 transition cursor-pointer"
           >
@@ -111,12 +105,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-neutral-200 border-b border-neutral-900"
           >
             🏃 Carreras & Ediciones
-          </button>
-          <button
-            onClick={() => handleNavClick('comunidad-social-run', 'Social Run Club')}
-            className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-neutral-200 border-b border-neutral-900"
-          >
-            🌴 Comunidad Social Run
           </button>
           <button
             onClick={() => handleNavClick('merch-oficial', 'Merch Oficial')}

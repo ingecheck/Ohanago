@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Trophy, CheckCircle2, Users, Flame, Award, Sparkles, ChevronRight, Search } from 'lucide-react';
+import React from 'react';
+import { Trophy, CheckCircle2 } from 'lucide-react';
 import { RunnerRegistration } from '../types/race';
 
 interface PastEditionsArchiveProps {
@@ -9,18 +9,6 @@ interface PastEditionsArchiveProps {
 export const PastEditionsArchive: React.FC<PastEditionsArchiveProps> = ({
   registrations,
 }) => {
-  const [showRosterModal, setShowRosterModal] = useState(false);
-  const [searchRoster, setSearchRoster] = useState('');
-
-  const filtered = registrations.filter((r) => {
-    const q = searchRoster.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      r.firstName.toLowerCase().includes(q) ||
-      r.lastName.toLowerCase().includes(q)
-    );
-  });
-
   return (
     <section id="edicion-halloween-archive" className="py-16 sm:py-24 px-4 max-w-7xl mx-auto w-full scroll-mt-20 border-t border-neutral-900">
       
@@ -42,9 +30,9 @@ export const PastEditionsArchive: React.FC<PastEditionsArchiveProps> = ({
 
       {/* Cinematic Edition Showcase Stage (Full impact, no claustrophobic boxes) */}
       <div className="relative rounded-3xl bg-gradient-to-b from-neutral-950 via-black to-neutral-950 border border-neutral-800 p-6 sm:p-10 md:p-14 overflow-hidden shadow-[0_20px_70px_rgba(0,0,0,0.9)]">
-        {/* Powerful Ambient Glow & Speed Strip Texture */}
-        <div className="absolute top-1/2 left-1/4 -translate-y-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-lime-400/10 rounded-full blur-[160px] pointer-events-none" />
-        <div className="absolute -top-12 -right-12 w-80 h-80 bg-lime-500/5 rounded-full blur-[140px] pointer-events-none" />
+        {/* Powerful Ambient Glow & Speed Strip Texture (Balanced) */}
+        <div className="absolute top-1/2 left-1/4 -translate-y-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-lime-400/[0.04] rounded-full blur-[160px] pointer-events-none" />
+        <div className="absolute -top-12 -right-12 w-80 h-80 bg-lime-500/[0.02] rounded-full blur-[140px] pointer-events-none" />
         
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center relative z-10">
           
@@ -52,7 +40,7 @@ export const PastEditionsArchive: React.FC<PastEditionsArchiveProps> = ({
           <div className="lg:col-span-5 flex flex-col items-center justify-center text-center">
             <div className="relative group w-full flex items-center justify-center py-4">
               {/* Radial glow spotlight behind medal */}
-              <div className="absolute inset-0 max-w-[320px] max-h-[320px] mx-auto bg-gradient-to-tr from-lime-400/25 to-lime-500/10 rounded-full blur-3xl pointer-events-none group-hover:scale-125 transition-transform duration-700" />
+              <div className="absolute inset-0 max-w-[320px] max-h-[320px] mx-auto bg-gradient-to-tr from-lime-400/15 to-transparent rounded-full blur-2xl pointer-events-none group-hover:scale-110 transition-transform duration-700" />
               
               <img
                 src="/official-medal.png"
@@ -113,7 +101,7 @@ export const PastEditionsArchive: React.FC<PastEditionsArchiveProps> = ({
 
               <div className="space-y-1">
                 <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-500 block font-bold">Sorteos</span>
-                <span className="font-bebas text-4xl sm:text-5xl text-white block leading-none font-black">22</span>
+                <span className="font-bebas text-4xl sm:text-5xl text-white block leading-none font-black">25</span>
                 <span className="text-[11px] text-neutral-400 font-sans">Premios en meta</span>
               </div>
 
@@ -123,87 +111,9 @@ export const PastEditionsArchive: React.FC<PastEditionsArchiveProps> = ({
                 <span className="text-[11px] text-neutral-400 font-sans">Competencia sana</span>
               </div>
             </div>
-
-            {/* Imposing Action Button */}
-            <div className="pt-2">
-              <button
-                onClick={() => setShowRosterModal(true)}
-                className="px-8 py-4 rounded-2xl bg-lime-400 hover:bg-lime-300 text-black font-bebas text-xl sm:text-2xl uppercase tracking-wider transition-all duration-300 transform hover:scale-105 active:scale-95 cursor-pointer font-black inline-flex items-center gap-3 shadow-xl shadow-lime-400/25"
-              >
-                <Users className="w-6 h-6 text-black" />
-                <span>Ver Nómina Oficial de los {registrations.length} Finishers</span>
-              </button>
-            </div>
           </div>
         </div>
       </div>
-
-      {/* Roster Modal (Respectful, clean: Names only, NO DNI, NO City) */}
-      {showRosterModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
-          <div className="relative w-full max-w-2xl bg-neutral-950 border border-neutral-800 rounded-3xl p-6 sm:p-8 shadow-2xl max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between pb-5 border-b border-neutral-800">
-              <div>
-                <span className="text-[11px] font-mono text-lime-400 uppercase tracking-widest font-bold block mb-1">
-                  HISTORIAL DE COMPETIDORES · HALLOWEEN 5K 2026
-                </span>
-                <h3 className="font-bebas text-3xl sm:text-4xl text-white uppercase tracking-wide leading-none">
-                  Nómina Oficial de Finishers
-                </h3>
-                <p className="text-xs text-neutral-400 mt-1">
-                  {registrations.length} atletas que cruzaron la meta oficial
-                </p>
-              </div>
-              <button
-                onClick={() => setShowRosterModal(false)}
-                className="p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white transition cursor-pointer text-lg"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="py-4">
-              <div className="relative">
-                <Search className="w-4 h-4 text-neutral-500 absolute left-4 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={searchRoster}
-                  onChange={(e) => setSearchRoster(e.target.value)}
-                  placeholder="Buscar corredor por nombre o apellido..."
-                  className="w-full pl-11 pr-4 py-3 rounded-xl bg-neutral-900 border border-neutral-800 text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-lime-400 transition"
-                />
-              </div>
-            </div>
-
-            <div className="overflow-y-auto flex-1 divide-y divide-neutral-900 pr-1">
-              {filtered.map((r, i) => (
-                <div key={r.id} className="py-3.5 flex items-center justify-between text-sm hover:bg-neutral-900/60 px-3 rounded-xl transition">
-                  <div className="flex items-center gap-3.5">
-                    <span className="font-mono text-neutral-500 font-bold w-8 text-center text-xs">{i + 1}</span>
-                    <div>
-                      <strong className="text-white block font-sans font-semibold text-sm sm:text-base tracking-wide">
-                        {r.firstName} {r.lastName}
-                      </strong>
-                    </div>
-                  </div>
-                  <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-lime-950/80 text-lime-400 border border-lime-400/40 uppercase tracking-wider">
-                    Finisher 5K
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="pt-5 border-t border-neutral-800 flex justify-end">
-              <button
-                onClick={() => setShowRosterModal(false)}
-                className="px-6 py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold uppercase tracking-wider font-mono cursor-pointer"
-              >
-                Cerrar Nómina
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   );
 };

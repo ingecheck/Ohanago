@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { EventHero } from './components/EventHero';
 import { UpcomingRaceTeaser } from './components/UpcomingRaceTeaser';
-import { SocialRunSection } from './components/SocialRunSection';
 import { PastEditionsArchive } from './components/PastEditionsArchive';
 import { OhanaMerchSection } from './components/OhanaMerchSection';
 import { EventKitSection } from './components/EventKitSection';
@@ -19,7 +18,7 @@ import { RunnerRegistration } from './types/race';
 import { getStoredRegistrations } from './data/initialRegistrations';
 import { isAdminAuthenticated } from './data/auth';
 import { processStartCheckinSafe, subscribeToRegistrationsFirestore } from './utils/checkinManager';
-import { HelpCircle, ChevronDown, ChevronUp, CheckCircle2, AlertCircle, X, Sparkles, MapPin, QrCode } from 'lucide-react';
+import { CheckCircle2, AlertCircle, X, Sparkles, MapPin, QrCode } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { trackPageView, trackMiEspacioClick, trackRunnerLogin } from './utils/analytics';
 
@@ -29,7 +28,6 @@ export const App: React.FC = () => {
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
   const [isCompetitorLoginOpen, setIsCompetitorLoginOpen] = useState(false);
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   // Direct Start Line QR Check-in states (when runner scans start QR with camera)
   const [directCheckinOpen, setDirectCheckinOpen] = useState(false);
@@ -298,37 +296,14 @@ export const App: React.FC = () => {
     }
   };
 
-  const faqs = [
-    {
-      q: '¿Qué es OHANA GO y cómo puedo sumarme a los Social Runs semanales?',
-      a: 'OHANA GO es una comunidad atlética y productora de eventos deportivos con sede en Tarapoto. Nos reunimos todos los martes y jueves a las 6:30 PM en la Plaza Mayor de Tarapoto para trotar en grupo de manera 100% libre y gratuita. No necesitas experiencia previa, solo tus zapatillas y las ganas de moverte.',
-    },
-    {
-      q: '¿Cuándo se anunciará la próxima carrera oficial de OHANA GO?',
-      a: 'La siguiente gran edición se encuentra actualmente en fase confidencial de diseño y preparación. Los circuitos, distancias y preventa de inscripciones se revelarán primero a los inscritos en nuestra lista de espera VIP de WhatsApp.',
-    },
-    {
-      q: '¿Cómo consulto mi medalla y credencial de ediciones pasadas (ej. Halloween 5K)?',
-      a: 'En la barra superior presiona el botón "Mi Espacio 🎒" e ingresa tu número de DNI. El sistema cargará de inmediato tu credencial oficial, tu estado de acreditación y tu registro de participación en nuestras carreras.',
-    },
-    {
-      q: '¿Qué ritmos de entrenamiento manejan en las salidas del club?',
-      a: 'Contamos con tres grupos de ritmo guiados por capitanes: Grupo Iniciación (6:45 a 7:15 min/km), Grupo Intermedio (5:50 a 6:20 min/km) y Grupo Avanzado (5:00 a 5:30 min/km). La filosofía Ohana es que nadie corre solo ni se queda atrás.',
-    },
-    {
-      q: '¿Cómo puedo adquirir los polos técnicos y merch oficial de Ohana Go?',
-      a: 'En la sección Merch Oficial puedes ver nuestro catálogo de polos técnicos microperforados, viseras running y calcetines deportivos. Escríbenos directamente a nuestro WhatsApp oficial (+51 957 342 934) para coordinar tallas y entrega inmediata en Tarapoto o envíos a nivel nacional.',
-    },
-  ];
-
   return (
     <div className="min-h-screen bg-black text-neutral-100 flex flex-col font-sans selection:bg-lime-400 selection:text-black">
       {/* Top Brand Notification Banner */}
-      <div className="bg-neutral-950 border-b border-lime-400/30 py-2 px-4 text-center text-xs sm:text-sm font-mono tracking-wider uppercase text-neutral-300 relative z-40 flex items-center justify-center gap-2">
-        <span className="w-2 h-2 rounded-full bg-lime-400 animate-ping shrink-0" />
+      <div className="bg-neutral-950 border-b border-neutral-800/80 py-2 px-4 text-center text-xs sm:text-sm font-mono tracking-wider uppercase text-neutral-300 relative z-40 flex items-center justify-center gap-2">
+        <span className="w-2 h-2 rounded-full bg-lime-400 shrink-0" />
         <span className="text-white font-bold">OHANA GO • RUN CLUB & RACING</span>
-        <span className="hidden sm:inline text-neutral-500">|</span>
-        <span className="hidden sm:inline text-lime-400 font-bold">PRÓXIMA EDICIÓN EN PREPARACIÓN</span>
+        <span className="hidden sm:inline text-neutral-600">|</span>
+        <span className="hidden sm:inline text-neutral-400">PRÓXIMA EDICIÓN EN PREPARACIÓN</span>
       </div>
 
       {/* Main Navbar */}
@@ -341,64 +316,18 @@ export const App: React.FC = () => {
       <EventHero
         registeredCount={registrations.length}
         onExploreUpcoming={() => scrollToSection('ediciones')}
-        onExploreCommunity={() => scrollToSection('comunidad-social-run')}
       />
 
       {/* Upcoming Race Teaser (Próxima carrera) */}
       <UpcomingRaceTeaser />
 
-      {/* Social Run Club (Comunidad & Entrenamientos semanales) */}
-      <SocialRunSection />
-
       {/* Ohana Merch Section (Indumentaria oficial) */}
       <OhanaMerchSection />
 
-      {/* Past Editions Archive (Preserva Halloween 5K y nómina de 131 atletas) */}
+      {/* Past Editions Archive (Preserva Halloween 5K y medalla conmemorativa) */}
       <PastEditionsArchive
         registrations={registrations}
       />
-
-      {/* Frequently Asked Questions */}
-      <section id="preguntas-frecuentes" className="py-12 sm:py-16 px-4 max-w-4xl mx-auto w-full scroll-mt-20 border-t border-neutral-900">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-lime-950/60 border border-lime-400/40 text-lime-400 text-xs font-mono font-bold uppercase tracking-wider mb-2">
-            <HelpCircle className="w-3.5 h-3.5" />
-            <span>Preguntas Frecuentes</span>
-          </div>
-          <h3 className="font-bebas text-3xl sm:text-4xl md:text-5xl text-white uppercase tracking-wider">
-            RESPUESTAS CLARAS PARA <span className="text-lime-400">CORREDORES</span>
-          </h3>
-          <p className="text-xs sm:text-sm text-neutral-400 mt-1">
-            Conoce cómo funciona nuestra comunidad de running, los entrenamientos y las carreras oficiales.
-          </p>
-        </div>
-
-        <div className="space-y-3">
-          {faqs.map((faq, idx) => (
-            <div
-              key={idx}
-              className="bg-neutral-900/80 border border-neutral-800 rounded-2xl overflow-hidden transition hover:border-lime-400/40"
-            >
-              <button
-                onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                className="w-full p-4 sm:p-5 text-left font-bold text-sm text-neutral-200 flex items-center justify-between gap-4 hover:text-lime-400 transition cursor-pointer"
-              >
-                <span>{faq.q}</span>
-                {openFaq === idx ? (
-                  <ChevronUp className="w-4 h-4 text-lime-400 shrink-0" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-neutral-500 shrink-0" />
-                )}
-              </button>
-              {openFaq === idx && (
-                <div className="px-4 sm:px-5 pb-5 text-xs sm:text-sm text-neutral-300 leading-relaxed border-t border-neutral-800/60 pt-3.5">
-                  {faq.a}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
 
       {/* Footer */}
       <Footer onOpenAdmin={handleAdminAccess} />

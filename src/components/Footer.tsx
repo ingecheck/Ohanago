@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Instagram, Clock, ExternalLink, ShieldCheck, Heart, Sparkles, MessageCircle } from 'lucide-react';
+import { Instagram, ExternalLink, ShieldCheck, MessageCircle } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 
 interface FooterProps {
@@ -9,19 +9,15 @@ interface FooterProps {
 export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
   return (
     <footer className="bg-black border-t border-neutral-900 text-neutral-400 py-12 px-4">
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
         {/* Brand Col */}
         <div className="space-y-3">
           <div className="flex items-center gap-3">
             <BrandLogo size="md" showSubtitle={true} className="items-start" />
           </div>
           <p className="text-xs text-neutral-400 leading-relaxed">
-            Plataforma oficial de <strong>OHANA GO</strong>. Social Run Club, carreras atléticas multiedición y experiencias deportivas en Tarapoto, San Martín.
+            Plataforma oficial de <strong>OHANA GO</strong>. Social Run Club, carreras atléticas multiedición y experiencias deportivas.
           </p>
-          <div className="text-xs text-neutral-400 flex items-center gap-1.5 font-mono">
-            <MapPin className="w-4 h-4 text-lime-400 shrink-0" />
-            <span>Tarapoto, San Martín • Perú</span>
-          </div>
         </div>
 
         {/* Contact & Support */}
@@ -71,19 +67,6 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
           </a>
         </div>
 
-        {/* Comunidad & Aliados */}
-        <div className="space-y-2">
-          <h4 className="font-bebas text-lg text-white uppercase tracking-wider">
-            Comunidad & Alianzas
-          </h4>
-          <ul className="text-xs space-y-1.5 text-neutral-400">
-            <li>• <strong>Social Run Club</strong> (Martes y Jueves 6:30 PM)</li>
-            <li>• <strong>Circuito Tarapoto</strong> (Plaza Mayor de Armas)</li>
-            <li>• <strong>Entre Jarras</strong> (Punto de Encuentro Oficial)</li>
-            <li>• <strong>Voluntariado & Staff</strong> (Convocatoria Abierta)</li>
-          </ul>
-        </div>
-
         {/* Admin Access */}
         <div className="space-y-2">
           <h4 className="font-bebas text-lg text-white uppercase tracking-wider">
@@ -104,9 +87,6 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
 
       <div className="max-w-7xl mx-auto pt-6 border-t border-neutral-900 text-center text-xs text-neutral-500 flex flex-col sm:flex-row items-center justify-between gap-3">
         <p>© {new Date().getFullYear()} OHANA GO. Todos los derechos reservados.</p>
-        <p className="flex items-center gap-1 text-neutral-400 font-mono">
-          MÁS QUE CORRER, SOMOS FAMILIA
-        </p>
       </div>
     </footer>
   );
