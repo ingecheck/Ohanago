@@ -35,15 +35,22 @@ export const SocialRunSection: React.FC = () => {
             <li className="flex items-start gap-2">
               <CheckCircle2 className="w-4 h-4 text-lime-400 shrink-0 mt-0.5" />
               <div>
-                <strong className="text-white block">Martes • 6:30 PM</strong>
-                <span>Trote social regenerativo (4K a 5K)</span>
+                <strong className="text-white block">Lunes • 5:45 AM</strong>
+                <span>Activación matutina y trote social (4K a 5K)</span>
               </div>
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle2 className="w-4 h-4 text-lime-400 shrink-0 mt-0.5" />
               <div>
-                <strong className="text-white block">Jueves • 6:30 PM</strong>
-                <span>Fondo progresivo & activación (5K a 7K)</span>
+                <strong className="text-white block">Martes • 5:45 AM</strong>
+                <span>Ritmo progresivo y técnica de carrera (5K a 6K)</span>
+              </div>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="w-4 h-4 text-lime-400 shrink-0 mt-0.5" />
+              <div>
+                <strong className="text-white block">Viernes • 5:45 AM</strong>
+                <span>Fondo matutino y cierre de semana (5K a 7K)</span>
               </div>
             </li>
           </ul>
@@ -114,7 +121,7 @@ export const SocialRunSection: React.FC = () => {
         </div>
 
         <a
-          href="https://wa.me/51957342934?text=%C2%A1Hola%20Ohana%20Go!%20Quiero%20unirme%20a%20los%20Social%20Runs%20semanales%20en%20Tarapoto."
+          href="https://wa.me/51902227356?text=%C2%A1Hola%20Ohana%20Go!%20Quiero%20unirme%20a%20los%20Social%20Runs%20semanales."
           target="_blank"
           rel="noopener noreferrer"
           className="px-6 py-3.5 rounded-2xl bg-lime-400 hover:bg-lime-300 text-black font-bebas text-xl uppercase tracking-wider transition font-black flex items-center gap-2 shadow-lg shadow-lime-400/20 shrink-0"

@@ -78,8 +78,8 @@ export const EventHero: React.FC<EventHeroProps> = ({
               <Zap className="w-4 h-4" />
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-400">Social Run</span>
             </div>
-            <span className="font-bebas text-2xl sm:text-3xl text-white block">Martes & Jueves</span>
-            <span className="text-[11px] text-neutral-400">6:30 PM • Salidas gratuitas</span>
+            <span className="font-bebas text-2xl sm:text-3xl text-white block">Lun, Mar & Vie</span>
+            <span className="text-[11px] text-neutral-400">5:45 AM • Salidas del Club</span>
           </div>
 
           <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-4 transition hover:border-lime-400/40">

@@ -16,7 +16,7 @@ export const UpcomingRaceTeaser: React.FC<UpcomingRaceTeaserProps> = () => {
     setTimeout(() => {
       // open WhatsApp with prefilled message
       const text = encodeURIComponent(`¡Hola Ohana Go! Quiero ser de los primeros en recibir la primicia y preventa de la próxima carrera oficial. Mi contacto es: ${emailOrPhone.trim()}`);
-      window.open(`https://wa.me/51957342934?text=${text}`, '_blank');
+      window.open(`https://wa.me/51902227356?text=${text}`, '_blank');
     }, 600);
   };
 

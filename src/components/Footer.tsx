@@ -57,13 +57,13 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
 
           {/* WhatsApp Direct */}
           <a
-            href="https://wa.me/51957342934"
+            href="https://wa.me/51902227356"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 text-xs text-neutral-300 bg-neutral-900 px-3 py-2.5 rounded-xl border border-neutral-800 hover:border-lime-400/50 transition"
           >
             <MessageCircle className="w-4 h-4 text-lime-400 shrink-0" />
-            <span>WhatsApp Organización: +51 957 342 934</span>
+            <span>WhatsApp Compras & Organización: +51 902 227 356</span>
           </a>
         </div>
 
