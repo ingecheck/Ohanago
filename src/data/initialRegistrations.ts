@@ -3798,7 +3798,7 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
     "department": "San Martín",
     "city": "Tarapoto",
     "district": "Tarapoto",
-    "runningClub": "Master Ulala",
+    "runningClub": "Ohana Run Club",
     "tShirtSize": "M",
     "emergencyContactName": "Contacto de Emergencia",
     "emergencyContactPhone": "967953355",

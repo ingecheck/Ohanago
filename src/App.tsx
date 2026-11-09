@@ -6,6 +6,7 @@ import { PastEditionsArchive } from './components/PastEditionsArchive';
 import { OhanaMerchSection } from './components/OhanaMerchSection';
 import { EventKitSection } from './components/EventKitSection';
 import { RaceRouteSection } from './components/RaceRouteSection';
+import { SnowfallCanvas } from './components/SnowfallCanvas';
 import { RegistrationForm } from './components/RegistrationForm';
 import { RegistrationSuccessModal } from './components/RegistrationSuccessModal';
 import { AdminDashboard } from './components/AdminDashboard';
@@ -297,29 +298,45 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-neutral-100 flex flex-col font-sans selection:bg-lime-400 selection:text-black">
+    <div className="min-h-screen bg-[#070D14] text-neutral-100 flex flex-col font-sans selection:bg-red-500 selection:text-white relative">
+      {/* 60 FPS Snowfall Particle System (Fixed, non-blocking, z-20) */}
+      <SnowfallCanvas />
+
       {/* Top Brand Notification Banner */}
-      <div className="bg-neutral-950 border-b border-neutral-800/80 py-2 px-4 text-center text-xs sm:text-sm font-mono tracking-wider uppercase text-neutral-300 relative z-40 flex items-center justify-center gap-2">
-        <span className="w-2 h-2 rounded-full bg-lime-400 shrink-0" />
-        <span className="text-white font-bold">OHANA GO • RUN CLUB & RACING</span>
+      <div className="bg-[#070D14] border-b border-red-950/60 py-2.5 px-4 text-center text-xs font-mono tracking-wider uppercase text-neutral-300 relative z-40 flex items-center justify-center gap-2">
+        <span className="w-2 h-2 rounded-full bg-red-500 animate-ping shrink-0" />
+        <span className="text-white font-bold">🎅 OHANA GO PRESENTA: SANTA RUN TARAPOTO 2026</span>
         <span className="hidden sm:inline text-neutral-600">|</span>
-        <span className="hidden sm:inline text-neutral-400">PRÓXIMA EDICIÓN EN PREPARACIÓN</span>
+        <span className="hidden sm:inline text-amber-400 font-bold">SÁBADO 19 DE DICIEMBRE · CORRE Y REGALA SONRISAS</span>
       </div>
 
       {/* Main Navbar */}
       <Navbar
         onOpenAdmin={handleAdminAccess}
+        onOpenCompetitorLogin={handleCompetitorAccess}
         onGoToSection={scrollToSection}
+        loggedInCompetitorName={activeCompetitor ? `${activeCompetitor.firstName} ${activeCompetitor.lastName}` : null}
       />
 
       {/* Hero Section */}
       <EventHero
         registeredCount={registrations.length}
+        onRegisterClick={() => scrollToSection('formulario-registro')}
         onExploreUpcoming={() => scrollToSection('ediciones')}
+        onOpenCompetitorLogin={handleCompetitorAccess}
       />
 
-      {/* Upcoming Race Teaser (Próxima carrera) */}
-      <UpcomingRaceTeaser />
+      {/* Upcoming Race Teaser (Kit Oficial & Inversión S/ 70) */}
+      <UpcomingRaceTeaser
+        onRegisterClick={() => scrollToSection('formulario-registro')}
+      />
+
+      {/* Official Registration Form for Santa Run Tarapoto 2026 */}
+      <RegistrationForm
+        onRegistrationSuccess={handleRegistrationSuccess}
+        onOpenCompetitorLogin={handleCompetitorAccess}
+        onGoToRoute={() => scrollToSection('ediciones')}
+      />
 
       {/* Ohana Merch Section (Indumentaria oficial) */}
       <OhanaMerchSection />

@@ -1,134 +1,166 @@
-import React, { useState } from 'react';
-import { Sparkles, Bell, Clock, MapPin, Trophy, ShieldCheck, ArrowRight, MessageCircle } from 'lucide-react';
+import React from 'react';
+import { Trophy, Droplets, Shirt, Sparkles, Gift, ShoppingBag, CheckCircle2, MessageCircle, ArrowRight, Star } from 'lucide-react';
 
 interface UpcomingRaceTeaserProps {
-  onNotifyWhatsApp?: () => void;
+  onRegisterClick?: () => void;
 }
 
-export const UpcomingRaceTeaser: React.FC<UpcomingRaceTeaserProps> = () => {
-  const [emailOrPhone, setEmailOrPhone] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
-
-  const handleNotifySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!emailOrPhone.trim()) return;
-    setSubscribed(true);
-    setTimeout(() => {
-      // open WhatsApp with prefilled message
-      const text = encodeURIComponent(`¡Hola Ohana Go! Quiero ser de los primeros en recibir la primicia y preventa de la próxima carrera oficial. Mi contacto es: ${emailOrPhone.trim()}`);
-      window.open(`https://wa.me/51902227356?text=${text}`, '_blank');
-    }, 600);
-  };
+export const UpcomingRaceTeaser: React.FC<UpcomingRaceTeaserProps> = ({
+  onRegisterClick,
+}) => {
+  const kitItems = [
+    {
+      icon: Trophy,
+      name: 'Medalla Finisher Oficial',
+      desc: 'Aleación maciza de colección con relieve conmemorativo Santa Run 2026.',
+      badge: 'Metálica 3D',
+    },
+    {
+      icon: Droplets,
+      name: 'Hidratación Completa',
+      desc: 'Puntos de abastecimiento en circuito y meta para rendir al máximo.',
+      badge: 'En Ruta & Meta',
+    },
+    {
+      icon: Shirt,
+      name: 'Polo Oficial Santa Run',
+      desc: 'Tejido dry-fit microperforado blanco con arte de palmeras y trazos rojos.',
+      badge: 'Dry-Fit Unisex',
+    },
+    {
+      icon: Sparkles,
+      name: 'Gorra Navideña (Gorro Santa)',
+      desc: 'El toque festivo icónico para iluminar la marea roja nocturna.',
+      badge: 'Edición Navideña',
+    },
+    {
+      icon: ShoppingBag,
+      name: 'Mochila Deportiva',
+      desc: 'Mochila liviana y resistente para transportar tu kit y pertenencias.',
+      badge: 'Oficial Evento',
+    },
+    {
+      icon: Gift,
+      name: 'Sorteo de un Pavo Navideño',
+      desc: 'Participas automáticamente con tu número de inscripción oficial.',
+      badge: 'Premio Especial',
+    },
+  ];
 
   return (
-    <section id="ediciones" className="py-12 sm:py-16 px-4 max-w-6xl mx-auto w-full scroll-mt-20">
-      <div className="relative rounded-3xl p-6 sm:p-10 md:p-12 bg-gradient-to-b from-neutral-900 via-black to-neutral-950 border border-neutral-800 shadow-2xl shadow-black/80 overflow-hidden">
-        {/* Glow ambient background (Subtle) */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-lime-400/[0.03] rounded-full blur-[140px] pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-lime-500/[0.02] rounded-full blur-[120px] pointer-events-none" />
+    <section id="ediciones" className="py-12 sm:py-20 px-4 max-w-6xl mx-auto w-full scroll-mt-20">
+      <div className="relative rounded-3xl p-6 sm:p-10 md:p-12 bg-gradient-to-b from-[#09111C] via-[#0B1422] to-[#070D14] border border-red-500/30 shadow-[0_20px_60px_rgba(212,36,38,0.2)] overflow-hidden">
+        {/* Glow ambient background */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-red-600/10 rounded-full blur-[140px] pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-80 h-80 bg-amber-500/5 rounded-full blur-[120px] pointer-events-none" />
 
         <div className="relative z-10">
           {/* Tag & Status */}
           <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-300 text-xs font-mono font-bold uppercase tracking-wider">
-              <span className="w-2 h-2 rounded-full bg-lime-400" />
-              <span>Próxima Gran Carrera • Edición en Preparación</span>
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-950/80 border border-red-500/40 text-red-300 text-xs font-mono font-bold uppercase tracking-wider backdrop-blur-md">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+              <span>🎅 TU KIT OFICIAL · SANTA RUN TARAPOTO 2026</span>
             </div>
 
-            <span className="px-3 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-400 text-xs font-mono">
-              Temporada 2026 - 2027
-            </span>
-          </div>
-
-          {/* Headline */}
-          <div className="max-w-3xl space-y-3 mb-8">
-            <h2 className="font-bebas text-4xl sm:text-5xl md:text-6xl text-white tracking-wide uppercase leading-tight">
-              LO QUE VIENE SERÁ <span className="text-lime-400 underline decoration-lime-400/40 underline-offset-4">INCREÍBLE</span>
-            </h2>
-            <p className="text-sm sm:text-base text-neutral-300 leading-relaxed max-w-2xl">
-              Aún no revelamos la fecha exacta ni el circuito final, pero prepárate: la siguiente edición oficial de <strong>OHANA GO</strong> subirá el listón con una experiencia nocturna/sunset que no olvidarás.
-            </p>
-          </div>
-
-          {/* Mystery Teaser Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <div className="p-4 rounded-2xl bg-neutral-950/90 border border-neutral-800/80 relative overflow-hidden group hover:border-lime-400/40 transition">
-              <div className="flex items-center gap-2 text-lime-400 mb-1">
-                <MapPin className="w-4 h-4" />
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-400">Circuitos</span>
-              </div>
-              <span className="font-bebas text-2xl text-white block">Urbano & Trail Running</span>
-              <p className="text-[11px] text-neutral-400 mt-1">Rutas mixtas por asfalto, naturaleza y senderos con pura competencia sana.</p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-neutral-950/90 border border-neutral-800/80 relative overflow-hidden group hover:border-lime-400/40 transition">
-              <div className="flex items-center gap-2 text-lime-400 mb-1">
-                <Clock className="w-4 h-4" />
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-400">Modalidades</span>
-              </div>
-              <span className="font-bebas text-2xl text-white block">5K · 10K & Trail</span>
-              <p className="text-[11px] text-neutral-400 mt-1">Desafíos diseñados para todos los niveles de atletas y clubes.</p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-neutral-950/90 border border-neutral-800/80 relative overflow-hidden group hover:border-lime-400/40 transition">
-              <div className="flex items-center gap-2 text-lime-400 mb-1">
-                <Trophy className="w-4 h-4" />
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-400">Kit Exclusivo</span>
-              </div>
-              <span className="font-bebas text-2xl text-white block">Medalla de Colección</span>
-              <p className="text-[11px] text-neutral-400 mt-1">Polo dry-fit premium, chip de cronometraje e hidratación.</p>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-neutral-950/90 border border-neutral-800/80 relative overflow-hidden group hover:border-lime-400/40 transition">
-              <div className="flex items-center gap-2 text-lime-400 mb-1">
-                <Sparkles className="w-4 h-4" />
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-400">Apertura</span>
-              </div>
-              <span className="font-bebas text-2xl text-lime-400 block">Preventa en Breve</span>
-              <p className="text-[11px] text-neutral-400 mt-1">Cupos limitados con precio especial de prelanzamiento.</p>
+            <div className="flex items-center gap-2">
+              <span className="px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold flex items-center gap-1.5">
+                <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                <span>19 DE DICIEMBRE</span>
+              </span>
             </div>
           </div>
 
-          {/* Action Box: WhatsApp Alert & Priority List */}
-          <div className="p-5 sm:p-7 rounded-2xl bg-neutral-950 border border-lime-400/30 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="space-y-1 text-center md:text-left">
-              <div className="flex items-center justify-center md:justify-start gap-2 text-lime-400 text-xs font-mono font-bold uppercase">
-                <Bell className="w-4 h-4" />
-                <span>Lista de Espera VIP</span>
-              </div>
-              <h3 className="font-bebas text-2xl sm:text-3xl text-white uppercase tracking-wide">
-                Sé el primero en enterarte antes del lanzamiento oficial
-              </h3>
-              <p className="text-xs text-neutral-400 max-w-lg">
-                Los miembros de la lista de espera reciben acceso a la preventa 24 horas antes que el público general.
+          {/* Headline & Pricing Badge */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center mb-10">
+            <div className="lg:col-span-7 space-y-3">
+              <h2 className="font-bebas text-4xl sm:text-5xl md:text-6xl text-white tracking-wide uppercase leading-tight">
+                TODO LO QUE <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-rose-400">INCLUYE TU KIT</span>
+              </h2>
+              <p className="text-sm sm:text-base text-neutral-300 leading-relaxed font-sans max-w-2xl">
+                Prepárate para vivir una noche inolvidable. Al inscribirte recibes todo el equipamiento oficial de Santa Run más tu derecho a cronometraje, hidratación y el gran sorteo del pavo navideño.
               </p>
             </div>
 
-            <div className="w-full md:w-auto shrink-0">
-              {subscribed ? (
-                <div className="px-5 py-3 rounded-xl bg-lime-950 border border-lime-400/60 text-lime-300 text-xs font-bold flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-lime-400" />
-                  <span>¡Redirigiendo a WhatsApp Oficial de Ohana Go!</span>
+            {/* Glowing Price Box matching the official poster */}
+            <div className="lg:col-span-5 flex flex-col items-center sm:items-end justify-center">
+              <div className="w-full max-w-sm rounded-3xl p-5 bg-gradient-to-b from-red-950/90 to-slate-950 border-2 border-red-500 shadow-[0_0_40px_rgba(255,30,39,0.35)] text-center relative">
+                <span className="text-[11px] font-mono uppercase tracking-widest text-red-200 font-bold block mb-1">
+                  INVERSIÓN GENERAL
+                </span>
+                <div className="font-bebas text-5xl sm:text-6xl text-white font-black tracking-tight leading-none my-1 drop-shadow-md">
+                  S/ 70.00
                 </div>
-              ) : (
-                <form onSubmit={handleNotifySubmit} className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-                  <input
-                    type="text"
-                    value={emailOrPhone}
-                    onChange={(e) => setEmailOrPhone(e.target.value)}
-                    placeholder="Tu WhatsApp o Correo"
-                    className="w-full sm:w-64 px-4 py-3 rounded-xl bg-neutral-900 border border-neutral-700 text-white placeholder-neutral-500 text-xs focus:outline-none focus:border-lime-400 transition"
-                  />
-                  <button
-                    type="submit"
-                    className="w-full sm:w-auto px-5 py-3 rounded-xl bg-lime-400 hover:bg-lime-300 text-black font-bebas text-lg uppercase tracking-wider transition cursor-pointer flex items-center justify-center gap-1.5 font-black shrink-0"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    <span>Avisarme por WhatsApp</span>
-                  </button>
-                </form>
-              )}
+
+                {/* 15% discount for previous editions */}
+                <div className="mt-3 pt-3 border-t border-red-500/40 rounded-2xl bg-black/60 p-2.5 flex items-center justify-between text-left gap-2">
+                  <span className="font-bebas text-2xl text-amber-400 font-black shrink-0 px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                    15% OFF
+                  </span>
+                  <p className="text-[11px] text-neutral-300 leading-tight">
+                    <strong className="text-white block">Participantes anteriores OHANA GO</strong>
+                    <span>(Ej. Halloween 5K con tu DNI)</span>
+                  </p>
+                </div>
+              </div>
             </div>
+          </div>
+
+          {/* Grid of 6 Kit Items */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+            {kitItems.map((item, idx) => {
+              const IconComp = item.icon;
+              return (
+                <div
+                  key={idx}
+                  className="p-5 rounded-2xl bg-slate-900/80 border border-white/10 hover:border-red-500/50 transition-all duration-300 group backdrop-blur-md"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 flex items-center justify-center group-hover:bg-red-500 group-hover:text-white transition-colors duration-300">
+                      <IconComp className="w-5 h-5" />
+                    </div>
+                    <span className="text-[10px] font-mono text-amber-400 font-bold uppercase tracking-wider bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">
+                      {item.badge}
+                    </span>
+                  </div>
+                  <h3 className="font-bebas text-xl text-white uppercase tracking-wide group-hover:text-red-400 transition-colors">
+                    {item.name}
+                  </h3>
+                  <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
+                    {item.desc}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Official Kit & Pricing Image Banner */}
+          <div className="rounded-3xl overflow-hidden border border-red-500/30 shadow-2xl relative max-w-3xl mx-auto mb-8 group">
+            <img
+              src="/assets/aistudio/santa_run_kit_pricing.jpeg"
+              alt="Tu Kit Oficial Santa Run Tarapoto 2026 - S/ 70.00"
+              className="w-full h-auto object-cover group-hover:scale-[1.01] transition-transform duration-700"
+            />
+          </div>
+
+          {/* Bottom CTAs */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            <button
+              onClick={onRegisterClick}
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bebas text-2xl uppercase tracking-wider transition-all duration-300 shadow-xl shadow-red-600/30 font-black cursor-pointer flex items-center justify-center gap-2.5 border border-red-400/40"
+            >
+              <span>Completar Formulario de Inscripción</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
+
+            <a
+              href={`https://wa.me/51902227356?text=${encodeURIComponent('¡Hola Ohana Go! Quiero información para inscribirme a la Santa Run Tarapoto 2026 (S/ 70.00).')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-white/10 text-neutral-200 hover:text-white font-bebas text-xl uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer backdrop-blur-md"
+            >
+              <MessageCircle className="w-5 h-5 text-emerald-400" />
+              <span>Consultar por WhatsApp (+51 902 227 356)</span>
+            </a>
           </div>
         </div>
       </div>

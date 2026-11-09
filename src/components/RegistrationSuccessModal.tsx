@@ -27,14 +27,14 @@ export const RegistrationSuccessModal: React.FC<RegistrationSuccessModalProps> =
 
         {/* Celebration Header */}
         <div className="text-center mb-6">
-          <div className="inline-flex p-3 rounded-2xl bg-lime-400/20 text-lime-400 mb-2 border border-lime-400/30">
+          <div className="inline-flex p-3 rounded-2xl bg-red-600/20 text-red-400 mb-2 border border-red-500/40">
             <CheckCircle className="w-10 h-10" />
           </div>
           <h2 className="font-bebas text-4xl sm:text-5xl text-white tracking-wide uppercase">
             ¡Inscripción Exitosa!
           </h2>
           <p className="text-sm text-neutral-300 max-w-md mx-auto">
-            ¡Felicitaciones <span className="text-lime-400 font-bold">{registration.firstName}</span>! Tu cupo para la <strong>OHANA GO 5K HALLOWEEN</strong> en Tarapoto está confirmado.
+            ¡Felicitaciones <span className="text-amber-400 font-bold">{registration.firstName}</span>! Tu cupo oficial para la <strong>SANTA RUN TARAPOTO 2026</strong> está confirmado.
           </p>
         </div>
 
@@ -44,31 +44,31 @@ export const RegistrationSuccessModal: React.FC<RegistrationSuccessModalProps> =
         </div>
 
         {/* Important Next Steps Card */}
-        <div className="bg-neutral-950 rounded-2xl p-4 border border-neutral-800 space-y-2.5 text-xs text-neutral-300">
+        <div className="bg-slate-950/80 rounded-2xl p-4 border border-red-500/30 space-y-2.5 text-xs text-neutral-300">
           <h4 className="font-bebas text-base text-white uppercase tracking-wider flex items-center gap-1.5">
-            <AlertCircle className="w-4 h-4 text-orange-400" />
+            <AlertCircle className="w-4 h-4 text-amber-400" />
             Información Clave para el Día de la Carrera
           </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-neutral-400">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-neutral-300">
             <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-lime-400 shrink-0" />
-              <span><strong>Sábado 31 Octubre 2026</strong> • 5:30 PM Concentración (Partida 7 PM)</span>
+              <Calendar className="w-4 h-4 text-red-400 shrink-0" />
+              <span><strong>Sábado 19 Diciembre 2026</strong> • 7:00 P.M. (Partida)</span>
             </div>
             <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-lime-400 shrink-0" />
-              <span><strong>Partida:</strong> Plaza de Armas Tarapoto</span>
+              <MapPin className="w-4 h-4 text-rose-400 shrink-0" />
+              <span><strong>Partida:</strong> Parque de la Av. Aviación</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-lime-400 font-bold font-mono">REGISTRO</span>
+              <span className="text-amber-400 font-bold font-mono">REGISTRO</span>
               <span><strong>Código:</strong> {registration.id}</span>
             </div>
             <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-orange-400 shrink-0" />
-              <span><strong>Meta:</strong> Entre Jarras (Jr. Lima cda. 13)</span>
+              <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span><strong>Llegada:</strong> Concha Acústica</span>
             </div>
           </div>
-          <p className="text-[11px] text-neutral-400 pt-2 border-t border-neutral-800/80">
-            * Guarda una captura de pantalla de este pase oficial para canjear tu medalla finisher y artículo neón el día de la carrera.
+          <p className="text-[11px] text-neutral-400 pt-2 border-t border-white/10">
+            * Guarda tu pase oficial para canjear tu kit completo (Polo Oficial, Gorro Santa, Mochila, Medalla Finisher e Hidratación) y participar en el sorteo del pavo navideño 🦃.
           </p>
         </div>
 

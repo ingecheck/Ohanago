@@ -51,6 +51,14 @@ export interface RunnerRegistration {
   finishedAtMeta?: boolean;
   finishCheckinTime?: string;
   medalDelivered?: boolean;
+  // Santa Run Tarapoto 2026 specific fields
+  edition?: 'santa-run-2026' | 'halloween-5k-2026';
+  hasPreviousDiscount?: boolean;
+  amountPaid?: number;
+  turkeyRaffleTicket?: string;
+  kitClaimed?: boolean;
+  santaCapDelivered?: boolean;
+  backpackDelivered?: boolean;
   // Compatibility fields
   totalCandies?: number;
   potionsCollected?: string[];

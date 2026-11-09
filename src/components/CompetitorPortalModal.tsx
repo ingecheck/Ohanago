@@ -17,11 +17,13 @@ import {
   PackageCheck,
   Award,
   Trophy,
-  Timer
+  Timer,
+  Gift
 } from 'lucide-react';
 import { RunnerRegistration } from '../types/race';
 import { QRScannerModal } from './QRScannerModal';
 import { processStartCheckinSafe } from '../utils/checkinManager';
+import { DigitalBib } from './DigitalBib';
 
 interface CompetitorPortalModalProps {
   competitor: RunnerRegistration;
@@ -41,6 +43,7 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
   const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(null);
 
   const isVirtual = competitor.modality === 'Virtual';
+  const isSantaRun = competitor.edition === 'santa-run-2026' || competitor.id.startsWith('SR-');
 
   // Live time tracking for the 7:15 PM milestone
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
@@ -333,24 +336,46 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
           </div>
         </div>
 
+        {/* DIGITAL BIB & ACCREDITATION PASS CARD */}
+        <div className="py-2 flex flex-col items-center">
+          <div className="text-center mb-4">
+            <span className={`text-[10px] font-mono uppercase tracking-widest font-bold block mb-1 ${
+              isSantaRun ? 'text-red-400' : 'text-lime-400'
+            }`}>
+              {isSantaRun ? '🎅 SANTA RUN TARAPOTO 2026' : 'CREDENCIAL DIGITAL OFICIAL'}
+            </span>
+            <h3 className="font-bebas text-3xl sm:text-4xl text-white uppercase tracking-wide">
+              {isSantaRun ? 'Dorsal Navideño & Ticket Sorteo Pavo' : 'Pase Digital de Competidor'}
+            </h3>
+            <p className="text-xs text-neutral-400 max-w-md mx-auto mt-0.5">
+              {isSantaRun
+                ? 'Presenta tu código QR en el Parque de la Av. Aviación para acreditarte y reclamar tu Kit Navideño Oficial.'
+                : 'Presenta este código QR en la mesa de acreditación para validar tu ingreso.'}
+            </p>
+          </div>
+          <DigitalBib registration={competitor} showActions={true} />
+        </div>
+
         {/* Clean Official Verification Card */}
         <div className="p-6 sm:p-7 rounded-3xl bg-neutral-900/90 border border-neutral-800 shadow-xl space-y-4">
           <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-lime-400" />
+              <ShieldCheck className={`w-5 h-5 ${isSantaRun ? 'text-red-500' : 'text-lime-400'}`} />
               <h3 className="font-bebas text-2xl text-white uppercase tracking-wide">
-                Ficha Oficial de Verificación
+                Ficha Oficial de Verificación {isSantaRun ? '• Santa Run 2026' : ''}
               </h3>
             </div>
             <span className="text-xs text-neutral-400 font-mono">
-              Participante N° <strong className="text-lime-400">{competitor.registrationNumber || competitor.id}</strong>
+              Participante N° <strong className={isSantaRun ? 'text-red-400' : 'text-lime-400'}>{competitor.registrationNumber || competitor.id}</strong>
             </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 text-xs">
             <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800/80">
               <span className="text-neutral-500 block uppercase font-bold text-[10px]">Documento de Identidad (DNI)</span>
-              <span className="text-lime-400 font-black font-mono text-base block mt-0.5">{competitor.documentNumber}</span>
+              <span className={`font-black font-mono text-base block mt-0.5 ${isSantaRun ? 'text-red-400' : 'text-lime-400'}`}>
+                {competitor.documentNumber}
+              </span>
               <span className="text-[10px] text-neutral-400">Verificado para ingreso</span>
             </div>
 
@@ -369,47 +394,96 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
               <span className="text-[10px] text-neutral-400">Contacto de registro</span>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800/80">
-              <span className="text-neutral-500 block uppercase font-bold text-[10px]">Modalidad</span>
-              <span className="text-white font-bold text-sm block mt-0.5">5K Presencial Tarapoto</span>
-              <span className="text-[10px] text-neutral-400">Plaza de Armas</span>
-            </div>
-
-            <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800/80">
-              <span className="text-neutral-500 block uppercase font-bold text-[10px]">Kit Inicial</span>
-              <div className="mt-0.5">
-                {competitor.confirmedAtStart ? (
-                  <span className="text-emerald-400 font-bold text-sm flex items-center gap-1">
-                    <CheckCircle2 className="w-4 h-4" /> Entregado en Plaza
+            {isSantaRun ? (
+              <>
+                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-red-950/60 to-neutral-950 border border-red-500/40">
+                  <span className="text-red-400 block uppercase font-bold text-[10px] flex items-center gap-1">
+                    <Gift className="w-3.5 h-3.5" /> Ticket Sorteo del Pavo
                   </span>
-                ) : (
-                  <span className="text-amber-400 font-bold text-sm flex items-center gap-1">
-                    <Clock className="w-4 h-4" /> Pendiente de Entrega
+                  <span className="text-amber-300 font-black font-mono text-base block mt-0.5">
+                    {competitor.turkeyRaffleTicket || `PAVO-${competitor.id}`}
                   </span>
-                )}
-              </div>
-              <span className="text-[10px] text-neutral-400">Recepción en mesa de acreditación</span>
-            </div>
+                  <span className="text-[10px] text-neutral-400">Válido en la Concha Acústica</span>
+                </div>
 
-            <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800/80">
-              <span className="text-neutral-500 block uppercase font-bold text-[10px]">Ubicación</span>
-              <span className="text-white font-semibold text-xs block mt-0.5">{competitor.city} • {competitor.district}</span>
-              <span className="text-[10px] text-neutral-400">{competitor.department || 'San Martín'}</span>
-            </div>
+                <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800/80">
+                  <span className="text-neutral-500 block uppercase font-bold text-[10px]">Polo Dry-Fit Talla</span>
+                  <span className="text-white font-bold text-sm block mt-0.5">
+                    Talla {competitor.tShirtSize || 'M'} + Gorra Navideña + Mochila
+                  </span>
+                  <span className="text-[10px] text-neutral-400">Kit Navideño Oficial</span>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800/80">
+                  <span className="text-neutral-500 block uppercase font-bold text-[10px]">Ruta & Largada</span>
+                  <span className="text-white font-bold text-xs block mt-0.5">Parque Av. Aviación → Concha Acústica</span>
+                  <span className="text-[10px] text-red-400 font-mono">Sábado 19 Dic • 7:00 PM</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800/80">
+                  <span className="text-neutral-500 block uppercase font-bold text-[10px]">Modalidad</span>
+                  <span className="text-white font-bold text-sm block mt-0.5">5K Presencial Tarapoto</span>
+                  <span className="text-[10px] text-neutral-400">Plaza de Armas</span>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800/80">
+                  <span className="text-neutral-500 block uppercase font-bold text-[10px]">Kit Inicial</span>
+                  <div className="mt-0.5">
+                    {competitor.confirmedAtStart ? (
+                      <span className="text-emerald-400 font-bold text-sm flex items-center gap-1">
+                        <CheckCircle2 className="w-4 h-4" /> Entregado en Plaza
+                      </span>
+                    ) : (
+                      <span className="text-amber-400 font-bold text-sm flex items-center gap-1">
+                        <Clock className="w-4 h-4" /> Pendiente de Entrega
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-neutral-400">Recepción en mesa de acreditación</span>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800/80">
+                  <span className="text-neutral-500 block uppercase font-bold text-[10px]">Ubicación</span>
+                  <span className="text-white font-semibold text-xs block mt-0.5">{competitor.city} • {competitor.district}</span>
+                  <span className="text-[10px] text-neutral-400">{competitor.department || 'San Martín'}</span>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Event Schedule & Instructions Note */}
-          <div className="p-4 rounded-2xl bg-purple-950/40 border border-purple-500/30 text-xs space-y-1.5">
-            <div className="flex items-center gap-2 text-purple-300 font-bold">
-              <Calendar className="w-4 h-4 text-lime-400" />
-              <span>Cronograma Oficial del Evento • Sábado 31 de Octubre</span>
+          <div className={`p-4 rounded-2xl border text-xs space-y-1.5 ${
+            isSantaRun 
+              ? 'bg-red-950/40 border-red-500/30' 
+              : 'bg-purple-950/40 border-purple-500/30'
+          }`}>
+            <div className={`flex items-center gap-2 font-bold ${
+              isSantaRun ? 'text-red-300' : 'text-purple-300'
+            }`}>
+              <Calendar className={`w-4 h-4 ${isSantaRun ? 'text-red-400' : 'text-lime-400'}`} />
+              <span>
+                {isSantaRun 
+                  ? 'Cronograma Oficial Santa Run Tarapoto 2026 • Sábado 19 de Diciembre' 
+                  : 'Cronograma Oficial del Evento • Sábado 31 de Octubre'}
+              </span>
             </div>
-            <ul className="text-neutral-300 text-[11px] space-y-1 list-disc list-inside">
-              <li><strong>5:30 PM:</strong> Concentración y entrega de Kit Inicial en la Plaza de Armas de Tarapoto.</li>
-              <li><strong>6:30 PM:</strong> Calentamiento grupal, dinámicas y activación.</li>
-              <li><strong>7:00 PM:</strong> Conteo regresivo y largada oficial 5K.</li>
-              <li><strong>Llegada & After Race:</strong> Meta y sorteos en Entre Jarras (Av. Lima 1230).</li>
-            </ul>
+            {isSantaRun ? (
+              <ul className="text-neutral-300 text-[11px] space-y-1 list-disc list-inside">
+                <li><strong>6:00 PM:</strong> Concentración y entrega de Kit Navideño en el <strong>Parque de la Av. Aviación</strong>.</li>
+                <li><strong>6:40 PM:</strong> Calentamiento festivo, dinámicas y fotos oficiales con el gorro navideño.</li>
+                <li><strong>7:00 PM:</strong> Conteo regresivo y largada oficial nocturna de la Santa Run.</li>
+                <li><strong>Meta en Concha Acústica:</strong> Entrega de la Medalla Finisher Oficial y el gran <strong>Sorteo en vivo de un Pavo</strong>.</li>
+              </ul>
+            ) : (
+              <ul className="text-neutral-300 text-[11px] space-y-1 list-disc list-inside">
+                <li><strong>5:30 PM:</strong> Concentración y entrega de Kit Inicial en la Plaza de Armas de Tarapoto.</li>
+                <li><strong>6:30 PM:</strong> Calentamiento grupal, dinámicas y activación.</li>
+                <li><strong>7:00 PM:</strong> Conteo regresivo y largada oficial 5K.</li>
+                <li><strong>Llegada & After Race:</strong> Meta y sorteos en Entre Jarras (Av. Lima 1230).</li>
+              </ul>
+            )}
           </div>
         </div>
 

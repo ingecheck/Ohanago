@@ -38,10 +38,12 @@ import {
   Trophy,
   Download,
   FileSpreadsheet,
-  Database
+  Database,
+  Gift
 } from 'lucide-react';
 import { AdminAnalyticsTab } from './AdminAnalyticsTab';
 import { AdminRouletteModal } from './AdminRouletteModal';
+import { SantaTurkeyLotteryModal } from './SantaTurkeyLotteryModal';
 import { fetchAnalytics, AnalyticsSummary } from '../utils/analytics';
 import { getStoredRouletteState } from '../utils/rouletteManager';
 
@@ -60,6 +62,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCheckin, setFilterCheckin] = useState<'all' | 'confirmed' | 'pending'>('all');
+  const [filterEdition, setFilterEdition] = useState<'all' | 'santa-run-2026' | 'halloween-5k-2026'>('all');
+  const [showTurkeyLottery, setShowTurkeyLottery] = useState(false);
 
   // Modals
   const [scannedRunnerModal, setScannedRunnerModal] = useState<RunnerRegistration | null>(null);
@@ -403,7 +407,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       (filterCheckin === 'confirmed' && !!r.confirmedAtStart) ||
       (filterCheckin === 'pending' && !r.confirmedAtStart);
 
-    return matchSearch && matchCheckin;
+    // Edition filter (Santa Run 2026 vs Halloween 5K)
+    const isSanta = r.edition === 'santa-run-2026' || r.id.startsWith('SR-');
+    const matchEdition =
+      filterEdition === 'all' ||
+      (filterEdition === 'santa-run-2026' && isSanta) ||
+      (filterEdition === 'halloween-5k-2026' && !isSanta);
+
+    return matchSearch && matchCheckin && matchEdition;
   });
 
   return (
@@ -438,14 +449,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* Action Buttons Toolbar */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Ruleta de Sorteos (22 Premios) */}
+            {/* Sorteo del Pavo Navideño (Santa Run 2026) */}
+            <button
+              onClick={() => setShowTurkeyLottery(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-red-600 via-rose-500 to-red-600 hover:from-red-500 text-white rounded-xl text-xs font-black transition shadow-lg shadow-red-600/30 cursor-pointer ring-2 ring-red-500/50 hover:scale-[1.02]"
+              title="Girar la Tómbola Digital del Sorteo del Pavo Santa Run 2026"
+            >
+              <Gift className="w-4 h-4 text-amber-300" />
+              <span>🦃 Sorteo del Pavo</span>
+            </button>
+
+            {/* Ruleta de Sorteos (25 Premios) */}
             <button
               onClick={() => setShowRouletteModal(true)}
               className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 text-black rounded-xl text-xs font-black transition shadow-lg shadow-amber-500/25 cursor-pointer ring-2 ring-yellow-400/50 hover:scale-[1.02]"
-              title="Controlar y Girar Ruleta de Sorteos en Vivo (22 Premios / 266 Tickets)"
+              title="Controlar y Girar Ruleta de Sorteos en Vivo (25 Premios)"
             >
               <Trophy className="w-4 h-4 text-black" />
-              <span>🎡 Sorteos (22 Premios)</span>
+              <span>🎡 Sorteos (25 Premios)</span>
             </button>
 
             {/* Kit Delivery QR Projector Button */}
@@ -659,6 +680,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     >
                       <Clock className="w-3.5 h-3.5 text-amber-400" />
                       <span>⏳ Pendiente de Kit ({checkinPendingCount})</span>
+                    </button>
+                  </div>
+
+                  {/* Edition Filter (Santa Run 2026 vs Halloween 5K) */}
+                  <div className="flex items-center bg-neutral-950 p-1 rounded-xl border border-neutral-800">
+                    <button
+                      onClick={() => setFilterEdition('all')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                        filterEdition === 'all'
+                          ? 'bg-neutral-800 text-white font-bold'
+                          : 'text-neutral-400 hover:text-white'
+                      }`}
+                    >
+                      Todas
+                    </button>
+                    <button
+                      onClick={() => setFilterEdition('santa-run-2026')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+                        filterEdition === 'santa-run-2026'
+                          ? 'bg-red-950 border border-red-500/60 text-red-400 shadow-sm shadow-red-500/20'
+                          : 'text-neutral-400 hover:text-red-300'
+                      }`}
+                    >
+                      <span>🎅 Santa Run 2026</span>
+                    </button>
+                    <button
+                      onClick={() => setFilterEdition('halloween-5k-2026')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+                        filterEdition === 'halloween-5k-2026'
+                          ? 'bg-amber-950 border border-amber-500/60 text-amber-400 shadow-sm shadow-amber-500/20'
+                          : 'text-neutral-400 hover:text-amber-300'
+                      }`}
+                    >
+                      <span>🎃 Halloween</span>
                     </button>
                   </div>
                 </div>
@@ -1186,11 +1241,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* Modal: Admin Live Roulette Controls (22 Sorteos / 266 Tickets) */}
+      {/* Modal: Admin Live Roulette Controls (25 Sorteos) */}
       {showRouletteModal && (
         <AdminRouletteModal
           onClose={() => setShowRouletteModal(false)}
           registrations={registrations}
+        />
+      )}
+
+      {/* Modal: Digital Turkey Raffle Live Drum (Santa Run 2026) */}
+      {showTurkeyLottery && (
+        <SantaTurkeyLotteryModal
+          runners={registrations}
+          onClose={() => setShowTurkeyLottery(false)}
         />
       )}
     </div>

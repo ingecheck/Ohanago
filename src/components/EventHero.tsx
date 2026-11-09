@@ -1,94 +1,143 @@
 import React from 'react';
-import { Sparkles, Users, Trophy, MapPin, ArrowRight, Zap, Flame, Shield } from 'lucide-react';
+import { Calendar, Clock, MapPin, Sparkles, Gift, Users, Trophy, Flame, ChevronRight, User } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 
 interface EventHeroProps {
   onRegisterClick?: () => void;
   onExploreUpcoming?: () => void;
-  onExploreCommunity?: () => void;
+  onOpenCompetitorLogin?: () => void;
   registeredCount: number;
 }
 
 export const EventHero: React.FC<EventHeroProps> = ({
   onRegisterClick,
   onExploreUpcoming,
-  onExploreCommunity,
+  onOpenCompetitorLogin,
   registeredCount,
 }) => {
   return (
-    <div className="relative overflow-hidden pt-8 pb-14 md:pt-14 md:pb-20 border-b border-neutral-900 bg-gradient-to-b from-black via-neutral-950 to-neutral-900">
-      {/* Background Soft Ambient Glows (Toned Down) */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-lime-400/[0.03] rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-0 right-10 w-72 h-72 bg-lime-500/[0.02] rounded-full blur-[120px] pointer-events-none" />
+    <div className="relative overflow-hidden pt-8 pb-16 md:pt-14 md:pb-24 border-b border-red-950/40 bg-gradient-to-b from-[#070D14] via-[#0B131E] to-[#080E17]">
+      {/* Background Holiday Ambient Warmth */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-red-600/10 rounded-full blur-[160px] pointer-events-none" />
+      <div className="absolute top-1/3 right-10 w-96 h-96 bg-amber-500/5 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute bottom-0 left-10 w-80 h-80 bg-rose-600/5 rounded-full blur-[130px] pointer-events-none" />
 
-      {/* Grid Pattern Texture */}
-      <div 
-        className="absolute inset-0 opacity-[0.02] pointer-events-none"
+      {/* Grid subtle texture */}
+      <div
+        className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{
           backgroundImage: `linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)`,
           backgroundSize: '48px 48px',
         }}
       />
 
-      <div className="relative max-w-5xl mx-auto px-4 text-center">
-        {/* Brand Official Native Vector Logo Display */}
+      <div className="relative max-w-6xl mx-auto px-4 text-center">
+        {/* Festive Holiday Edition Pill */}
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-950/80 border border-red-500/40 text-red-200 text-xs font-mono font-bold uppercase tracking-widest mb-6 shadow-lg shadow-red-950/50 backdrop-blur-md">
+          <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+          <span>🎅 EDICIÓN OFICIAL NAVIDEÑA · TARAPOTO 2026</span>
+          <span className="text-amber-400 font-black">★</span>
+        </div>
+
+        {/* Brand Official Native Logo */}
         <div className="flex flex-col items-center justify-center mb-6">
-          <BrandLogo size="xl" showSubtitle={false} className="py-2 hover:scale-[1.01] transition-transform duration-300" />
-          <p className="font-bebas text-2xl sm:text-3xl md:text-4xl text-neutral-300 uppercase tracking-widest mt-2">
+          <BrandLogo size="xl" showSubtitle={false} variant="crimson" className="py-2 hover:scale-[1.01] transition-transform duration-300" />
+          <p className="font-bebas text-2xl sm:text-3xl md:text-4xl text-neutral-300 uppercase tracking-widest mt-1">
             Muévete. Conecta. Vive.
           </p>
         </div>
 
-        {/* Narrative Description */}
-        <div className="max-w-3xl mx-auto text-sm sm:text-base text-neutral-300 leading-relaxed mb-8 space-y-3">
-          <p className="font-bold text-white text-base sm:text-lg">
-            Bienvenidos a la plataforma oficial de OHANA GO
+        {/* Narrative & Slogan */}
+        <div className="max-w-3xl mx-auto space-y-3 mb-10">
+          <h1 className="font-bebas text-4xl sm:text-6xl md:text-7xl text-white tracking-wide uppercase leading-none drop-shadow-xl">
+            SANTA RUN <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-400 to-amber-300">TARAPOTO 2026</span>
+          </h1>
+          <p className="font-bebas text-xl sm:text-2xl text-red-400 uppercase tracking-wider flex items-center justify-center gap-2">
+            <span>❤️ Corre y regala Sonrisas</span>
           </p>
-          <p>
-            Un espacio creado para conectar personas, compartir experiencias, descubrir nuevas actividades, asumir retos y celebrar cada logro. Somos una comunidad que cree en el poder del movimiento y las experiencias compartidas.
-          </p>
-          <p className="text-neutral-200 font-medium">
-            ¡Esto recién comienza! Nos esperan muchos kilómetros, nuevos desafíos y momentos inolvidables por vivir juntos.
+          <p className="text-sm sm:text-base text-neutral-300 leading-relaxed max-w-2xl mx-auto font-sans">
+            La marea roja se apodera del asfalto nocturno de Tarapoto este fin de año. Una fiesta deportiva, familiar y solidaria con gorros de Santa, medalla conmemorativa, kit completo y sorteo de pavo navideño.
           </p>
         </div>
 
-        {/* Action CTA */}
-        <div className="flex items-center justify-center mb-10">
+        {/* Key Event Milestones Chips */}
+        <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-3 mb-10 text-left">
+          <div className="bg-slate-900/70 border border-white/10 rounded-2xl p-3.5 backdrop-blur-md transition hover:border-red-500/40">
+            <span className="text-[10px] font-mono uppercase text-red-400 font-bold block flex items-center gap-1.5 mb-1">
+              <Calendar className="w-3.5 h-3.5 text-red-400" /> Fecha
+            </span>
+            <span className="font-bebas text-xl sm:text-2xl text-white block leading-tight">Sábado 19 DIC</span>
+            <span className="text-[11px] text-neutral-400">Temporada 2026</span>
+          </div>
+
+          <div className="bg-slate-900/70 border border-white/10 rounded-2xl p-3.5 backdrop-blur-md transition hover:border-red-500/40">
+            <span className="text-[10px] font-mono uppercase text-amber-400 font-bold block flex items-center gap-1.5 mb-1">
+              <Clock className="w-3.5 h-3.5 text-amber-400" /> Horario
+            </span>
+            <span className="font-bebas text-xl sm:text-2xl text-white block leading-tight">7:00 P.M.</span>
+            <span className="text-[11px] text-neutral-400">Carrera Nocturna</span>
+          </div>
+
+          <div className="bg-slate-900/70 border border-white/10 rounded-2xl p-3.5 backdrop-blur-md transition hover:border-red-500/40">
+            <span className="text-[10px] font-mono uppercase text-rose-400 font-bold block flex items-center gap-1.5 mb-1">
+              <MapPin className="w-3.5 h-3.5 text-rose-400" /> Partida
+            </span>
+            <span className="font-bebas text-lg sm:text-xl text-white block leading-tight truncate">Parque Aviación</span>
+            <span className="text-[11px] text-neutral-400">Av. Aviación</span>
+          </div>
+
+          <div className="bg-slate-900/70 border border-white/10 rounded-2xl p-3.5 backdrop-blur-md transition hover:border-red-500/40">
+            <span className="text-[10px] font-mono uppercase text-emerald-400 font-bold block flex items-center gap-1.5 mb-1">
+              <Trophy className="w-3.5 h-3.5 text-emerald-400" /> Llegada
+            </span>
+            <span className="font-bebas text-lg sm:text-xl text-white block leading-tight truncate">Concha Acústica</span>
+            <span className="text-[11px] text-neutral-400">Meta & Celebración</span>
+          </div>
+        </div>
+
+        {/* Action CTAs */}
+        <div className="flex flex-wrap items-center justify-center gap-4 mb-14">
+          <button
+            onClick={onRegisterClick}
+            className="px-8 sm:px-10 py-4 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-red-600 hover:from-red-500 hover:to-rose-500 text-white font-bebas text-2xl uppercase tracking-wider transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-xl shadow-red-600/35 font-black cursor-pointer flex items-center gap-3 border border-red-400/40"
+          >
+            <span>Inscribirme Ahora · S/ 70.00</span>
+            <ChevronRight className="w-6 h-6" />
+          </button>
+
           <button
             onClick={onExploreUpcoming}
-            className="px-10 py-4 rounded-2xl bg-lime-400 hover:bg-lime-300 text-black font-bebas text-2xl uppercase tracking-wider transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-md shadow-black/50 font-black cursor-pointer"
+            className="px-7 py-4 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border-2 border-red-500/50 hover:border-red-400 text-red-200 hover:text-white font-bebas text-xl sm:text-2xl uppercase tracking-wider transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer backdrop-blur-md font-black shadow-lg"
           >
-            Próxima Carrera
+            <Gift className="w-5 h-5 text-amber-400" />
+            <span>Ver Kit & Descuento 15%</span>
           </button>
+
+          {onOpenCompetitorLogin && (
+            <button
+              onClick={onOpenCompetitorLogin}
+              className="px-6 py-4 rounded-2xl bg-slate-900/60 hover:bg-slate-800/80 border border-white/10 hover:border-white/30 text-neutral-300 hover:text-white font-mono text-xs uppercase tracking-wider transition flex items-center gap-2 cursor-pointer backdrop-blur-md font-bold"
+            >
+              <span>🎒 Mi Espacio / Consultar Pase</span>
+            </button>
+          )}
         </div>
 
-        {/* Quick Brand Stat Pillars (3 Pillars - Natural & Balanced) */}
-        <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4 text-left">
-          <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-4 transition hover:border-lime-400/40">
-            <div className="flex items-center gap-2 text-lime-400 mb-1">
-              <Users className="w-4 h-4" />
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-400">Comunidad</span>
-            </div>
-            <span className="font-bebas text-2xl sm:text-3xl text-white block">+{registeredCount || 131} Atletas</span>
-            <span className="text-[11px] text-neutral-400">Runners activos</span>
-          </div>
-
-          <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-4 transition hover:border-lime-400/40">
-            <div className="flex items-center gap-2 text-lime-400 mb-1">
-              <Zap className="w-4 h-4" />
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-400">Social Run</span>
-            </div>
-            <span className="font-bebas text-2xl sm:text-3xl text-white block">Lun, Mar & Vie</span>
-            <span className="text-[11px] text-neutral-400">5:45 AM • Salidas del Club</span>
-          </div>
-
-          <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-4 transition hover:border-lime-400/40">
-            <div className="flex items-center gap-2 text-lime-400 mb-1">
-              <Flame className="w-4 h-4" />
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-neutral-400">Filosofía</span>
-            </div>
-            <span className="font-bebas text-2xl sm:text-3xl text-white block">Ohana Spirit</span>
-            <span className="text-[11px] text-neutral-400">Nadie se queda atrás</span>
+        {/* Clean Official Poster Showcase */}
+        <div className="max-w-3xl mx-auto rounded-3xl overflow-hidden border border-red-500/30 shadow-[0_20px_80px_rgba(212,36,38,0.25)] relative group">
+          <img
+            src="/assets/aistudio/santa_run_poster_edition.jpeg"
+            alt="Santa Run Tarapoto 2026 - Afiche Oficial"
+            className="w-full h-auto object-cover group-hover:scale-[1.01] transition-transform duration-700"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+          <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs font-mono text-white">
+            <span className="bg-black/80 px-3 py-1 rounded-full border border-red-500/30 font-bold backdrop-blur-md">
+              🎅 Santa Run Oficial 2026
+            </span>
+            <span className="bg-red-600/90 text-white font-bold px-3 py-1 rounded-full shadow-md">
+              Sábado 19 Dic · 7:00 PM
+            </span>
           </div>
         </div>
       </div>
