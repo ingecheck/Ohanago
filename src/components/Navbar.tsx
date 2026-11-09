@@ -94,6 +94,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
+
           {/* Instagram Link Button */}
           <a
             href="https://www.instagram.com/ohanago.peru/"
@@ -184,6 +185,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>🎒 Mi Espacio / Consultar Pase Digital</span>
             </button>
           )}
+
 
           <a
             href="https://www.instagram.com/ohanago.peru/"

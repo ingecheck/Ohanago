@@ -10,7 +10,7 @@ export const SantaRunKitSection: React.FC<SantaRunKitSectionProps> = ({ onRegist
     {
       icon: '🏅',
       title: 'Medalla Finisher Oficial',
-      description: 'Aleación conmemorativa metálica en alto relieve de colección Santa Run Tarapoto 2026.',
+      description: 'Medalla conmemorativa oficial en alto relieve de colección Santa Run Tarapoto 2026.',
       tag: 'Garantizada en Meta',
     },
     {

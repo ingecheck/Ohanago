@@ -59,7 +59,7 @@ export const CompetitorLoginModal: React.FC<CompetitorLoginModalProps> = ({
     try {
       const allList: RunnerRegistration[] = getStoredRegistrations();
 
-      const match = allList.find((r) => {
+      const matches = allList.filter((r) => {
         const rDni = String(r.documentNumber || '').trim().toLowerCase().replace(/[\s\.\-#]/g, '');
         const rDigits = String(r.documentNumber || '').replace(/\D/g, '');
         const rEmail = String(r.email || '').trim().toLowerCase();
@@ -71,6 +71,9 @@ export const CompetitorLoginModal: React.FC<CompetitorLoginModalProps> = ({
           (cleanDigits && cleanDigits.length >= 7 && rDigits.endsWith(cleanDigits))
         );
       });
+
+      // Si tiene inscripciones en ambos eventos, prioriza Santa Run 2026 o la más reciente
+      const match = matches.find((r) => r.edition === 'santa-run-2026' || r.id.startsWith('SR-')) || matches[0];
 
       if (match) {
         trackEvent({

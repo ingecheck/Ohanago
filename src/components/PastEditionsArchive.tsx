@@ -49,12 +49,9 @@ export const PastEditionsArchive: React.FC<PastEditionsArchiveProps> = ({
               />
             </div>
 
-            <div className="mt-2 space-y-1">
+            <div className="mt-2">
               <span className="font-bebas text-2xl sm:text-3xl text-white uppercase tracking-wider block">
                 Medalla Finisher Oficial
-              </span>
-              <span className="font-mono text-xs sm:text-sm text-amber-400 tracking-wide font-bold block">
-                Aleación maciza de colección · Relieve conmemorativo 3D
               </span>
             </div>
           </div>

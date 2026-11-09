@@ -189,19 +189,19 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
         </div>
 
         {/* Atletas que consultaron su espacio */}
-        <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border-2 border-lime-500/40 shadow-md shadow-lime-500/10 relative overflow-hidden">
-          <div className="flex items-center justify-between text-lime-400">
+        <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border-2 border-red-500/40 shadow-md shadow-red-500/10 relative overflow-hidden">
+          <div className="flex items-center justify-between text-red-400">
             <span className="text-[10px] uppercase font-bold tracking-wider">Atletas que Consultaron</span>
-            <CheckCircle2 className="w-4 h-4 text-lime-400" />
+            <CheckCircle2 className="w-4 h-4 text-red-400" />
           </div>
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="font-bebas text-3xl sm:text-4xl text-lime-400">
+            <span className="font-bebas text-3xl sm:text-4xl text-red-400">
               {consultedCount}
             </span>
-            <span className="text-[11px] text-lime-300/80 font-bold">de {totalRunners}</span>
+            <span className="text-[11px] text-red-300/80 font-bold">de {totalRunners}</span>
           </div>
           <div className="text-[11px] text-neutral-400 mt-1 flex items-center gap-1.5">
-            <span className="font-mono text-lime-400 font-bold">
+            <span className="font-mono text-amber-400 font-bold">
               {Math.round((consultedCount / (totalRunners || 1)) * 100)}%
             </span>
             <span>ya tienen listo su QR</span>
@@ -237,7 +237,7 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
                 : 'text-neutral-400 hover:text-white'
             }`}
           >
-            <Users className="w-3.5 h-3.5 text-lime-400" />
+            <Users className="w-3.5 h-3.5 text-red-400" />
             <span>¿Quiénes entraron a Mi Espacio? ({consultedCount})</span>
           </button>
 
@@ -245,7 +245,7 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
             onClick={() => setActiveSubView('sections')}
             className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer ${
               activeSubView === 'sections'
-                ? 'bg-neutral-800 text-lime-400 border border-lime-400/30 shadow-sm'
+                ? 'bg-neutral-800 text-red-400 border border-red-500/30 shadow-sm'
                 : 'text-neutral-400 hover:text-white'
             }`}
           >
@@ -273,7 +273,7 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold transition cursor-pointer border border-neutral-700"
             title="Refrescar métricas ahora"
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-lime-400 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3.5 h-3.5 text-red-400 ${isLoading ? 'animate-spin' : ''}`} />
             <span>Actualizar</span>
           </button>
 
@@ -301,7 +301,7 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
           <div className="p-4 sm:p-5 border-b border-neutral-800 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="font-bebas text-xl sm:text-2xl text-white tracking-wide flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-lime-400" />
+                <Sparkles className="w-5 h-5 text-amber-400" />
                 Monitoreo de Acceso a <span className="text-purple-400">Mi Espacio</span>
               </h3>
               <p className="text-xs text-neutral-400 mt-0.5">
@@ -399,7 +399,7 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
                             {runner.firstName} {runner.lastName}
                           </div>
                           <div className="text-[10px] text-neutral-400 font-mono flex items-center gap-1 mt-0.5">
-                            <span className="text-lime-400">{runner.id}</span>
+                            <span className="text-red-400 font-bold">{runner.id}</span>
                             {runner.runningClub && (
                               <span className="bg-neutral-800 px-1.5 rounded">
                                 {runner.runningClub}
@@ -479,7 +479,7 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
                     <span className="font-bold text-white text-sm flex items-center gap-2">
                       <span className="text-xl">{sec.icon}</span> {sec.name}
                     </span>
-                    <span className="font-bebas text-2xl text-lime-400">
+                    <span className="font-bebas text-2xl text-red-400">
                       {sec.views} <span className="text-xs font-sans text-neutral-400 font-normal">vistas</span>
                     </span>
                   </div>
@@ -487,7 +487,7 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
                   {/* Progress bar */}
                   <div className="w-full bg-neutral-800 h-2 rounded-full overflow-hidden">
                     <div
-                      className="bg-gradient-to-r from-lime-400 to-emerald-400 h-full rounded-full transition-all duration-500"
+                      className="bg-gradient-to-r from-red-600 via-rose-500 to-amber-400 h-full rounded-full transition-all duration-500"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -532,7 +532,7 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
                     return <span className="p-2 rounded-xl bg-purple-950 text-purple-400 border border-purple-500/40">🪪</span>;
                   }
                   if (evt.type === 'click_mi_espacio') {
-                    return <span className="p-2 rounded-xl bg-lime-950 text-lime-400 border border-lime-500/40">🖱️</span>;
+                    return <span className="p-2 rounded-xl bg-red-950/80 text-red-400 border border-red-500/40">🖱️</span>;
                   }
                   if (evt.type === 'qr_scan') {
                     return <span className="p-2 rounded-xl bg-emerald-950 text-emerald-400 border border-emerald-500/40">🏁</span>;

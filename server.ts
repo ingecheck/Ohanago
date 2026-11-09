@@ -298,9 +298,106 @@ app.put('/api/registrations', (req, res) => {
   const { registrations } = req.body;
   if (Array.isArray(registrations)) {
     writeJSON(REGISTRATIONS_FILE, registrations);
+    try {
+      generateStaticExport(registrations);
+    } catch (e) {}
     return res.json({ success: true, count: registrations.length });
   }
   res.status(400).json({ error: 'Expected array of registrations' });
+});
+
+app.post('/api/runner/update', (req, res) => {
+  const { runnerId, documentNumber, whatsapp, firstName, lastName, tShirtSize } = req.body;
+  if (!runnerId) {
+    return res.status(400).json({ error: 'Falta runnerId' });
+  }
+  const registrations = readJSON<any[]>(REGISTRATIONS_FILE, []);
+  const idx = registrations.findIndex((r) => r.id === runnerId);
+  if (idx !== -1) {
+    registrations[idx] = {
+      ...registrations[idx],
+      ...(documentNumber !== undefined ? { documentNumber } : {}),
+      ...(whatsapp !== undefined ? { whatsapp } : {}),
+      ...(firstName !== undefined ? { firstName } : {}),
+      ...(lastName !== undefined ? { lastName } : {}),
+      ...(tShirtSize !== undefined ? { tShirtSize } : {}),
+    };
+    writeJSON(REGISTRATIONS_FILE, registrations);
+    try {
+      generateStaticExport(registrations);
+    } catch (e) {}
+    return res.json({ success: true, runner: registrations[idx] });
+  }
+  return res.status(404).json({ error: 'Runner no encontrado' });
+});
+
+// Helper to write static synchronized CSV in public/ folder
+function generateStaticExport(list: any[]) {
+  const headers = [
+    'ID Corredor',
+    'Edicion',
+    'N° Dorsal/Inscripcion',
+    'Nombres',
+    'Apellidos',
+    'Tipo Documento',
+    'Numero DNI',
+    'WhatsApp',
+    'Email',
+    'Talla Polo',
+    'Monto Pagado',
+    'Descuento 15% Ohana',
+    'Ticket Sorteo Pavo',
+    'Estado Kit Inicial',
+    'Check-in QR Partida',
+    'Hora Check-in',
+    'Cruzo Meta',
+    'Hora Llegada Meta',
+    'Medalla Entregada',
+    'Fecha de Registro',
+    'Estado de Pago'
+  ];
+
+  const rows = list.map((r: any) => [
+    `"${(r.id || '').replace(/"/g, '""')}"`,
+    `"${(r.edition === 'santa-run-2026' || r.id?.startsWith('SR-') ? 'Santa Run 2026' : 'Halloween 5K').replace(/"/g, '""')}"`,
+    `"${r.registrationNumber || r.bibNumber || ''}"`,
+    `"${(r.firstName || '').replace(/"/g, '""')}"`,
+    `"${(r.lastName || '').replace(/"/g, '""')}"`,
+    `"${r.documentType || 'DNI'}"`,
+    `"${r.documentNumber || ''}"`,
+    `"${r.whatsapp || ''}"`,
+    `"${r.email || ''}"`,
+    `"${r.tShirtSize || ''}"`,
+    `"${r.amountPaid ? `S/ ${r.amountPaid}` : (r.edition === 'santa-run-2026' || r.id?.startsWith('SR-') ? 'S/ 70' : 'S/ 50')}"`,
+    `"${r.hasPreviousDiscount ? 'SI (15%)' : 'Tarifa Normal'}"`,
+    `"${r.turkeyRaffleTicket || ''}"`,
+    `"${r.confirmedAtStart ? 'ENTREGADO' : 'PENDIENTE'}"`,
+    `"${r.confirmedAtStart ? 'CONFIRMADO (QR)' : 'NO REGISTRADO'}"`,
+    `"${r.startCheckinTime || ''}"`,
+    `"${r.finishedAtMeta ? 'SI' : 'NO'}"`,
+    `"${r.finishCheckinTime || ''}"`,
+    `"${r.medalDelivered ? 'SI' : 'NO'}"`,
+    `"${r.createdAt || ''}"`,
+    `"${r.paymentStatus || 'Verificado'}"`
+  ]);
+
+  const csv = '\uFEFF' + [headers.join(','), ...rows.map(row => row.join(','))].join('\r\n');
+  fs.writeFileSync(path.join(__dirname, 'public', 'inscripciones-sincronizadas.csv'), csv, 'utf8');
+}
+
+// 2.1 Direct Excel / CSV Export endpoint for real-time synchronization
+app.get('/api/export/excel', (req, res) => {
+  const current = readJSON<any[]>(REGISTRATIONS_FILE, []);
+  try {
+    generateStaticExport(current);
+  } catch (e) {}
+  const filePath = path.join(__dirname, 'public', 'inscripciones-sincronizadas.csv');
+  if (fs.existsSync(filePath)) {
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="OHANA_GO_Inscripciones_Oficiales.csv"');
+    return res.sendFile(filePath);
+  }
+  res.status(404).send('No registrations available to export');
 });
 
 // Helper function to find a runner by ANY identifier (DNI, ID with/without dash, URL, JSON, phone, or name)

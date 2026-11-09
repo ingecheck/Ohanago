@@ -12,8 +12,8 @@ export const UpcomingRaceTeaser: React.FC<UpcomingRaceTeaserProps> = ({
     {
       icon: Trophy,
       name: 'Medalla Finisher Oficial',
-      desc: 'Aleación maciza de colección con relieve conmemorativo Santa Run 2026.',
-      badge: 'Metálica 3D',
+      desc: 'Medalla oficial conmemorativa de meta con cinta y relieve Santa Run 2026.',
+      badge: 'Edición 2026',
     },
     {
       icon: Droplets,

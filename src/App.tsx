@@ -13,7 +13,7 @@ import { CompetitorLoginModal } from './components/CompetitorLoginModal';
 import { CompetitorPortalModal } from './components/CompetitorPortalModal';
 import { Footer } from './components/Footer';
 import { RunnerRegistration } from './types/race';
-import { getStoredRegistrations } from './data/initialRegistrations';
+import { getStoredRegistrations, saveRegistrations } from './data/initialRegistrations';
 import { isAdminAuthenticated } from './data/auth';
 import { processStartCheckinSafe, subscribeToRegistrationsFirestore } from './utils/checkinManager';
 import { CheckCircle2, AlertCircle, X, Sparkles, MapPin, QrCode } from 'lucide-react';
@@ -256,8 +256,12 @@ export const App: React.FC = () => {
   };
 
   const handleRegistrationSuccess = (newReg: RunnerRegistration) => {
-    // Actualiza el estado para que la nómina se sincronice
-    setRegistrations((prev) => [newReg, ...prev]);
+    // Actualiza el estado y almacenamiento oficial para que la nómina y Mi Espacio sincronicen
+    setRegistrations((prev) => {
+      const updated = [newReg, ...prev.filter((r) => r.id !== newReg.id)];
+      saveRegistrations(updated);
+      return updated;
+    });
     // Abre el pase oficial digital
     setRecentlyRegistered(newReg);
     // Establece como competidor activo para acceso instantáneo

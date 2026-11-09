@@ -155,6 +155,13 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
       if (res.ok) {
         const savedRecord = await res.json();
+        try {
+          const updatedList = [savedRecord, ...stored.filter((r) => r.id !== savedRecord.id)];
+          localStorage.setItem('ohana_registrations', JSON.stringify(updatedList));
+          localStorage.setItem('ohana_local_registrations', JSON.stringify(updatedList));
+          localStorage.setItem('ohana_active_competitor', JSON.stringify(savedRecord));
+        } catch (e) {}
+
         trackEvent({
           type: 'runner_login',
           runner: savedRecord,

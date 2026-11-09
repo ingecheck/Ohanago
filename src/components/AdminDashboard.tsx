@@ -46,6 +46,7 @@ import { AdminRouletteModal } from './AdminRouletteModal';
 import { SantaTurkeyLotteryModal } from './SantaTurkeyLotteryModal';
 import { fetchAnalytics, AnalyticsSummary } from '../utils/analytics';
 import { getStoredRouletteState } from '../utils/rouletteManager';
+import { exportToNativeXLSX } from '../services/googleWorkspaceService';
 
 interface AdminDashboardProps {
   registrations: RunnerRegistration[];
@@ -157,7 +158,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     } catch (e) {}
   };
 
-  // Respaldo y Exportación de Datos del Evento (Post-Evento)
+  // Respaldo y Exportación de Datos del Evento
   const [showExportModal, setShowExportModal] = useState(false);
 
   const downloadFile = (filename: string, content: string, mimeType: string) => {
@@ -172,10 +173,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  const handleExportRunnersCSV = () => {
+  const handleExportHalloweenAuditCSV = (filterMode: 'all' | 'pending' | 'qr-confirmed' = 'all') => {
+    let list = registrations.filter((r) => r.edition !== 'santa-run-2026' && !r.id.startsWith('SR-'));
+    if (filterMode === 'pending') {
+      list = list.filter((r) => !r.confirmedAtStart);
+    } else if (filterMode === 'qr-confirmed') {
+      list = list.filter((r) => r.confirmedAtStart);
+    }
+
     const headers = [
       'N°',
-      'Código',
+      'Código ID',
       'Nombres',
       'Apellidos',
       'DNI',
@@ -183,13 +191,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       'Modalidad',
       'Ciudad',
       'Club / Team',
-      'Kit Entregado (Check-in)',
-      'Hora Check-in',
+      'Estado Kit Inicial',
+      'Check-in QR Partida',
+      'Fecha y Hora Check-in',
       'Llegó a Meta',
       'Estado Pago',
+      'Observación Auditoría'
     ];
 
-    const rows = registrations.map((r, i) => [
+    const rows = list.map((r, i) => [
       i + 1,
       `"${r.id}"`,
       `"${r.firstName.replace(/"/g, '""')}"`,
@@ -199,14 +209,57 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       `"${r.modality}"`,
       `"${r.city || ''}"`,
       `"${r.runningClub || ''}"`,
-      r.confirmedAtStart ? 'SÍ (Entregado)' : 'NO (Pendiente)',
+      r.confirmedAtStart ? 'ENTREGADO' : 'PENDIENTE DE ENTREGA',
+      r.confirmedAtStart ? 'CONFIRMADO (QR)' : 'NO REGISTRÓ EN QR',
       r.startCheckinTime ? `"${new Date(r.startCheckinTime).toLocaleString('es-PE')}"` : '""',
       r.finishedAtMeta ? 'SÍ' : 'NO',
       `"${r.paymentStatus}"`,
+      r.confirmedAtStart ? '✓ Kit Entregado' : '⚠️ ATLETA SIN ENTREGA DE KIT'
     ]);
 
     const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
-    downloadFile(`OhanaGo5K_Nomina_Corredores_${new Date().toISOString().slice(0, 10)}.csv`, csvContent, 'text/csv;charset=utf-8;');
+    const suffix = filterMode === 'pending' ? '_SOLO_KITS_PENDIENTES' : filterMode === 'qr-confirmed' ? '_CON_CHECKIN_QR' : '_AUDITORIA_COMPLETA';
+    downloadFile(`Ohana_Halloween5K${suffix}_${new Date().toISOString().slice(0, 10)}.csv`, csvContent, 'text/csv;charset=utf-8;');
+  };
+
+  const handleExportSantaRunCSV = () => {
+    const list = registrations.filter((r) => r.edition === 'santa-run-2026' || r.id.startsWith('SR-'));
+    const headers = [
+      'N°',
+      'ID Santa Run',
+      'Nombres',
+      'Apellidos',
+      'DNI',
+      'WhatsApp',
+      'Talla Polo',
+      'Monto Inversión',
+      'Descuento 15% Exclusivo',
+      'Kit Santa Run',
+      'Check-in QR',
+      'Fecha Registro'
+    ];
+
+    const rows = list.map((r, i) => [
+      i + 1,
+      `"${r.id.startsWith('SR-') ? r.id : `SR-${r.id}`}"`,
+      `"${r.firstName.replace(/"/g, '""')}"`,
+      `"${r.lastName.replace(/"/g, '""')}"`,
+      `"${r.documentNumber}"`,
+      `"${r.whatsapp}"`,
+      `"${r.tShirtSize || 'M'}"`,
+      'S/ 70.00',
+      'SÍ (Corredor Ohana)',
+      r.confirmedAtStart ? 'ENTREGADO' : 'PENDIENTE',
+      r.confirmedAtStart ? 'CONFIRMADO' : 'PENDIENTE',
+      r.createdAt ? `"${new Date(r.createdAt).toLocaleString('es-PE')}"` : '""'
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+    downloadFile(`Ohana_SantaRun2026_Inscripciones_${new Date().toISOString().slice(0, 10)}.csv`, csvContent, 'text/csv;charset=utf-8;');
+  };
+
+  const handleExportRunnersCSV = () => {
+    handleExportHalloweenAuditCSV('all');
   };
 
   const handleExportWinnersCSV = () => {
@@ -235,8 +288,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleExportFullJSON = () => {
     const rState = getStoredRouletteState();
     const fullBackup = {
-      event: 'OHANA GO Social Run 5K Halloween Tarapoto',
+      event: 'OHANA GO Santa Run 2026 & Halloween 5K Tarapoto',
       exportDate: new Date().toISOString(),
+      userEmail: 'ingecheckplus@gmail.com',
       totalAthletes: registrations.length,
       kitsDeliveredCount: registrations.filter((r) => r.confirmedAtStart).length,
       roulette: rState,
@@ -245,7 +299,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     };
 
     downloadFile(
-      `OhanaGo5K_Respaldo_Completo_Oficial_${new Date().toISOString().slice(0, 10)}.json`,
+      `OhanaGo_Respaldo_Completo_Oficial_${new Date().toISOString().slice(0, 10)}.json`,
       JSON.stringify(fullBackup, null, 2),
       'application/json;charset=utf-8;'
     );
@@ -263,6 +317,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       .then((url) => setStartQrDataUrl(url))
       .catch((err) => console.error('Error generating kit delivery QR:', err));
   }, []);
+
+
 
   const fetchLiveRegistrations = async () => {
     setIsRefreshing(true);
@@ -383,6 +439,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
+  // Santa Run and Halloween specific metrics
+  const santaRunRegistrations = registrations.filter((r) => r.edition === 'santa-run-2026' || r.id.startsWith('SR-'));
+  const halloweenRegistrations = registrations.filter((r) => r.edition !== 'santa-run-2026' && !r.id.startsWith('SR-'));
+  const santaTotalCount = santaRunRegistrations.length;
+  const santaKitsConfirmed = santaRunRegistrations.filter((r) => r.confirmedAtStart).length;
+  const santaKitsPending = santaTotalCount - santaKitsConfirmed;
+  const halloweenTotalCount = halloweenRegistrations.length;
+  const halloweenKitsPending = halloweenRegistrations.filter((r) => !r.confirmedAtStart).length;
+  const halloweenKitsConfirmed = halloweenRegistrations.filter((r) => r.confirmedAtStart).length;
+
   // Metrics calculation
   const totalCount = registrations.length;
   const checkinConfirmedCount = registrations.filter((r) => r.confirmedAtStart).length;
@@ -417,77 +483,107 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     return matchSearch && matchCheckin && matchEdition;
   });
 
+  // Sort registrations so the MOST RECENT entries appear FIRST (Newest first)
+  const sortedRegistrations = [...filteredRegistrations].sort((a, b) => {
+    const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    if (timeA !== timeB) return timeB - timeA;
+    const numA = a.registrationNumber || parseInt(a.id.replace(/\D/g, ''), 10) || 0;
+    const numB = b.registrationNumber || parseInt(b.id.replace(/\D/g, ''), 10) || 0;
+    return numB - numA;
+  });
+
   return (
-    <div className="fixed inset-0 z-50 bg-neutral-950 overflow-y-auto text-neutral-100 flex flex-col min-h-screen selection:bg-lime-400 selection:text-black">
+    <div className="fixed inset-0 z-50 bg-neutral-950 overflow-y-auto text-neutral-100 flex flex-col min-h-screen selection:bg-red-600 selection:text-white">
       {/* Top Sticky Header Bar (Fluid page navigation) */}
       <header className="sticky top-0 z-40 bg-neutral-900/95 backdrop-blur-md border-b border-neutral-800 shadow-xl px-4 sm:px-8 py-3.5">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="px-3.5 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-lime-400 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border border-lime-400/30 shadow-sm"
+              className="px-3.5 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-red-400 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border border-red-500/30 shadow-sm"
               title="Volver a la página principal de la carrera"
             >
-              <ArrowLeft className="w-4 h-4 text-lime-400" />
+              <ArrowLeft className="w-4 h-4 text-red-400" />
               <span>Volver a la Web</span>
             </button>
 
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bebas text-2xl sm:text-3xl text-white tracking-wide uppercase leading-none">
-                  Panel del <span className="text-lime-400">Organizador</span>
+                  Panel del <span className="text-red-500">Organizador</span>
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full bg-lime-400/20 text-lime-400 font-bold uppercase text-[10px] tracking-wider border border-lime-400/30 hidden sm:inline-block">
-                  Acreditación & Entrega de Kits
+                <span className="px-2.5 py-0.5 rounded-full bg-red-950/80 text-red-400 font-bold uppercase text-[10px] tracking-wider border border-red-500/40 hidden sm:inline-block">
+                  Control de Atletas & Reportes
                 </span>
               </div>
               <p className="text-[11px] text-neutral-400 mt-0.5 hidden md:block">
-                Plaza de Armas de Tarapoto • {totalCount} atletas registrados
+                Tarapoto • {totalCount} atletas en base de datos • {santaTotalCount} Santa Run · {halloweenTotalCount} Halloween
               </p>
             </div>
           </div>
 
           {/* Action Buttons Toolbar */}
           <div className="flex flex-wrap items-center gap-2">
+            {/* LECTOR QR DE CONTROL DE ATLETAS (CÁMARA DEL CELULAR / EN ROJO) */}
+            <button
+              onClick={() => setShowStaffScanner(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-red-600 via-rose-600 to-red-600 hover:from-red-500 text-white rounded-xl text-xs font-black transition shadow-lg shadow-red-600/30 cursor-pointer ring-2 ring-red-500/60 hover:scale-[1.02]"
+              title="Abrir lector QR con la cámara del celular para acreditar atleta y entregar kit"
+            >
+              <Camera className="w-4 h-4 text-white" />
+              <span>📷 Lector QR Atletas</span>
+            </button>
+
+            {/* DESCARGA DE REPORTES (HALLOWEEN Y SANTA RUN) */}
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-neutral-800 hover:bg-neutral-700 text-amber-300 rounded-xl text-xs font-black transition border border-amber-500/40 shadow-sm cursor-pointer hover:scale-[1.02]"
+              title="Descargar reportes oficiales de Halloween 5K (kits pendientes y QR) y Santa Run"
+            >
+              <Download className="w-4 h-4 text-amber-400" />
+              <span>📥 Descargar Reportes</span>
+            </button>
+
             {/* Sorteo del Pavo Navideño (Santa Run 2026) */}
             <button
               onClick={() => setShowTurkeyLottery(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-red-600 via-rose-500 to-red-600 hover:from-red-500 text-white rounded-xl text-xs font-black transition shadow-lg shadow-red-600/30 cursor-pointer ring-2 ring-red-500/50 hover:scale-[1.02]"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-xs font-black transition border border-neutral-700 shadow cursor-pointer"
               title="Girar la Tómbola Digital del Sorteo del Pavo Santa Run 2026"
             >
               <Gift className="w-4 h-4 text-amber-300" />
-              <span>🦃 Sorteo del Pavo</span>
+              <span>🦃 Sorteo Pavo</span>
             </button>
 
             {/* Ruleta de Sorteos (25 Premios) */}
             <button
               onClick={() => setShowRouletteModal(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 text-black rounded-xl text-xs font-black transition shadow-lg shadow-amber-500/25 cursor-pointer ring-2 ring-yellow-400/50 hover:scale-[1.02]"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-neutral-900 hover:bg-neutral-800 text-amber-400 rounded-xl text-xs font-black transition border border-neutral-700 shadow cursor-pointer"
               title="Controlar y Girar Ruleta de Sorteos en Vivo (25 Premios)"
             >
-              <Trophy className="w-4 h-4 text-black" />
-              <span>🎡 Sorteos (25 Premios)</span>
+              <Trophy className="w-4 h-4 text-amber-400" />
+              <span>🎡 25 Premios</span>
             </button>
 
             {/* Kit Delivery QR Projector Button */}
             <button
               onClick={() => setShowStartQRModal(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-lime-400 to-lime-300 hover:from-lime-300 text-black rounded-xl text-xs font-black transition shadow-lg shadow-lime-400/25 cursor-pointer ring-2 ring-lime-400/50"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-bold transition shadow cursor-pointer border border-neutral-700"
               title="Mostrar y proyectar QR oficial de entrega de kit para la Plaza de Armas"
             >
-              <QrCode className="w-4 h-4 text-black" />
-              <span>🏁 QR Entrega de Kit</span>
+              <QrCode className="w-4 h-4 text-red-400" />
+              <span>Proyectar QR</span>
             </button>
 
             {/* Live refresh */}
             <button
               onClick={fetchLiveRegistrations}
               disabled={isRefreshing}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl text-xs font-bold transition shadow cursor-pointer border border-neutral-700"
+              className="flex items-center gap-1.5 px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl text-xs font-bold transition shadow cursor-pointer border border-neutral-700"
               title="Sincronizar participantes en tiempo real"
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-lime-400 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span>Actualizar Nómina</span>
+              <RefreshCw className={`w-3.5 h-3.5 text-red-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Actualizar</span>
             </button>
 
             {/* Logout */}
@@ -510,14 +606,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <main className="max-w-7xl mx-auto w-full px-4 sm:px-8 py-6 space-y-6 flex-1">
         {/* Live Notice Banner */}
         {liveNotice && (
-          <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/90 via-neutral-900 to-emerald-950/90 border-2 border-emerald-400 text-emerald-200 text-xs font-bold flex items-center justify-between shadow-xl shadow-emerald-500/20 animate-pulse">
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-red-950/90 via-neutral-900 to-red-950/90 border-2 border-red-500 text-red-200 text-xs font-bold flex items-center justify-between shadow-xl shadow-red-500/20 animate-pulse">
             <div className="flex items-center gap-2.5">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="w-5 h-5 text-red-400 shrink-0" />
               <span className="text-sm">{liveNotice}</span>
             </div>
             <button
               onClick={() => setLiveNotice(null)}
-              className="text-emerald-400 hover:text-white p-1 rounded-lg hover:bg-emerald-900/60 cursor-pointer"
+              className="text-red-400 hover:text-white p-1 rounded-lg hover:bg-red-900/60 cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -531,7 +627,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               onClick={() => setActiveAdminTab('roster')}
               className={`px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition flex items-center gap-2 cursor-pointer ${
                 activeAdminTab === 'roster'
-                  ? 'bg-lime-400 text-black shadow-lg shadow-lime-400/20 font-black'
+                  ? 'bg-red-600 text-white shadow-lg shadow-red-600/30 font-black'
                   : 'bg-neutral-900 text-neutral-400 hover:text-white hover:bg-neutral-800 border border-neutral-800'
               }`}
             >
@@ -546,36 +642,47 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               }}
               className={`px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition flex items-center gap-2 cursor-pointer ${
                 activeAdminTab === 'analytics'
-                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30 font-black'
+                  ? 'bg-neutral-800 text-red-400 border border-red-500/50 font-black shadow-lg shadow-red-600/20'
                   : 'bg-neutral-900 text-neutral-400 hover:text-white hover:bg-neutral-800 border border-neutral-800'
               }`}
             >
-              <BarChart3 className="w-4 h-4 text-purple-300" />
+              <BarChart3 className="w-4 h-4 text-red-400" />
               <span>Métricas & Tráfico en Vivo</span>
               {analyticsData && (
-                <span className="ml-1 px-2 py-0.5 rounded-full bg-purple-950 text-purple-200 text-[10px] border border-purple-400/40 font-mono">
+                <span className="ml-1 px-2 py-0.5 rounded-full bg-red-950 text-red-200 text-[10px] border border-red-500/40 font-mono">
                   {analyticsData.totalPageViews} visitas
                 </span>
               )}
             </button>
 
             <button
-              onClick={() => setShowRouletteModal(true)}
-              className="px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition flex items-center gap-2 cursor-pointer bg-neutral-900 text-amber-400 hover:text-white hover:bg-neutral-800 border border-amber-500/30 hover:border-amber-400 shadow-sm"
-              title="Abrir Ruleta y Sorteos Oficiales"
+              onClick={() => setShowExportModal(true)}
+              className="px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition flex items-center gap-2 cursor-pointer bg-neutral-900 text-amber-300 hover:text-white hover:bg-neutral-800 border border-amber-500/40 shadow-sm"
+              title="Descargar reportes de Halloween y Santa Run"
             >
-              <Trophy className="w-4 h-4 text-amber-400" />
-              <span>🎡 Ruleta & Sorteos</span>
+              <FileSpreadsheet className="w-4 h-4 text-amber-400" />
+              <span>Reporte Halloween & Santa Run</span>
+            </button>
+
+            <button
+              onClick={() => {
+                exportToNativeXLSX(registrations);
+                setLiveNotice('✓ Archivo Excel oficial (.xlsx) descargado.');
+                setTimeout(() => setLiveNotice(null), 4000);
+              }}
+              className="px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition flex items-center gap-2 cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500 shadow-md shadow-emerald-950/40"
+              title="Descargar archivo Excel oficial nativo (.xlsx) con pestañas de Santa Run y Halloween"
+            >
+              <Download className="w-4 h-4 text-white" />
+              <span>Descargar Excel Oficial (.xlsx)</span>
             </button>
           </div>
 
           <div className="text-xs text-neutral-400 flex items-center gap-3">
-            <span className="hidden sm:inline">Concentración: <strong className="text-lime-400">5:30 PM</strong></span>
-            {analyticsData && (
-              <span className="hidden md:inline text-purple-300 font-medium">
-                🎒 Clics en Mi Espacio: <strong className="text-white font-mono">{analyticsData.miEspacioClicks}</strong>
-              </span>
-            )}
+            <span className="text-red-400 font-bold flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+              Mostrando los más recientes primero
+            </span>
           </div>
         </div>
 
@@ -589,41 +696,92 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           />
         ) : (
           <>
-            {/* 3 Clean Metric Summary Cards (Focused purely on registration and kit delivery) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-              <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-neutral-800 shadow-md">
-                <span className="text-[10px] uppercase font-bold text-neutral-400 block">Total Atletas</span>
-                <div className="flex items-baseline gap-1.5 mt-1">
-                  <span className="font-bebas text-3xl sm:text-4xl text-white">{totalCount}</span>
-                  <span className="text-[11px] text-neutral-500">registrados</span>
-                </div>
-              </div>
-
-              <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border-2 border-emerald-500/50 shadow-md shadow-emerald-500/10">
-                <span className="text-[10px] uppercase font-bold text-emerald-400 flex items-center gap-1.5">
-                  <PackageCheck className="w-4 h-4 text-emerald-400" />
-                  Kits Iniciales Entregados
+            {/* High-Impact Athletic Metric Summary Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+              {/* Santa Run 2026 Inscriptions in Red */}
+              <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border-2 border-red-500/60 shadow-lg shadow-red-500/10">
+                <span className="text-[10px] uppercase font-bold text-red-400 block flex items-center gap-1.5">
+                  <Gift className="w-3.5 h-3.5 text-red-400" />
+                  🎅 Santa Run 2026
                 </span>
                 <div className="flex items-baseline gap-1.5 mt-1">
-                  <span className="font-bebas text-3xl sm:text-4xl text-emerald-400">
-                    {String(checkinConfirmedCount).padStart(2, '0')}
-                  </span>
-                  <span className="text-[11px] text-emerald-500 font-bold">
-                    ({Math.round((checkinConfirmedCount / (totalCount || 1)) * 100)}%)
-                  </span>
+                  <span className="font-bebas text-3xl sm:text-4xl text-red-500">{santaTotalCount}</span>
+                  <span className="text-[11px] text-neutral-400">inscritos (S/ 70)</span>
+                </div>
+                <div className="text-[10px] text-neutral-400 mt-1 flex items-center justify-between border-t border-neutral-800 pt-1">
+                  <span>Kits entregados:</span>
+                  <span className="text-red-400 font-mono font-bold">{santaKitsConfirmed}</span>
                 </div>
               </div>
 
-              <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-amber-500/40 shadow-md">
+              {/* Halloween Finishers Totales */}
+              <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-neutral-800 shadow-md">
+                <span className="text-[10px] uppercase font-bold text-neutral-400 block">🎃 Halloween 5K</span>
+                <div className="flex items-baseline gap-1.5 mt-1">
+                  <span className="font-bebas text-3xl sm:text-4xl text-white">{halloweenTotalCount}</span>
+                  <span className="text-[11px] text-neutral-500">atletas meta</span>
+                </div>
+                <div className="text-[10px] text-neutral-400 mt-1 flex items-center justify-between border-t border-neutral-800 pt-1">
+                  <span>Check-in QR partida:</span>
+                  <span className="text-emerald-400 font-mono font-bold">{halloweenKitsConfirmed}</span>
+                </div>
+              </div>
+
+              {/* Kits Pendientes de Entrega (Halloween) */}
+              <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-amber-500/50 shadow-md">
                 <span className="text-[10px] uppercase font-bold text-amber-400 flex items-center gap-1.5">
                   <Clock className="w-4 h-4 text-amber-400" />
-                  Pendientes de Kit
+                  Kits Halloween Pendientes
                 </span>
                 <div className="flex items-baseline gap-1.5 mt-1">
                   <span className="font-bebas text-3xl sm:text-4xl text-amber-400">
-                    {String(checkinPendingCount).padStart(2, '0')}
+                    {String(halloweenKitsPending).padStart(2, '0')}
                   </span>
-                  <span className="text-[11px] text-neutral-500">en Plaza de Armas</span>
+                  <span className="text-[11px] text-neutral-500">sin entregar</span>
+                </div>
+                <button
+                  onClick={() => handleExportHalloweenAuditCSV('pending')}
+                  className="mt-1 w-full text-left text-[10px] text-amber-300 font-bold hover:underline flex items-center gap-1 pt-1 border-t border-neutral-800 cursor-pointer"
+                >
+                  <Download className="w-3 h-3 text-amber-400" />
+                  Descargar pendientes (CSV)
+                </button>
+              </div>
+
+              {/* Descargas & Respaldo Oficial Directo */}
+              <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-neutral-800 shadow-md flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-neutral-400 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+                      Descargas & Excel
+                    </span>
+                    <span className="text-[9px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/40 font-mono font-bold">
+                      .XLSX DIRECTO
+                    </span>
+                  </span>
+                  <div className="text-xs text-neutral-300 mt-1 font-sans">
+                    Nómina oficial de Santa Run & Halloween
+                  </div>
+                </div>
+                <div className="mt-2 flex flex-col gap-1.5">
+                  <button
+                    onClick={() => {
+                      exportToNativeXLSX(registrations);
+                      setLiveNotice('✓ Archivo Excel oficial (.xlsx) descargado.');
+                      setTimeout(() => setLiveNotice(null), 4000);
+                    }}
+                    className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Descargar Excel (.xlsx)</span>
+                  </button>
+                  <button
+                    onClick={() => setShowExportModal(true)}
+                    className="w-full py-1 text-center rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-[10px] font-bold transition border border-neutral-700 cursor-pointer"
+                  >
+                    Más opciones (CSV / Backup)
+                  </button>
                 </div>
               </div>
             </div>
@@ -639,7 +797,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Buscar por nombre, DNI, celular, ciudad o ID..."
-                    className="w-full pl-10 pr-4 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-lime-400 transition text-xs"
+                    className="w-full pl-10 pr-4 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-red-500 transition text-xs"
                   />
                 </div>
 
@@ -703,7 +861,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           : 'text-neutral-400 hover:text-red-300'
                       }`}
                     >
-                      <span>🎅 Santa Run 2026</span>
+                      <span>🎅 Santa Run ({santaTotalCount})</span>
                     </button>
                     <button
                       onClick={() => setFilterEdition('halloween-5k-2026')}
@@ -713,24 +871,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           : 'text-neutral-400 hover:text-amber-300'
                       }`}
                     >
-                      <span>🎃 Halloween</span>
+                      <span>🎃 Halloween ({halloweenTotalCount})</span>
                     </button>
                   </div>
                 </div>
               </div>
             </div>
 
-        {/* Official Participant Table (No 'tallas', No 'meta / medalla', fluid view) */}
+        {/* Official Participant Table (Sorted most recent first) */}
         <div className="w-full bg-neutral-900 border border-neutral-800 rounded-3xl shadow-2xl overflow-hidden">
           <div className="p-4 sm:p-5 border-b border-neutral-800 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-lime-400" />
+              <Users className="w-5 h-5 text-red-500" />
               <h3 className="font-bebas text-2xl text-white uppercase tracking-wide">
-                Nómina Oficial de Participantes ({filteredRegistrations.length})
+                Nómina Oficial de Participantes ({sortedRegistrations.length})
               </h3>
             </div>
-            <span className="text-xs text-neutral-400 font-mono">
-              Control de Acreditación y Entrega de Kit Inicial
+            <span className="text-xs text-red-400 font-mono font-bold flex items-center gap-1">
+              ⚡ Más recientes arriba
             </span>
           </div>
 
@@ -742,18 +900,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <th className="py-3.5 px-3">Nombres y Apellidos</th>
                   <th className="py-3.5 px-3">Entrega de Kit Inicial (Check-in QR)</th>
                   <th className="py-3.5 px-3">DNI / Celular</th>
-                  <th className="py-3.5 px-3 text-right">Modalidad</th>
+                  <th className="py-3.5 px-3 text-right">Edición / Modalidad</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-800/60">
-                {filteredRegistrations.length === 0 ? (
+                {sortedRegistrations.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-12 text-center text-neutral-500 text-sm">
                       No se encontraron participantes con los filtros seleccionados.
                     </td>
                   </tr>
                 ) : (
-                  filteredRegistrations.map((runner, index) => {
+                  sortedRegistrations.map((runner, index) => {
+                    const isSanta = runner.edition === 'santa-run-2026' || runner.id.startsWith('SR-');
                     const isRunVirtual = runner.modality === 'Virtual';
                     return (
                       <tr key={runner.id} className="hover:bg-neutral-800/50 transition">
@@ -762,13 +921,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           {index + 1}
                         </td>
 
-                        {/* Participant Name */}
+                        {/* Participant Name & Red IDs for Santa Run */}
                         <td className="py-3.5 px-3">
                           <div className="font-bold text-white text-sm">
                             {runner.firstName} {runner.lastName}
                           </div>
                           <div className="text-[11px] text-neutral-400 flex items-center gap-1.5 mt-0.5">
-                            <span className="font-mono text-lime-400/80 font-bold">{runner.id}</span>
+                            {isSanta ? (
+                              <span className="font-mono text-xs font-black px-2 py-0.5 rounded bg-red-950/90 text-red-400 border border-red-500/50 shadow-sm">
+                                {runner.id.startsWith('SR-') ? runner.id : `SR-${runner.id}`}
+                              </span>
+                            ) : (
+                              <span className="font-mono text-neutral-300 font-bold">{runner.id}</span>
+                            )}
                             {runner.willWearCostume && (
                               <span className="text-[10px] text-purple-400 bg-purple-950/60 px-1.5 py-0.2 rounded border border-purple-500/30">
                                 🎃 {runner.costumeName || 'Disfraz'}
@@ -805,7 +970,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           ) : (
                             <button
                               onClick={() => handleToggleKitDelivery(runner.id, false)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase transition cursor-pointer border bg-neutral-800 text-neutral-300 border-neutral-700 hover:text-white hover:border-lime-400 hover:bg-neutral-700 shadow-sm"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase transition cursor-pointer border bg-neutral-800 text-neutral-300 border-neutral-700 hover:text-white hover:border-red-500 hover:bg-neutral-700 shadow-sm"
                               title="Marcar entrega de kit inicial para este participante"
                             >
                               <Clock className="w-3.5 h-3.5 text-amber-400" />
@@ -814,7 +979,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           )}
                         </td>
 
-                        {/* DNI & Phone - LUEGO */}
+                        {/* DNI & Phone */}
                         <td className="py-3.5 px-3">
                           <div className="flex items-center gap-1.5">
                             {runner.documentNumber.includes('Pendiente') ? (
@@ -822,7 +987,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 ⚠️ Sin DNI (Ingresó correo)
                               </span>
                             ) : (
-                              <span className="font-mono font-bold text-lime-400 text-xs">
+                              <span className="font-mono font-bold text-neutral-200 text-xs">
                                 {runner.documentType}: {runner.documentNumber}
                               </span>
                             )}
@@ -835,7 +1000,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               className="text-neutral-400 hover:text-white p-1 rounded hover:bg-neutral-800 transition cursor-pointer"
                               title="Editar o asignar DNI a este corredor"
                             >
-                              <Pencil className="w-3 h-3 text-neutral-400 hover:text-lime-400" />
+                              <Pencil className="w-3 h-3 text-neutral-400 hover:text-red-400" />
                             </button>
                           </div>
                           <div className="flex items-center gap-1.5 mt-0.5">
@@ -857,14 +1022,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           </div>
                         </td>
 
-                        {/* Modality at the VERY LAST column */}
+                        {/* Modality & Edition */}
                         <td className="py-3.5 px-3 text-right">
-                          {isRunVirtual ? (
+                          {isSanta ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-red-950/80 text-red-400 border border-red-500/40 shadow-sm">
+                              🎅 Santa Run
+                            </span>
+                          ) : isRunVirtual ? (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-purple-950/80 text-purple-300 border border-purple-500/40">
                               Virtual 5K
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-lime-950/80 text-lime-400 border border-lime-500/40">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-neutral-800 text-neutral-300 border border-neutral-700">
                               Presencial 5K
                             </span>
                           )}
@@ -884,7 +1053,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Modal: Runner Scanned Profile Card (Staff Scanned runner via Camera or DNI search) */}
       {scannedRunnerModal && (
         <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
-          <div className="relative max-w-lg w-full bg-neutral-900 border-2 border-lime-400 rounded-3xl p-6 shadow-2xl">
+          <div className="relative max-w-lg w-full bg-neutral-900 border-2 border-red-500 rounded-3xl p-6 shadow-2xl">
             <button
               onClick={() => setScannedRunnerModal(null)}
               className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
@@ -893,18 +1062,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </button>
 
             <div className="flex items-center gap-3 mb-4 border-b border-neutral-800 pb-3">
-              <div className="w-14 h-14 rounded-2xl bg-lime-400 text-black flex items-center justify-center font-black text-2xl">
+              <div className="w-14 h-14 rounded-2xl bg-red-600 text-white flex items-center justify-center font-black text-2xl shadow-lg shadow-red-600/30">
                 🏃
               </div>
               <div>
-                <span className="text-[10px] font-black uppercase tracking-wider text-lime-400 bg-lime-400/10 px-2 py-0.5 rounded-full border border-lime-400/30">
+                <span className="text-[10px] font-black uppercase tracking-wider text-red-400 bg-red-950/80 px-2 py-0.5 rounded-full border border-red-500/40">
                   Participante Identificado
                 </span>
                 <h4 className="font-bebas text-3xl text-white uppercase mt-0.5 leading-none">
                   {scannedRunnerModal.firstName} {scannedRunnerModal.lastName}
                 </h4>
                 <p className="text-xs text-neutral-400">
-                  DNI: <strong className="text-lime-400 font-mono">{scannedRunnerModal.documentNumber}</strong> • Código: <strong className="text-white font-mono">{scannedRunnerModal.id}</strong>
+                  DNI: <strong className="text-red-400 font-mono">{scannedRunnerModal.documentNumber}</strong> • Código: <strong className="text-white font-mono">{scannedRunnerModal.id}</strong>
                 </p>
               </div>
             </div>
@@ -925,14 +1094,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
               <div>
                 <span className="text-[10px] uppercase font-bold text-neutral-500 block">DNI</span>
-                <span className="font-bold text-lime-400 font-mono">
+                <span className="font-bold text-red-400 font-mono">
                   {scannedRunnerModal.documentNumber}
                 </span>
               </div>
             </div>
 
             {/* Single Prominent Action: Confirm Kit Delivery */}
-            <div className="p-4 rounded-2xl bg-neutral-950 border border-lime-400/40 space-y-3">
+            <div className="p-4 rounded-2xl bg-neutral-950 border border-red-500/40 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-sm font-bold text-white block">Entrega de Kit Inicial</span>
@@ -947,10 +1116,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     await handleToggleKitDelivery(scannedRunnerModal.id, scannedRunnerModal.confirmedAtStart || false);
                     setScannedRunnerModal((prev) => prev ? { ...prev, confirmedAtStart: newVal, startCheckinTime: newVal ? new Date().toISOString() : undefined } : null);
                   }}
-                  className={`px-4 py-2 rounded-xl font-bebas text-base uppercase transition cursor-pointer ${
+                  className={`px-4 py-2 rounded-xl font-bebas text-base uppercase transition cursor-pointer font-black ${
                     scannedRunnerModal.confirmedAtStart
                       ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/50'
-                      : 'bg-lime-400 text-black hover:bg-lime-300 shadow-md shadow-lime-400/20'
+                      : 'bg-red-600 text-white hover:bg-red-500 shadow-md shadow-red-600/30'
                   }`}
                 >
                   {scannedRunnerModal.confirmedAtStart ? '✓ Kit Entregado' : 'Entregar Kit Inicial'}
@@ -974,19 +1143,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Modal: Official Kit Delivery Check-in QR (For Plaza de Armas Accreditation Desk) */}
       {showStartQRModal && (
         <div className={`fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-6 bg-black/95 backdrop-blur-xl overflow-y-auto ${isFullScreenQR ? 'p-0' : ''}`}>
-          <div className={`relative w-full ${isFullScreenQR ? 'h-full max-w-none rounded-none p-6 sm:p-10 flex flex-col justify-between' : 'max-w-2xl rounded-3xl p-6'} bg-neutral-900 border border-lime-400/50 shadow-[0_0_60px_rgba(163,230,53,0.3)] transition-all`}>
+          <div className={`relative w-full ${isFullScreenQR ? 'h-full max-w-none rounded-none p-6 sm:p-10 flex flex-col justify-between' : 'max-w-2xl rounded-3xl p-6'} bg-neutral-900 border border-red-500/50 shadow-[0_0_60px_rgba(212,36,38,0.3)] transition-all`}>
             {/* Modal Top Bar */}
             <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-xl bg-lime-400 text-black flex items-center justify-center font-bebas text-xl font-black">
+                <div className="w-9 h-9 rounded-xl bg-red-600 text-white flex items-center justify-center font-bebas text-xl font-black shadow-md shadow-red-600/30">
                   🏁
                 </div>
                 <div>
                   <h4 className="font-bebas text-2xl sm:text-3xl text-white tracking-wide uppercase leading-tight">
-                    Mesa de Acreditación • <span className="text-lime-400">QR Entrega de Kit Inicial</span>
+                    Mesa de Acreditación • <span className="text-red-400">QR Entrega de Kit Inicial</span>
                   </h4>
                   <p className="text-[11px] text-neutral-400">
-                    Plaza de Armas de Tarapoto • Concentración 5:30 PM • Sábado 31 de Octubre
+                    Tarapoto • Control Oficial de Acreditación
                   </p>
                 </div>
               </div>
@@ -997,7 +1166,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   className="p-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition cursor-pointer"
                   title={isFullScreenQR ? 'Salir de pantalla completa' : 'Modo pantalla gigante / tablet'}
                 >
-                  {isFullScreenQR ? <Minimize2 className="w-5 h-5 text-lime-400" /> : <Maximize2 className="w-5 h-5" />}
+                  {isFullScreenQR ? <Minimize2 className="w-5 h-5 text-red-400" /> : <Maximize2 className="w-5 h-5" />}
                 </button>
                 <button
                   onClick={() => {
@@ -1012,10 +1181,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
 
             {/* Live Progress Banner */}
-            <div className="my-4 p-3.5 rounded-2xl bg-gradient-to-r from-lime-950/60 via-neutral-950 to-neutral-950 border border-lime-400/40">
+            <div className="my-4 p-3.5 rounded-2xl bg-gradient-to-r from-red-950/60 via-neutral-950 to-neutral-950 border border-red-500/40">
               <div className="flex items-center justify-between text-xs font-bold mb-1.5">
-                <span className="text-lime-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Check className="w-4 h-4 text-lime-400" />
+                <span className="text-red-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Check className="w-4 h-4 text-red-400" />
                   Kits Entregados en Tiempo Real:
                 </span>
                 <span className="font-mono text-white text-sm">
@@ -1024,7 +1193,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
               <div className="w-full bg-neutral-800 h-2.5 rounded-full overflow-hidden">
                 <div
-                  className="bg-gradient-to-r from-lime-500 to-emerald-400 h-full transition-all duration-500"
+                  className="bg-gradient-to-r from-red-600 via-rose-500 to-amber-400 h-full transition-all duration-500"
                   style={{ width: `${Math.min(100, Math.round((checkinConfirmedCount / (totalCount || 1)) * 100))}%` }}
                 />
               </div>
@@ -1032,7 +1201,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             {/* Center: Giant High-Contrast QR Code */}
             <div className="flex flex-col items-center justify-center my-2 text-center">
-              <div className="p-4 sm:p-6 bg-white rounded-3xl shadow-2xl border-4 border-lime-400/80 max-w-[320px] sm:max-w-[380px] w-full flex items-center justify-center transition-transform hover:scale-[1.02]">
+              <div className="p-4 sm:p-6 bg-white rounded-3xl shadow-2xl border-4 border-red-500/80 max-w-[320px] sm:max-w-[380px] w-full flex items-center justify-center transition-transform hover:scale-[1.02]">
                 {startQrDataUrl ? (
                   <img
                     src={startQrDataUrl}
@@ -1046,11 +1215,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 )}
               </div>
 
-              <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-lime-400/10 border border-lime-400/30 text-lime-400 text-xs font-black uppercase tracking-wider">
+              <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/80 border border-red-500/40 text-red-400 text-xs font-black uppercase tracking-wider">
                 QR Oficial Entrega de Kit • Plaza de Armas
               </div>
               <p className="text-xs text-neutral-300 max-w-lg mt-2 leading-relaxed">
-                Este código QR se ubica en la carpa de acreditación de la Plaza de Armas. Los atletas lo escanean con su cámara desde <strong>Mi Espacio 🎒</strong> para confirmar la entrega de su kit inicial en vivo.
+                Este código QR se ubica en la carpa de acreditación. Los atletas lo escanean con su cámara desde <strong>Mi Espacio 🎒</strong> para confirmar la entrega de su kit inicial en vivo.
               </p>
             </div>
 
@@ -1062,9 +1231,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   onClick={() => {
                     setShowStaffScanner(true);
                   }}
-                  className="px-3.5 py-2 rounded-xl bg-purple-950/80 hover:bg-purple-900 text-purple-200 border border-purple-500/40 font-bold transition flex items-center gap-2 cursor-pointer shadow-md"
+                  className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold transition flex items-center gap-2 cursor-pointer shadow-md shadow-red-600/30"
                 >
-                  <Camera className="w-4 h-4 text-lime-400" />
+                  <Camera className="w-4 h-4 text-white" />
                   <span>Escanear Corredor con la Cámara</span>
                 </button>
               </div>
@@ -1081,18 +1250,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             <title>QR Entrega de Kit - OHANA GO 5K Tarapoto</title>
                             <style>
                               body { font-family: sans-serif; text-align: center; padding: 40px; background: #000; color: #fff; }
-                              h1 { font-size: 38px; margin: 0; color: #a3e635; text-transform: uppercase; }
+                              h1 { font-size: 38px; margin: 0; color: #ef4444; text-transform: uppercase; }
                               h2 { font-size: 20px; color: #fff; margin: 5px 0 25px 0; font-weight: normal; }
-                              .qr-box { background: #fff; padding: 20px; border-radius: 20px; display: inline-block; border: 4px solid #a3e635; }
+                              .qr-box { background: #fff; padding: 20px; border-radius: 20px; display: inline-block; border: 4px solid #ef4444; }
                               img { width: 380px; height: 380px; display: block; }
                               p { font-size: 18px; margin-top: 25px; color: #e5e5e5; }
-                              .badge { background: #f97316; color: #fff; padding: 6px 16px; border-radius: 20px; font-weight: bold; font-size: 14px; text-transform: uppercase; }
+                              .badge { background: #dc2626; color: #fff; padding: 6px 16px; border-radius: 20px; font-weight: bold; font-size: 14px; text-transform: uppercase; }
                             </style>
                           </head>
                           <body>
                             <span class="badge">Acreditación Oficial</span>
                             <h1>OHANA GO 5K TARAPOTO</h1>
-                            <h2>Plaza de Armas • Sábado 31 de Octubre - 5:30 PM</h2>
+                            <h2>Plaza de Armas • Control de Acreditación</h2>
                             <div class="qr-box">
                               <img src="${startQrDataUrl}" />
                             </div>
@@ -1104,7 +1273,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       printWindow.document.close();
                     }
                   }}
-                  className="px-4 py-2 rounded-xl bg-lime-400 hover:bg-lime-300 text-black font-bebas text-base uppercase tracking-wider transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-lime-400/20"
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bebas text-base uppercase tracking-wider transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-red-600/30"
                 >
                   <Printer className="w-4 h-4" />
                   Imprimir Cartel de Acreditación
@@ -1115,10 +1284,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <a
                     href={startQrDataUrl}
                     download="QR_Entrega_Kit_Ohana_Tarapoto_5K.png"
-                    className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-lime-400 hover:text-white font-bebas text-base uppercase tracking-wider transition flex items-center gap-1.5 cursor-pointer border border-lime-400/40 shadow-md"
+                    className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-red-400 hover:text-white font-bebas text-base uppercase tracking-wider transition flex items-center gap-1.5 cursor-pointer border border-red-500/40 shadow-md"
                     title="Descargar imagen oficial del código QR en formato PNG para imprimir"
                   >
-                    <Download className="w-4 h-4 text-lime-400" />
+                    <Download className="w-4 h-4 text-red-400" />
                     Descargar QR (PNG)
                   </a>
                 )}
@@ -1171,7 +1340,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {/* Modal: Edit Runner DNI / Phone */}
       {editingRunner && (
         <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-          <div className="relative max-w-sm w-full bg-neutral-900 border-2 border-lime-400 rounded-3xl p-6 shadow-2xl">
+          <div className="relative max-w-sm w-full bg-neutral-900 border-2 border-red-500 rounded-3xl p-6 shadow-2xl">
             <button
               onClick={() => setEditingRunner(null)}
               className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
@@ -1199,7 +1368,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   value={editDniValue}
                   onChange={(e) => setEditDniValue(e.target.value.replace(/\D/g, ''))}
                   placeholder="Ej: 73017454"
-                  className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3.5 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-lime-400"
+                  className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3.5 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-red-500"
                 />
                 <span className="text-[10px] text-neutral-500 mt-1 block">
                   Con este número el corredor ingresará a «Mi Espacio 🎒»
@@ -1216,7 +1385,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   value={editPhoneValue}
                   onChange={(e) => setEditPhoneValue(e.target.value)}
                   placeholder="Ej: 993778180"
-                  className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3.5 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-lime-400"
+                  className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3.5 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-red-500"
                 />
               </div>
 
@@ -1231,12 +1400,145 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <button
                   type="submit"
                   disabled={isSavingEdit || editDniValue.length !== 8}
-                  className="px-5 py-2 rounded-xl bg-lime-400 hover:bg-lime-300 text-black font-bebas text-lg uppercase tracking-wider cursor-pointer shadow-md disabled:opacity-50"
+                  className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bebas text-lg uppercase tracking-wider cursor-pointer shadow-md disabled:opacity-50"
                 >
                   {isSavingEdit ? 'Guardando...' : 'Guardar DNI'}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Descargas Oficiales & Sincronización Google Drive */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
+          <div className="relative max-w-2xl w-full bg-neutral-900 border-2 border-red-500/60 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 max-h-[92vh] overflow-y-auto">
+            <button
+              onClick={() => setShowExportModal(false)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-red-400 bg-red-950/80 px-2.5 py-1 rounded-full border border-red-500/40">
+                Auditoría & Descargas Oficiales
+              </span>
+              <h3 className="font-bebas text-3xl sm:text-4xl text-white tracking-wide uppercase mt-1 leading-none">
+                Exportar Reportes & Google Drive
+              </h3>
+              <p className="text-xs text-neutral-400 mt-1">
+                Descarga la nómina de atletas con auditoría de entrega de kits y registro en QR para Halloween 5K y Santa Run 2026.
+              </p>
+            </div>
+
+            {/* Section 1: Reportes Halloween 5K (Kits y QR) */}
+            <div className="p-4 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-3">
+              <h4 className="font-bebas text-xl text-amber-400 uppercase tracking-wide flex items-center gap-2">
+                <span>🎃 Reportes Oficiales Halloween 5K</span>
+              </h4>
+              <p className="text-xs text-neutral-400">
+                Verifica a quién se le entregó el kit, quién tiene pendiente y quién registró con código QR.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                <button
+                  onClick={() => handleExportHalloweenAuditCSV('all')}
+                  className="p-3 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-neutral-700 hover:border-amber-400/60 text-xs font-bold text-left transition flex flex-col justify-between cursor-pointer"
+                >
+                  <span className="text-white font-bold block mb-1">📄 Reporte Completo</span>
+                  <span className="text-[10px] text-neutral-400">Todos los {halloweenTotalCount} atletas con kits y QR</span>
+                </button>
+
+                <button
+                  onClick={() => handleExportHalloweenAuditCSV('pending')}
+                  className="p-3 rounded-xl bg-amber-950/40 hover:bg-amber-950/70 text-amber-200 border border-amber-500/50 text-xs font-bold text-left transition flex flex-col justify-between cursor-pointer"
+                >
+                  <span className="text-amber-300 font-bold block mb-1">⚠️ Solo Kits Pendientes</span>
+                  <span className="text-[10px] text-amber-400/80">{halloweenKitsPending} atletas sin entrega</span>
+                </button>
+
+                <button
+                  onClick={() => handleExportHalloweenAuditCSV('qr-confirmed')}
+                  className="p-3 rounded-xl bg-emerald-950/40 hover:bg-emerald-950/70 text-emerald-200 border border-emerald-500/50 text-xs font-bold text-left transition flex flex-col justify-between cursor-pointer"
+                >
+                  <span className="text-emerald-300 font-bold block mb-1">🏁 Con Check-in QR</span>
+                  <span className="text-[10px] text-emerald-400/80">{halloweenKitsConfirmed} con QR verificado</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Section 2: Reporte Santa Run 2026 */}
+            <div className="p-4 rounded-2xl bg-neutral-950 border border-red-500/40 space-y-3">
+              <h4 className="font-bebas text-xl text-red-400 uppercase tracking-wide flex items-center gap-2">
+                <span>🎅 Inscripciones Santa Run Tarapoto 2026</span>
+              </h4>
+              <p className="text-xs text-neutral-400">
+                Lista de nuevos inscritos con sus IDs oficiales de Ohana Santa Run, tallas de polo, montos y validación de descuento 15%.
+              </p>
+
+              <button
+                onClick={handleExportSantaRunCSV}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-red-600 hover:from-red-500 text-white font-bebas text-lg uppercase tracking-wider font-black transition flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-red-600/30"
+              >
+                <Download className="w-4 h-4" />
+                <span>Descargar Nómina Santa Run 2026 (CSV / Excel)</span>
+              </button>
+            </div>
+
+            {/* Section 3: Descarga de Respaldo Completo y Excel Nativo */}
+            <div className="p-4 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Database className="w-5 h-5 text-neutral-400" />
+                  <span className="font-bebas text-xl text-white uppercase tracking-wide">
+                    Respaldo Completo & Excel
+                  </span>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full bg-neutral-900 text-neutral-300 border border-neutral-700 text-[10px] font-mono">
+                  {registrations.length} registros
+                </span>
+              </div>
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                Descarga de forma directa y sin configuraciones la nómina completa en Excel (.xlsx) o una copia de seguridad en formato JSON.
+              </p>
+
+              <div className="pt-1 flex flex-wrap items-center gap-2.5">
+                <button
+                  onClick={() => {
+                    exportToNativeXLSX(registrations);
+                    setLiveNotice('✓ Archivo Excel oficial (.xlsx) descargado.');
+                    setTimeout(() => setLiveNotice(null), 4000);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow"
+                >
+                  <Download className="w-4 h-4 text-white" />
+                  <span>Descargar Excel Oficial (.xlsx)</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    handleExportFullJSON();
+                    setLiveNotice('✓ Archivo de respaldo JSON generado.');
+                    setTimeout(() => setLiveNotice(null), 4000);
+                  }}
+                  className="px-3.5 py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold transition flex items-center gap-1.5 border border-neutral-700 cursor-pointer"
+                >
+                  <Database className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Descargar Backup JSON</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={() => setShowExportModal(false)}
+                className="px-5 py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold transition cursor-pointer"
+              >
+                Cerrar Ventana
+              </button>
+            </div>
           </div>
         </div>
       )}
