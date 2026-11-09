@@ -4126,3 +4126,9 @@ export const saveRegistrations = (registrations: RunnerRegistration[]): void => 
     console.error("Error saving registrations to localStorage", e);
   }
 };
+
+export const isPreviousOhanaParticipant = (dni: string): boolean => {
+  if (!dni) return false;
+  const clean = dni.trim();
+  return INITIAL_REGISTRATIONS.some((r) => r.documentNumber.trim() === clean);
+};

@@ -41,11 +41,11 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
   ];
 
   return (
-    <footer className="bg-[#05090F] border-t border-red-950/40 text-neutral-400 py-14 px-4 relative z-30">
+    <footer className="bg-black border-t border-red-950/40 text-neutral-400 py-14 px-4 relative z-30">
       <div className="max-w-7xl mx-auto space-y-12">
         {/* SECTION: Aliados Estratégicos (Corporate Logo Cloud / Trusted-by Strip) */}
-        <div className="rounded-3xl p-6 sm:p-8 bg-slate-900/40 border border-white/5 backdrop-blur-md">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-white/5">
+        <div className="rounded-3xl p-6 sm:p-8 bg-neutral-950/80 border border-neutral-900 backdrop-blur-md">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-neutral-900">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400">
                 <Handshake className="w-4 h-4" />
@@ -70,7 +70,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
             {allies.map((ally, idx) => (
               <div
                 key={idx}
-                className="group p-3.5 rounded-2xl bg-slate-950/60 border border-white/5 hover:border-red-500/40 transition-all duration-300 flex flex-col justify-between text-left opacity-75 hover:opacity-100 hover:shadow-lg hover:shadow-red-950/40 cursor-default"
+                className="group p-3.5 rounded-2xl bg-neutral-900/60 border border-neutral-800 hover:border-red-500/40 transition-all duration-300 flex flex-col justify-between text-left opacity-75 hover:opacity-100 hover:shadow-lg hover:shadow-red-950/40 cursor-default"
               >
                 <div>
                   <span className="text-[9px] font-mono uppercase tracking-wider text-neutral-500 block group-hover:text-amber-400 transition-colors">
@@ -115,7 +115,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
               href="https://www.instagram.com/ohanago.peru/"
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative block p-3 rounded-2xl bg-slate-900/70 border border-white/10 hover:border-red-500/50 transition-all duration-300 backdrop-blur-md"
+              className="group relative block p-3 rounded-2xl bg-neutral-950 border border-neutral-800 hover:border-red-500/50 transition-all duration-300 backdrop-blur-md"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
@@ -140,9 +140,9 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
               href="https://wa.me/51902227356"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-xs text-neutral-300 bg-slate-900/70 px-3 py-2.5 rounded-xl border border-white/10 hover:border-red-500/50 transition backdrop-blur-md"
+              className="flex items-center gap-2 text-xs text-neutral-300 bg-neutral-950 px-3 py-2.5 rounded-xl border border-neutral-800 hover:border-red-500/50 transition backdrop-blur-md"
             >
-              <MessageCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+              <MessageCircle className="w-4 h-4 text-red-400 shrink-0" />
               <span>WhatsApp Compras & Organización: +51 902 227 356</span>
             </a>
           </div>
@@ -157,7 +157,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
             </p>
             <button
               onClick={onOpenAdmin}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-neutral-300 text-xs font-semibold border border-white/10 transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 text-xs font-semibold border border-neutral-800 transition cursor-pointer"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-red-400" />
               Acceso Panel Organizador

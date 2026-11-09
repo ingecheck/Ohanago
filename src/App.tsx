@@ -4,8 +4,6 @@ import { EventHero } from './components/EventHero';
 import { UpcomingRaceTeaser } from './components/UpcomingRaceTeaser';
 import { PastEditionsArchive } from './components/PastEditionsArchive';
 import { OhanaMerchSection } from './components/OhanaMerchSection';
-import { EventKitSection } from './components/EventKitSection';
-import { RaceRouteSection } from './components/RaceRouteSection';
 import { SnowfallCanvas } from './components/SnowfallCanvas';
 import { RegistrationForm } from './components/RegistrationForm';
 import { RegistrationSuccessModal } from './components/RegistrationSuccessModal';
@@ -13,7 +11,6 @@ import { AdminDashboard } from './components/AdminDashboard';
 import { AdminLoginModal } from './components/AdminLoginModal';
 import { CompetitorLoginModal } from './components/CompetitorLoginModal';
 import { CompetitorPortalModal } from './components/CompetitorPortalModal';
-import { LiveRouletteSection } from './components/LiveRouletteSection';
 import { Footer } from './components/Footer';
 import { RunnerRegistration } from './types/race';
 import { getStoredRegistrations } from './data/initialRegistrations';
@@ -298,12 +295,12 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#070D14] text-neutral-100 flex flex-col font-sans selection:bg-red-500 selection:text-white relative">
+    <div className="min-h-screen bg-black text-neutral-100 flex flex-col font-sans selection:bg-red-500 selection:text-white relative">
       {/* 60 FPS Snowfall Particle System (Fixed, non-blocking, z-20) */}
       <SnowfallCanvas />
 
       {/* Top Brand Notification Banner */}
-      <div className="bg-[#070D14] border-b border-red-950/60 py-2.5 px-4 text-center text-xs font-mono tracking-wider uppercase text-neutral-300 relative z-40 flex items-center justify-center gap-2">
+      <div className="bg-black border-b border-red-950/60 py-2.5 px-4 text-center text-xs font-mono tracking-wider uppercase text-neutral-300 relative z-40 flex items-center justify-center gap-2">
         <span className="w-2 h-2 rounded-full bg-red-500 animate-ping shrink-0" />
         <span className="text-white font-bold">🎅 OHANA GO PRESENTA: SANTA RUN TARAPOTO 2026</span>
         <span className="hidden sm:inline text-neutral-600">|</span>
@@ -412,29 +409,29 @@ export const App: React.FC = () => {
       {/* Modal: Direct Start QR Check-in Prompt (When scanned with native mobile camera) */}
       {directCheckinOpen && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-          <div className="relative max-w-md w-full bg-neutral-900 border-2 border-lime-400 rounded-3xl p-6 shadow-2xl">
+          <div className="relative max-w-md w-full bg-neutral-950 border-2 border-red-500 rounded-3xl p-6 shadow-2xl">
             <button
               onClick={() => {
                 setDirectCheckinOpen(false);
                 setDirectCheckinError(null);
               }}
-              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
+              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-900 text-neutral-400 hover:text-white cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
             <div className="text-center mb-5">
-              <div className="w-14 h-14 rounded-2xl bg-lime-400 text-black flex items-center justify-center font-bebas text-3xl mx-auto mb-3 shadow-lg shadow-lime-400/30">
+              <div className="w-14 h-14 rounded-2xl bg-red-600 text-white flex items-center justify-center font-bebas text-3xl mx-auto mb-3 shadow-lg shadow-red-600/30">
                 🏁
               </div>
-              <span className="text-[10px] font-bold tracking-widest uppercase text-lime-400 block mb-1">
-                Punto de Largada Oficial • Plaza de Armas
+              <span className="text-[10px] font-bold tracking-widest uppercase text-red-400 block mb-1">
+                Punto de Largada Oficial • Parque de la Av. Aviación
               </span>
               <h3 className="font-bebas text-3xl text-white uppercase tracking-wide">
-                Confirmar <span className="text-lime-400">Asistencia 5K</span>
+                Confirmar <span className="text-red-500">Asistencia Santa Run</span>
               </h3>
               <p className="text-xs text-neutral-300 mt-1">
-                ¡Bienvenido a la OHANA GO 5K! Ingresa tu número de DNI para validar tu check-in en vivo en la Plaza de Armas.
+                ¡Bienvenido a la SANTA RUN 2026! Ingresa tu número de DNI para validar tu check-in en vivo en partida.
               </p>
             </div>
 
@@ -442,7 +439,7 @@ export const App: React.FC = () => {
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-neutral-400 mb-1.5 flex items-center justify-between">
                   <span>Número de DNI del Participante *</span>
-                  <span className="text-[10px] text-lime-400">solo documento</span>
+                  <span className="text-[10px] text-amber-400">solo documento</span>
                 </label>
                 <input
                   type="tel"
@@ -453,7 +450,7 @@ export const App: React.FC = () => {
                   value={directCheckinQuery}
                   onChange={(e) => setDirectCheckinQuery(e.target.value)}
                   placeholder="Ingresa tu DNI (Ej: 70930296)"
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl px-4 py-3 text-white text-base font-bold font-mono focus:outline-none focus:border-lime-400 transition"
+                  className="w-full bg-black border border-neutral-800 rounded-xl px-4 py-3 text-white text-base font-bold font-mono focus:outline-none focus:border-red-500 transition"
                 />
               </div>
 
@@ -467,7 +464,7 @@ export const App: React.FC = () => {
               <button
                 type="submit"
                 disabled={directCheckinLoading}
-                className="w-full py-3.5 bg-lime-400 hover:bg-lime-300 disabled:opacity-50 text-black font-bebas text-xl uppercase tracking-wider rounded-xl transition shadow-lg shadow-lime-400/25 flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3.5 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bebas text-xl uppercase tracking-wider rounded-xl transition shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 cursor-pointer font-black"
               >
                 {directCheckinLoading ? 'Validando Entrega de Kit...' : '✓ Confirmar Entrega de Kit'}
               </button>
@@ -479,33 +476,33 @@ export const App: React.FC = () => {
       {/* Modal: Direct Start QR Check-in Success Confirmation */}
       {directCheckinSuccess && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
-          <div className="relative max-w-md w-full bg-neutral-900 border-2 border-emerald-400 rounded-3xl p-6 text-center shadow-[0_0_50px_rgba(52,211,153,0.3)]">
+          <div className="relative max-w-md w-full bg-neutral-950 border-2 border-red-500 rounded-3xl p-6 text-center shadow-[0_0_50px_rgba(239,68,68,0.3)]">
             <button
               onClick={() => setDirectCheckinSuccess(null)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
+              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-900 text-neutral-400 hover:text-white cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className="w-16 h-16 rounded-3xl bg-emerald-500/20 border-2 border-emerald-400 text-emerald-400 flex items-center justify-center mx-auto mb-3">
+            <div className="w-16 h-16 rounded-3xl bg-red-600/20 border-2 border-red-500 text-red-400 flex items-center justify-center mx-auto mb-3">
               <CheckCircle2 className="w-10 h-10" />
             </div>
 
-            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 block mb-1">
-              Entrega de Kit Inicial Confirmada
+            <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 block mb-1">
+              Entrega de Kit Oficial Confirmada
             </span>
             <h3 className="font-bebas text-3xl sm:text-4xl text-white uppercase tracking-wide">
-              ¡Kit Inicial Entregado!
+              ¡Kit Oficial Entregado!
             </h3>
             
-            <div className="my-4 p-4 rounded-2xl bg-neutral-950 border border-neutral-800 text-left space-y-1">
+            <div className="my-4 p-4 rounded-2xl bg-black border border-neutral-800 text-left space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-neutral-400 uppercase font-bold">Corredor:</span>
                 <span className="text-sm font-bold text-white">{directCheckinSuccess.firstName} {directCheckinSuccess.lastName}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-neutral-400 uppercase font-bold">DNI Verificado:</span>
-                <span className="text-sm font-black text-lime-400 font-mono">{directCheckinSuccess.documentNumber}</span>
+                <span className="text-sm font-black text-amber-400 font-mono">{directCheckinSuccess.documentNumber}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-neutral-400 uppercase font-bold">Hora de Entrega:</span>
@@ -516,7 +513,7 @@ export const App: React.FC = () => {
             </div>
 
             <p className="text-xs text-neutral-300 mb-4">
-              Tu kit inicial y asistencia ya se encuentran confirmados en tiempo real en la lista oficial del organizador. ¡Nos vemos en la largada a las 7:00 PM!
+              Tu kit oficial y asistencia ya se encuentran confirmados en tiempo real en la lista oficial del organizador. ¡Nos vemos en la largada a las 7:00 PM!
             </p>
 
             <button
@@ -524,7 +521,7 @@ export const App: React.FC = () => {
                 setDirectCheckinSuccess(null);
                 setIsCompetitorPortalOpen(true);
               }}
-              className="w-full py-3 bg-lime-400 hover:bg-lime-300 text-black font-bebas text-lg uppercase tracking-wider rounded-xl transition cursor-pointer shadow-md"
+              className="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bebas text-lg uppercase tracking-wider rounded-xl transition cursor-pointer shadow-md font-bold"
             >
               Ir a Mi Espacio 🎒 (Ficha de Verificación)
             </button>

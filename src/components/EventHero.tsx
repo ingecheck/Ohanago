@@ -16,20 +16,11 @@ export const EventHero: React.FC<EventHeroProps> = ({
   registeredCount,
 }) => {
   return (
-    <div className="relative overflow-hidden pt-8 pb-16 md:pt-14 md:pb-24 border-b border-red-950/40 bg-gradient-to-b from-[#070D14] via-[#0B131E] to-[#080E17]">
+    <div className="relative overflow-hidden pt-8 pb-16 md:pt-14 md:pb-24 border-b border-red-950/50 bg-black">
       {/* Background Holiday Ambient Warmth */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-red-600/10 rounded-full blur-[160px] pointer-events-none" />
-      <div className="absolute top-1/3 right-10 w-96 h-96 bg-amber-500/5 rounded-full blur-[140px] pointer-events-none" />
-      <div className="absolute bottom-0 left-10 w-80 h-80 bg-rose-600/5 rounded-full blur-[130px] pointer-events-none" />
-
-      {/* Grid subtle texture */}
-      <div
-        className="absolute inset-0 opacity-[0.03] pointer-events-none"
-        style={{
-          backgroundImage: `linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)`,
-          backgroundSize: '48px 48px',
-        }}
-      />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-red-600/10 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-1/3 right-10 w-80 h-80 bg-red-600/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-0 left-10 w-72 h-72 bg-amber-500/5 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="relative max-w-6xl mx-auto px-4 text-center">
         {/* Festive Holiday Edition Pill */}
@@ -62,7 +53,7 @@ export const EventHero: React.FC<EventHeroProps> = ({
 
         {/* Key Event Milestones Chips */}
         <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-3 mb-10 text-left">
-          <div className="bg-slate-900/70 border border-white/10 rounded-2xl p-3.5 backdrop-blur-md transition hover:border-red-500/40">
+          <div className="bg-neutral-950/80 border border-neutral-800/90 rounded-2xl p-3.5 backdrop-blur-md transition hover:border-red-500/50">
             <span className="text-[10px] font-mono uppercase text-red-400 font-bold block flex items-center gap-1.5 mb-1">
               <Calendar className="w-3.5 h-3.5 text-red-400" /> Fecha
             </span>
@@ -70,7 +61,7 @@ export const EventHero: React.FC<EventHeroProps> = ({
             <span className="text-[11px] text-neutral-400">Temporada 2026</span>
           </div>
 
-          <div className="bg-slate-900/70 border border-white/10 rounded-2xl p-3.5 backdrop-blur-md transition hover:border-red-500/40">
+          <div className="bg-neutral-950/80 border border-neutral-800/90 rounded-2xl p-3.5 backdrop-blur-md transition hover:border-red-500/50">
             <span className="text-[10px] font-mono uppercase text-amber-400 font-bold block flex items-center gap-1.5 mb-1">
               <Clock className="w-3.5 h-3.5 text-amber-400" /> Horario
             </span>
@@ -78,7 +69,7 @@ export const EventHero: React.FC<EventHeroProps> = ({
             <span className="text-[11px] text-neutral-400">Carrera Nocturna</span>
           </div>
 
-          <div className="bg-slate-900/70 border border-white/10 rounded-2xl p-3.5 backdrop-blur-md transition hover:border-red-500/40">
+          <div className="bg-neutral-950/80 border border-neutral-800/90 rounded-2xl p-3.5 backdrop-blur-md transition hover:border-red-500/50">
             <span className="text-[10px] font-mono uppercase text-rose-400 font-bold block flex items-center gap-1.5 mb-1">
               <MapPin className="w-3.5 h-3.5 text-rose-400" /> Partida
             </span>
@@ -86,9 +77,9 @@ export const EventHero: React.FC<EventHeroProps> = ({
             <span className="text-[11px] text-neutral-400">Av. Aviación</span>
           </div>
 
-          <div className="bg-slate-900/70 border border-white/10 rounded-2xl p-3.5 backdrop-blur-md transition hover:border-red-500/40">
-            <span className="text-[10px] font-mono uppercase text-emerald-400 font-bold block flex items-center gap-1.5 mb-1">
-              <Trophy className="w-3.5 h-3.5 text-emerald-400" /> Llegada
+          <div className="bg-neutral-950/80 border border-neutral-800/90 rounded-2xl p-3.5 backdrop-blur-md transition hover:border-red-500/50">
+            <span className="text-[10px] font-mono uppercase text-red-400 font-bold block flex items-center gap-1.5 mb-1">
+              <Trophy className="w-3.5 h-3.5 text-amber-400" /> Llegada
             </span>
             <span className="font-bebas text-lg sm:text-xl text-white block leading-tight truncate">Concha Acústica</span>
             <span className="text-[11px] text-neutral-400">Meta & Celebración</span>
@@ -107,7 +98,7 @@ export const EventHero: React.FC<EventHeroProps> = ({
 
           <button
             onClick={onExploreUpcoming}
-            className="px-7 py-4 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border-2 border-red-500/50 hover:border-red-400 text-red-200 hover:text-white font-bebas text-xl sm:text-2xl uppercase tracking-wider transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer backdrop-blur-md font-black shadow-lg"
+            className="px-7 py-4 rounded-2xl bg-neutral-950/90 hover:bg-neutral-900 border-2 border-red-500/50 hover:border-red-400 text-red-200 hover:text-white font-bebas text-xl sm:text-2xl uppercase tracking-wider transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer backdrop-blur-md font-black shadow-lg"
           >
             <Gift className="w-5 h-5 text-amber-400" />
             <span>Ver Kit & Descuento 15%</span>
@@ -116,7 +107,7 @@ export const EventHero: React.FC<EventHeroProps> = ({
           {onOpenCompetitorLogin && (
             <button
               onClick={onOpenCompetitorLogin}
-              className="px-6 py-4 rounded-2xl bg-slate-900/60 hover:bg-slate-800/80 border border-white/10 hover:border-white/30 text-neutral-300 hover:text-white font-mono text-xs uppercase tracking-wider transition flex items-center gap-2 cursor-pointer backdrop-blur-md font-bold"
+              className="px-6 py-4 rounded-2xl bg-neutral-950/80 hover:bg-neutral-900 border border-neutral-800 hover:border-red-500/40 text-neutral-300 hover:text-white font-mono text-xs uppercase tracking-wider transition flex items-center gap-2 cursor-pointer backdrop-blur-md font-bold"
             >
               <span>🎒 Mi Espacio / Consultar Pase</span>
             </button>

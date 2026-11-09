@@ -85,26 +85,26 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-neutral-950 overflow-y-auto min-h-screen text-neutral-100 flex flex-col selection:bg-lime-400 selection:text-black">
+    <div className="fixed inset-0 z-50 bg-black overflow-y-auto min-h-screen text-neutral-100 flex flex-col selection:bg-red-500 selection:text-white">
       {/* Top Sticky Header Bar: Fluid and natural, no boxed modal borders */}
-      <header className="sticky top-0 z-40 bg-neutral-900/95 backdrop-blur-md border-b border-purple-500/30 px-4 sm:px-8 py-3.5 shadow-xl">
+      <header className="sticky top-0 z-40 bg-neutral-950/95 backdrop-blur-md border-b border-red-500/30 px-4 sm:px-8 py-3.5 shadow-xl">
         <div className="max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="px-3.5 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-lime-400 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border border-lime-400/40 shadow-sm"
+              className="px-3.5 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-red-400 hover:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer border border-red-500/40 shadow-sm"
               title="Regresar a la página de inicio"
             >
-              <ArrowLeft className="w-4 h-4 text-lime-400" />
+              <ArrowLeft className="w-4 h-4 text-red-400" />
               <span>Volver a Inicio</span>
             </button>
 
             <div className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-indigo-700 text-white flex items-center justify-center text-sm shadow">
+              <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-600 to-rose-700 text-white flex items-center justify-center text-sm shadow">
                 🎒
               </span>
               <span className="font-bebas text-xl sm:text-2xl text-white tracking-wide uppercase leading-none">
-                Mi Espacio • <span className="text-lime-400">Verificación Oficial</span>
+                Mi Espacio • <span className="text-red-500">Verificación Oficial</span>
               </span>
             </div>
           </div>
@@ -136,23 +136,23 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
         )}
         {actionErrorMessage && (
           <div className="p-4 rounded-2xl bg-red-950/90 border-2 border-red-500/60 text-red-200 text-xs flex items-center gap-2.5">
-            <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
             <span>{actionErrorMessage}</span>
           </div>
         )}
 
         {/* Runner Welcome Identification Banner */}
-        <div className="p-5 sm:p-7 rounded-3xl bg-gradient-to-r from-purple-950/70 via-neutral-900 to-purple-950/70 border border-purple-500/40 shadow-2xl flex flex-wrap items-center justify-between gap-4">
+        <div className="p-5 sm:p-7 rounded-3xl bg-gradient-to-r from-red-950/70 via-neutral-950 to-red-950/70 border border-red-500/40 shadow-2xl flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-black text-purple-300 bg-purple-900/70 px-2.5 py-0.5 rounded-full border border-purple-500/40 tracking-wider uppercase flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-lime-400" />
+              <span className="text-[11px] font-black text-red-300 bg-red-900/70 px-2.5 py-0.5 rounded-full border border-red-500/40 tracking-wider uppercase flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-amber-400" />
                 Atleta Inscrito
               </span>
               <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${
                 isVirtual 
-                  ? 'bg-purple-950 text-purple-300 border-purple-500/40' 
-                  : 'bg-lime-950 text-lime-400 border-lime-500/40'
+                  ? 'bg-neutral-900 text-neutral-300 border-neutral-700' 
+                  : 'bg-red-950 text-red-400 border-red-500/40'
               }`}>
                 {isVirtual ? 'Modalidad Virtual' : 'Presencial Tarapoto'}
               </span>
@@ -161,7 +161,7 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
               {competitor.firstName} {competitor.lastName}
             </h2>
             <p className="text-xs sm:text-sm text-neutral-300">
-              DNI: <strong className="text-lime-400 font-mono text-base">{competitor.documentNumber}</strong> • Código: <strong className="text-white font-mono">{competitor.id}</strong>
+              DNI: <strong className="text-amber-400 font-mono text-base">{competitor.documentNumber}</strong> • Código: <strong className="text-white font-mono">{competitor.id}</strong>
             </p>
           </div>
 
@@ -188,13 +188,13 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
                 </div>
                 <div>
                   <span className="px-2.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 text-[10px] font-black uppercase tracking-wider border border-emerald-400/40">
-                    Acreditación en Plaza de Armas
+                    Acreditación en Parque Aviación
                   </span>
                   <h3 className="font-bebas text-2xl sm:text-3xl text-white tracking-wide uppercase mt-1 leading-none">
-                    ¡Kit Inicial Entregado y Asistencia Confirmada!
+                    ¡Kit Oficial Entregado y Asistencia Confirmada!
                   </h3>
                   <p className="text-xs sm:text-sm text-emerald-200/90 mt-1 max-w-xl leading-relaxed">
-                    Tu entrega de kit inicial (pulseras neón, hidratación y acreditación) ya está registrada en el sistema del organizador en tiempo real.
+                    Tu entrega de kit oficial (polo, gorro Santa, mochila, hidratación y acreditación) ya está registrada en el sistema del organizador en tiempo real.
                     {competitor.startCheckinTime && (
                       <span className="font-mono ml-1 text-emerald-300 font-bold block sm:inline mt-0.5 sm:mt-0">
                         • {new Date(competitor.startCheckinTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -209,20 +209,20 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
               </div>
             </div>
           ) : (
-            <div className="p-6 sm:p-8 bg-gradient-to-br from-neutral-900 via-purple-950/50 to-neutral-900 border-2 border-lime-400/80 flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_0_50px_rgba(163,230,53,0.15)]">
+            <div className="p-6 sm:p-8 bg-gradient-to-br from-neutral-950 via-neutral-900 to-black border-2 border-red-500/80 flex flex-col md:flex-row items-center justify-between gap-6 shadow-[0_0_50px_rgba(239,68,68,0.2)]">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-lime-400 text-black flex items-center justify-center font-black shrink-0 shadow-xl shadow-lime-400/30">
+                <div className="w-16 h-16 rounded-2xl bg-red-600 text-white flex items-center justify-center font-black shrink-0 shadow-xl shadow-red-600/30">
                   <Camera className="w-8 h-8 stroke-[2.5]" />
                 </div>
                 <div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-lime-400/20 text-lime-300 text-[10px] font-black uppercase tracking-wider border border-lime-400/40">
-                    Punto de Acreditación • Plaza de Armas
+                  <span className="px-2.5 py-0.5 rounded-full bg-red-950/60 text-red-300 text-[10px] font-black uppercase tracking-wider border border-red-500/40">
+                    Punto de Acreditación • Parque Aviación
                   </span>
                   <h3 className="font-bebas text-2xl sm:text-3xl text-white tracking-wide uppercase mt-1 leading-tight">
-                    Entrega de Kit Inicial (Check-in QR)
+                    Entrega de Kit Oficial (Check-in QR)
                   </h3>
                   <p className="text-xs sm:text-sm text-neutral-300 mt-1 max-w-xl leading-relaxed">
-                    Al llegar a la Plaza de Armas a las <strong>5:30 PM</strong>, apunta con tu cámara al código QR oficial para confirmar tu asistencia y recibir tu Kit Inicial (pulseras neón e hidratación).
+                    Al llegar al Parque de la Av. Aviación, apunta con tu cámara al código QR oficial para confirmar tu asistencia y recibir tu Kit Navideño Oficial.
                   </p>
                 </div>
               </div>
@@ -231,9 +231,9 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsScannerOpen(true)}
-                  className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-gradient-to-r from-lime-400 to-emerald-400 hover:from-lime-300 hover:to-emerald-300 text-black font-bebas text-lg sm:text-xl uppercase tracking-wider transition shadow-xl shadow-lime-400/25 flex items-center justify-center gap-2.5 cursor-pointer hover:scale-[1.02]"
+                  className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bebas text-lg sm:text-xl uppercase tracking-wider transition shadow-xl shadow-red-600/25 flex items-center justify-center gap-2.5 cursor-pointer hover:scale-[1.02] font-black"
                 >
-                  <Camera className="w-5 h-5 text-black stroke-[2.5]" />
+                  <Camera className="w-5 h-5 text-white stroke-[2.5]" />
                   <span>Escanear QR de Acreditación</span>
                 </button>
               </div>
@@ -319,16 +319,16 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
                 </div>
               ) : (
                 <div className="p-4 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-2.5">
-                  <div className="flex items-center gap-2 text-lime-400 font-bold text-sm">
-                    <Clock className="w-4 h-4 text-lime-400" />
+                  <div className="flex items-center gap-2 text-red-400 font-bold text-sm">
+                    <Clock className="w-4 h-4 text-red-400" />
                     <span>Se activa automáticamente a las 7:15 PM</span>
                   </div>
                   <p className="text-neutral-300 leading-relaxed text-xs">
-                    Al cruzar la meta en Entre Jarras a partir de las <strong>7:15 PM</strong>, este apartado confirmará tu acreditación como Finisher oficial. En este punto recibirás tu medalla conmemorativa de metal y se dará inicio al sorteo de los 22 premios oficiales con la Ruleta.
+                    Al cruzar la meta en la Concha Acústica a partir de las <strong>7:15 PM</strong>, este apartado confirmará tu acreditación como Finisher oficial. En este punto recibirás tu medalla conmemorativa de metal y se dará inicio al sorteo del pavo navideño.
                   </p>
                   <div className="text-[11px] text-neutral-400 flex items-center gap-2 font-mono">
-                    <Timer className="w-3.5 h-3.5 text-lime-400" />
-                    <span>Itinerario: 5:30 PM (Plaza de Armas) → 7:00 PM (Partida) → 7:15 PM (Meta Entre Jarras)</span>
+                    <Timer className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Itinerario: 6:00 PM (Parque Aviación) → 7:00 PM (Partida) → Meta Concha Acústica</span>
                   </div>
                 </div>
               )}
@@ -339,18 +339,14 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
         {/* DIGITAL BIB & ACCREDITATION PASS CARD */}
         <div className="py-2 flex flex-col items-center">
           <div className="text-center mb-4">
-            <span className={`text-[10px] font-mono uppercase tracking-widest font-bold block mb-1 ${
-              isSantaRun ? 'text-red-400' : 'text-lime-400'
-            }`}>
-              {isSantaRun ? '🎅 SANTA RUN TARAPOTO 2026' : 'CREDENCIAL DIGITAL OFICIAL'}
+            <span className="text-[10px] font-mono uppercase tracking-widest font-bold block mb-1 text-red-400">
+              🎅 SANTA RUN TARAPOTO 2026
             </span>
             <h3 className="font-bebas text-3xl sm:text-4xl text-white uppercase tracking-wide">
-              {isSantaRun ? 'Dorsal Navideño & Ticket Sorteo Pavo' : 'Pase Digital de Competidor'}
+              Dorsal Navideño & Ticket Sorteo Pavo
             </h3>
             <p className="text-xs text-neutral-400 max-w-md mx-auto mt-0.5">
-              {isSantaRun
-                ? 'Presenta tu código QR en el Parque de la Av. Aviación para acreditarte y reclamar tu Kit Navideño Oficial.'
-                : 'Presenta este código QR en la mesa de acreditación para validar tu ingreso.'}
+              Presenta tu código QR en el Parque de la Av. Aviación para acreditarte y reclamar tu Kit Navideño Oficial.
             </p>
           </div>
           <DigitalBib registration={competitor} showActions={true} />
@@ -360,20 +356,20 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
         <div className="p-6 sm:p-7 rounded-3xl bg-neutral-900/90 border border-neutral-800 shadow-xl space-y-4">
           <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
             <div className="flex items-center gap-2">
-              <ShieldCheck className={`w-5 h-5 ${isSantaRun ? 'text-red-500' : 'text-lime-400'}`} />
+              <ShieldCheck className="w-5 h-5 text-red-500" />
               <h3 className="font-bebas text-2xl text-white uppercase tracking-wide">
-                Ficha Oficial de Verificación {isSantaRun ? '• Santa Run 2026' : ''}
+                Ficha Oficial de Verificación • Santa Run 2026
               </h3>
             </div>
             <span className="text-xs text-neutral-400 font-mono">
-              Participante N° <strong className={isSantaRun ? 'text-red-400' : 'text-lime-400'}>{competitor.registrationNumber || competitor.id}</strong>
+              Participante N° <strong className="text-red-400">{competitor.registrationNumber || competitor.id}</strong>
             </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 text-xs">
             <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800/80">
               <span className="text-neutral-500 block uppercase font-bold text-[10px]">Documento de Identidad (DNI)</span>
-              <span className={`font-black font-mono text-base block mt-0.5 ${isSantaRun ? 'text-red-400' : 'text-lime-400'}`}>
+              <span className="font-black font-mono text-base block mt-0.5 text-amber-400">
                 {competitor.documentNumber}
               </span>
               <span className="text-[10px] text-neutral-400">Verificado para ingreso</span>
@@ -462,7 +458,7 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
             <div className={`flex items-center gap-2 font-bold ${
               isSantaRun ? 'text-red-300' : 'text-purple-300'
             }`}>
-              <Calendar className={`w-4 h-4 ${isSantaRun ? 'text-red-400' : 'text-lime-400'}`} />
+              <Calendar className="w-4 h-4 text-red-400" />
               <span>
                 {isSantaRun 
                   ? 'Cronograma Oficial Santa Run Tarapoto 2026 • Sábado 19 de Diciembre' 

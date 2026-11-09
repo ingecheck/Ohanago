@@ -49,7 +49,7 @@ export const UpcomingRaceTeaser: React.FC<UpcomingRaceTeaserProps> = ({
 
   return (
     <section id="ediciones" className="py-12 sm:py-20 px-4 max-w-6xl mx-auto w-full scroll-mt-20">
-      <div className="relative rounded-3xl p-6 sm:p-10 md:p-12 bg-gradient-to-b from-[#09111C] via-[#0B1422] to-[#070D14] border border-red-500/30 shadow-[0_20px_60px_rgba(212,36,38,0.2)] overflow-hidden">
+      <div className="relative rounded-3xl p-6 sm:p-10 md:p-12 bg-gradient-to-b from-neutral-950 via-black to-neutral-950 border border-red-500/40 shadow-[0_20px_60px_rgba(212,36,38,0.25)] overflow-hidden">
         {/* Glow ambient background */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-red-600/10 rounded-full blur-[140px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-amber-500/5 rounded-full blur-[120px] pointer-events-none" />
@@ -83,7 +83,7 @@ export const UpcomingRaceTeaser: React.FC<UpcomingRaceTeaserProps> = ({
 
             {/* Glowing Price Box matching the official poster */}
             <div className="lg:col-span-5 flex flex-col items-center sm:items-end justify-center">
-              <div className="w-full max-w-sm rounded-3xl p-5 bg-gradient-to-b from-red-950/90 to-slate-950 border-2 border-red-500 shadow-[0_0_40px_rgba(255,30,39,0.35)] text-center relative">
+              <div className="w-full max-w-sm rounded-3xl p-5 bg-gradient-to-b from-red-950/90 to-black border-2 border-red-500 shadow-[0_0_40px_rgba(255,30,39,0.35)] text-center relative">
                 <span className="text-[11px] font-mono uppercase tracking-widest text-red-200 font-bold block mb-1">
                   INVERSIÓN GENERAL
                 </span>
@@ -92,7 +92,7 @@ export const UpcomingRaceTeaser: React.FC<UpcomingRaceTeaserProps> = ({
                 </div>
 
                 {/* 15% discount for previous editions */}
-                <div className="mt-3 pt-3 border-t border-red-500/40 rounded-2xl bg-black/60 p-2.5 flex items-center justify-between text-left gap-2">
+                <div className="mt-3 pt-3 border-t border-red-500/40 rounded-2xl bg-black/80 p-2.5 flex items-center justify-between text-left gap-2">
                   <span className="font-bebas text-2xl text-amber-400 font-black shrink-0 px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
                     15% OFF
                   </span>
@@ -112,7 +112,7 @@ export const UpcomingRaceTeaser: React.FC<UpcomingRaceTeaserProps> = ({
               return (
                 <div
                   key={idx}
-                  className="p-5 rounded-2xl bg-slate-900/80 border border-white/10 hover:border-red-500/50 transition-all duration-300 group backdrop-blur-md"
+                  className="p-5 rounded-2xl bg-neutral-950/90 border border-neutral-800 hover:border-red-500/50 transition-all duration-300 group backdrop-blur-md"
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 flex items-center justify-center group-hover:bg-red-500 group-hover:text-white transition-colors duration-300">
@@ -156,9 +156,9 @@ export const UpcomingRaceTeaser: React.FC<UpcomingRaceTeaserProps> = ({
               href={`https://wa.me/51902227356?text=${encodeURIComponent('¡Hola Ohana Go! Quiero información para inscribirme a la Santa Run Tarapoto 2026 (S/ 70.00).')}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 border border-white/10 text-neutral-200 hover:text-white font-bebas text-xl uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer backdrop-blur-md"
+              className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 text-neutral-200 hover:text-white font-bebas text-xl uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer backdrop-blur-md"
             >
-              <MessageCircle className="w-5 h-5 text-emerald-400" />
+              <MessageCircle className="w-5 h-5 text-red-400" />
               <span>Consultar por WhatsApp (+51 902 227 356)</span>
             </a>
           </div>

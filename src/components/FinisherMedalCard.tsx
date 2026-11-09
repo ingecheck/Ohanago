@@ -57,24 +57,24 @@ export const FinisherMedalCard: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative group overflow-hidden rounded-3xl bg-gradient-to-b from-neutral-900 via-neutral-950 to-black border border-lime-400/40 p-5 sm:p-6 shadow-2xl transition-all duration-300 hover:border-lime-400 hover:shadow-[0_0_40px_rgba(163,230,53,0.25)]">
+    <div className="relative group overflow-hidden rounded-3xl bg-gradient-to-b from-neutral-900 via-neutral-950 to-black border border-red-500/40 p-5 sm:p-6 shadow-2xl transition-all duration-300 hover:border-red-500 hover:shadow-[0_0_40px_rgba(212,36,38,0.25)]">
       {/* Background Glow */}
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-64 h-64 bg-lime-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-64 h-64 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
 
       {/* Title - clean, non-bulky, no 'metálica' */}
       <div className="text-center mb-4">
         <h3 className="font-bebas text-3xl sm:text-4xl tracking-wider text-white uppercase flex items-center justify-center gap-2">
-          Medalla <span className="text-lime-400 text-glow-lime">Finisher 5K</span>
+          Medalla <span className="text-red-500">Finisher 5K</span>
         </h3>
         <p className="text-xs text-neutral-400 font-medium">
-          Exclusiva para todos los que crucen la meta en Entre Jarras
+          Exclusiva para todos los que crucen la meta en la Concha Acústica
         </p>
       </div>
 
       {/* Main Medal Display - Single Clean Sharp Square Showcase */}
       <div className="relative mx-auto my-3 w-full max-w-[320px] aspect-square flex items-center justify-center">
         {/* Soft radial glow directly behind the medal */}
-        <div className="absolute inset-4 bg-radial from-lime-400/15 via-transparent to-transparent rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute inset-4 bg-radial from-red-600/15 via-transparent to-transparent rounded-full blur-2xl pointer-events-none" />
 
         <div
           className="relative w-full h-full flex items-center justify-center cursor-pointer group/photo"
@@ -97,7 +97,7 @@ export const FinisherMedalCard: React.FC = () => {
               e.stopPropagation();
               setIsZoomed(true);
             }}
-            className="absolute bottom-2 right-2 p-2 rounded-xl bg-black/80 text-lime-400 hover:text-white border border-lime-400/40 backdrop-blur-md opacity-0 group-hover/photo:opacity-100 transition shadow-lg cursor-pointer"
+            className="absolute bottom-2 right-2 p-2 rounded-xl bg-black/80 text-red-400 hover:text-white border border-red-500/40 backdrop-blur-md opacity-0 group-hover/photo:opacity-100 transition shadow-lg cursor-pointer"
             title="Ver medalla en alta resolución"
           >
             <ZoomIn className="w-4 h-4" />
@@ -112,7 +112,7 @@ export const FinisherMedalCard: React.FC = () => {
           <Award className="w-4 h-4 text-amber-400" />
           Medalla oficial con relieve
         </span>
-        <span className="text-lime-400 font-bold">
+        <span className="text-amber-400 font-bold">
           Cinta oficial
         </span>
       </div>
@@ -127,7 +127,7 @@ export const FinisherMedalCard: React.FC = () => {
             >
               <X className="w-6 h-6" />
             </button>
-            <div className="relative p-2 rounded-3xl bg-neutral-900 border-2 border-lime-400 shadow-[0_0_50px_rgba(163,230,53,0.4)]">
+            <div className="relative p-2 rounded-3xl bg-neutral-900 border-2 border-red-500 shadow-[0_0_50px_rgba(212,36,38,0.4)]">
               <img
                 src={medalImage || defaultOfficialMedal}
                 alt="Medalla Finisher Oficial OHANA GO 5K"
@@ -140,7 +140,7 @@ export const FinisherMedalCard: React.FC = () => {
                 }}
               />
             </div>
-            <p className="text-xs text-lime-400 font-bold uppercase tracking-wider mt-3">
+            <p className="text-xs text-red-400 font-bold uppercase tracking-wider mt-3">
               Medalla Finisher Oficial • Tarapoto
             </p>
           </div>

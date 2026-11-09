@@ -111,18 +111,18 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-70 flex items-center justify-center p-3 sm:p-4 bg-black/95 backdrop-blur-md">
-      <div className="relative w-full max-w-xl bg-neutral-900 border-2 border-lime-400/40 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col max-h-[94vh] overflow-y-auto">
+      <div className="relative w-full max-w-xl bg-neutral-900 border-2 border-red-500/40 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col max-h-[94vh] overflow-y-auto">
         {/* Header navigation bar with Volver button */}
         <div className="flex items-center justify-between mb-3 border-b border-neutral-800 pb-2">
           <button
             onClick={onClose}
-            className="px-3.5 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-lime-400 hover:text-white text-xs font-bold transition flex items-center gap-1.5 border border-lime-400/40 cursor-pointer shadow-sm"
+            className="px-3.5 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-red-400 hover:text-white text-xs font-bold transition flex items-center gap-1.5 border border-red-500/40 cursor-pointer shadow-sm"
           >
-            <ArrowLeft className="w-4 h-4 text-lime-400" />
+            <ArrowLeft className="w-4 h-4 text-red-400" />
             <span>← Volver</span>
           </button>
 
-          <span className="text-[10px] font-black uppercase tracking-wider text-lime-400 bg-lime-400/10 px-2.5 py-1 rounded-full border border-lime-400/30">
+          <span className="text-[10px] font-black uppercase tracking-wider text-red-400 bg-red-950/60 px-2.5 py-1 rounded-full border border-red-500/30">
             Escaneo Rápido de Kit
           </span>
 
@@ -151,33 +151,33 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
         <div className="relative rounded-3xl overflow-hidden bg-black border-2 border-neutral-800 mb-4 flex flex-col items-center justify-center min-h-[340px] sm:min-h-[400px] w-full aspect-square max-h-[440px] shadow-inner">
           <div id={containerId} className="w-full h-full min-h-[340px] sm:min-h-[400px]" />
 
-          {/* Visual Target Frame Overlay with Lime Corners */}
-          <div className="absolute inset-4 sm:inset-6 pointer-events-none border-2 border-dashed border-lime-400/30 rounded-2xl flex flex-col justify-between p-2">
+          {/* Visual Target Frame Overlay with Red Corners */}
+          <div className="absolute inset-4 sm:inset-6 pointer-events-none border-2 border-dashed border-red-500/30 rounded-2xl flex flex-col justify-between p-2">
             {/* Top Corners */}
             <div className="flex justify-between">
-              <div className="w-8 h-8 border-t-4 border-l-4 border-lime-400 rounded-tl-xl shadow-[0_0_15px_rgba(163,230,53,0.8)]" />
-              <div className="w-8 h-8 border-t-4 border-r-4 border-lime-400 rounded-tr-xl shadow-[0_0_15px_rgba(163,230,53,0.8)]" />
+              <div className="w-8 h-8 border-t-4 border-l-4 border-red-500 rounded-tl-xl shadow-[0_0_15px_rgba(212,36,38,0.8)]" />
+              <div className="w-8 h-8 border-t-4 border-r-4 border-red-500 rounded-tr-xl shadow-[0_0_15px_rgba(212,36,38,0.8)]" />
             </div>
 
             {/* Pulsing center guideline */}
-            <div className="w-full text-center py-2 bg-black/60 backdrop-blur-sm rounded-xl border border-lime-400/30 mx-auto max-w-[280px]">
-              <span className="text-[11px] font-bold text-lime-400 tracking-wide">
+            <div className="w-full text-center py-2 bg-black/60 backdrop-blur-sm rounded-xl border border-red-500/30 mx-auto max-w-[280px]">
+              <span className="text-[11px] font-bold text-red-400 tracking-wide">
                 Centra el código QR en este cuadro
               </span>
             </div>
 
             {/* Bottom Corners */}
             <div className="flex justify-between">
-              <div className="w-8 h-8 border-b-4 border-l-4 border-lime-400 rounded-bl-xl shadow-[0_0_15px_rgba(163,230,53,0.8)]" />
-              <div className="w-8 h-8 border-b-4 border-r-4 border-lime-400 rounded-br-xl shadow-[0_0_15px_rgba(163,230,53,0.8)]" />
+              <div className="w-8 h-8 border-b-4 border-l-4 border-red-500 rounded-bl-xl shadow-[0_0_15px_rgba(212,36,38,0.8)]" />
+              <div className="w-8 h-8 border-b-4 border-r-4 border-red-500 rounded-br-xl shadow-[0_0_15px_rgba(212,36,38,0.8)]" />
             </div>
           </div>
 
           {successScanned && (
-            <div className="absolute inset-0 bg-lime-950/95 flex flex-col items-center justify-center text-lime-400 p-6 text-center z-30">
-              <CheckCircle2 className="w-20 h-20 mb-2 animate-bounce text-lime-400" />
+            <div className="absolute inset-0 bg-red-950/95 flex flex-col items-center justify-center text-red-400 p-6 text-center z-30">
+              <CheckCircle2 className="w-20 h-20 mb-2 animate-bounce text-red-400" />
               <span className="font-bebas text-3xl text-white">¡Código QR Detectado!</span>
-              <span className="text-sm text-lime-300 font-semibold mt-1">Registrando entrega de kit en tiempo real...</span>
+              <span className="text-sm text-red-300 font-semibold mt-1">Registrando entrega de kit en tiempo real...</span>
             </div>
           )}
 
@@ -186,7 +186,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
               <AlertCircle className="w-10 h-10 text-amber-400 mb-2" />
               <p className="mb-2 text-neutral-300 font-medium">{cameraError}</p>
               {allowManualInput && (
-                <span className="text-xs text-lime-400 font-bold">
+                <span className="text-xs text-red-400 font-bold">
                   Puedes ingresar el número de DNI manualmente abajo:
                 </span>
               )}
@@ -206,20 +206,18 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value)}
                 placeholder="Ej: 47605471 o OHA-2026-0003"
-                className="flex-1 bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-lime-400"
+                className="flex-1 bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2 text-white text-xs focus:outline-none focus:border-red-500"
               />
               <button
                 type="submit"
                 disabled={!manualCode.trim()}
-                className="px-4 py-2 bg-lime-400 hover:bg-lime-300 disabled:opacity-50 text-black font-bebas text-base uppercase rounded-xl transition cursor-pointer"
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bebas text-base uppercase rounded-xl transition cursor-pointer"
               >
                 Validar
               </button>
             </div>
           </form>
         )}
-
-
 
         {/* Bottom Back Button */}
         <div className="pt-3 border-t border-neutral-800 mt-2">
@@ -228,7 +226,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({
             onClick={onClose}
             className="w-full py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4 text-lime-400" />
+            <ArrowLeft className="w-4 h-4 text-red-400" />
             <span>← Volver y Cerrar Escáner</span>
           </button>
         </div>

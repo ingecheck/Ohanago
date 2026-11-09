@@ -90,11 +90,11 @@ export const CompetitorLoginModal: React.FC<CompetitorLoginModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-      <div className="relative w-full max-w-md bg-gradient-to-b from-neutral-950 via-purple-950/40 to-neutral-950 border-2 border-purple-500/50 rounded-3xl p-6 sm:p-8 shadow-[0_0_60px_rgba(168,85,247,0.25)]">
+      <div className="relative w-full max-w-md bg-gradient-to-b from-neutral-950 via-neutral-900 to-black border-2 border-red-500/50 rounded-3xl p-6 sm:p-8 shadow-[0_0_60px_rgba(239,68,68,0.25)]">
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-white bg-neutral-800/80 rounded-full transition cursor-pointer hover:border-lime-400 border border-neutral-700"
+          className="absolute top-4 right-4 p-2 text-neutral-400 hover:text-white bg-neutral-900 rounded-full transition cursor-pointer hover:border-red-400 border border-neutral-800"
           title="Cerrar y volver a la página de inicio"
         >
           <X className="w-5 h-5" />
@@ -102,14 +102,14 @@ export const CompetitorLoginModal: React.FC<CompetitorLoginModalProps> = ({
 
         {/* Modal Header */}
         <div className="text-center mb-6">
-          <div className="w-16 h-16 mx-auto rounded-3xl bg-gradient-to-br from-purple-600 to-indigo-700 text-white flex items-center justify-center mb-3 shadow-xl shadow-purple-600/30 border border-purple-400/40 text-3xl">
+          <div className="w-16 h-16 mx-auto rounded-3xl bg-gradient-to-br from-red-600 to-rose-700 text-white flex items-center justify-center mb-3 shadow-xl shadow-red-600/30 border border-red-400/40 text-3xl">
             🎒
           </div>
-          <span className="text-[10px] font-black uppercase tracking-wider text-purple-300 bg-purple-900/60 px-3 py-1 rounded-full border border-purple-500/40 inline-block mb-1.5">
+          <span className="text-[10px] font-black uppercase tracking-wider text-red-300 bg-red-950/60 px-3 py-1 rounded-full border border-red-500/40 inline-block mb-1.5">
             Portal del Atleta Oficial
           </span>
           <h3 className="font-bebas text-3xl sm:text-4xl text-white tracking-wider uppercase leading-none">
-            Mi Espacio <span className="text-lime-400">OHANA GO</span>
+            Mi Espacio <span className="text-red-500">OHANA GO</span>
           </h3>
           <p className="text-xs text-neutral-300 mt-2">
             Ingresa tu número de DNI para acceder a tu pase digital oficial, credencial y validación de asistencia en partida.
@@ -128,10 +128,10 @@ export const CompetitorLoginModal: React.FC<CompetitorLoginModalProps> = ({
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-neutral-300 mb-1.5 flex items-center justify-between">
               <span>Número de DNI</span>
-              <span className="text-[10px] text-lime-400 font-semibold lowercase">8 dígitos</span>
+              <span className="text-[10px] text-amber-400 font-semibold lowercase">8 dígitos</span>
             </label>
             <div className="relative">
-              <User className="w-4 h-4 text-purple-400 absolute left-3.5 top-3.5" />
+              <User className="w-4 h-4 text-red-400 absolute left-3.5 top-3.5" />
               <input
                 type="tel"
                 inputMode="numeric"
@@ -143,7 +143,7 @@ export const CompetitorLoginModal: React.FC<CompetitorLoginModalProps> = ({
                   if (errorMessage) setErrorMessage('');
                 }}
                 placeholder="Ingresa tu DNI (Ej: 47605471)"
-                className="w-full pl-10 pr-4 py-3 bg-neutral-950 border border-purple-500/40 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-lime-400 focus:ring-1 focus:ring-lime-400 transition text-sm font-semibold tracking-wider font-mono"
+                className="w-full pl-10 pr-4 py-3 bg-neutral-950 border border-neutral-800 rounded-xl text-white placeholder-neutral-500 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500 transition text-sm font-semibold tracking-wider font-mono"
               />
             </div>
             <p className="text-[11px] text-neutral-400 mt-1.5">
@@ -154,7 +154,7 @@ export const CompetitorLoginModal: React.FC<CompetitorLoginModalProps> = ({
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3.5 bg-lime-400 hover:bg-lime-300 disabled:opacity-50 text-black font-bebas text-xl uppercase tracking-wider rounded-xl transition shadow-lg shadow-lime-400/20 flex items-center justify-center gap-2 cursor-pointer mt-2"
+            className="w-full py-3.5 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-bebas text-xl uppercase tracking-wider rounded-xl transition shadow-lg shadow-red-600/30 flex items-center justify-center gap-2 cursor-pointer mt-2 font-black"
           >
             {isLoading ? (
               <>

@@ -33,7 +33,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <nav className="sticky top-0 z-40 bg-[#070D14]/90 backdrop-blur-md border-b border-red-950/40 text-white">
+    <nav className="sticky top-0 z-40 bg-black/95 backdrop-blur-md border-b border-red-950/50 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         {/* Native Vector Brand Logo */}
         <div
@@ -87,7 +87,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {onOpenCompetitorLogin && (
             <button
               onClick={handleMiEspacioClick}
-              className="px-3.5 py-2 rounded-xl bg-slate-900 border border-red-500/40 hover:border-red-400 text-white hover:text-red-300 transition flex items-center gap-2 text-xs font-mono font-bold cursor-pointer shadow-sm hover:shadow-red-950/50"
+              className="px-3.5 py-2 rounded-xl bg-neutral-900 border border-red-500/40 hover:border-red-400 text-white hover:text-red-300 transition flex items-center gap-2 text-xs font-mono font-bold cursor-pointer shadow-sm hover:shadow-red-950/50"
             >
               <User className="w-4 h-4 text-amber-400" />
               <span>{loggedInCompetitorName ? `Mi Espacio (${loggedInCompetitorName.split(' ')[0]})` : 'Mi Espacio 🎒'}</span>
@@ -100,7 +100,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             target="_blank"
             rel="noopener noreferrer"
             title="Instagram Oficial @ohanago.peru"
-            className="px-3.5 py-2 rounded-xl bg-slate-900 border border-white/10 hover:border-red-400/50 text-white hover:text-red-400 transition flex items-center gap-2 text-xs font-mono font-bold"
+            className="px-3.5 py-2 rounded-xl bg-neutral-900 border border-neutral-800 hover:border-red-400/50 text-white hover:text-red-400 transition flex items-center gap-2 text-xs font-mono font-bold"
           >
             <Instagram className="w-4 h-4 text-rose-400" />
             <span>@ohanago.peru</span>
@@ -123,14 +123,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Instagram"
-            className="p-2 rounded-lg bg-slate-900 border border-white/10 text-rose-400"
+            className="p-2 rounded-lg bg-neutral-900 border border-neutral-800 text-rose-400"
           >
             <Instagram className="w-4 h-4" />
           </a>
 
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-neutral-400 hover:text-white rounded-lg bg-slate-900 border border-white/10"
+            className="p-2 text-neutral-400 hover:text-white rounded-lg bg-neutral-900 border border-neutral-800"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -139,7 +139,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-[#070D14] border-b border-red-950/60 px-4 py-5 space-y-3">
+        <div className="md:hidden bg-black border-b border-red-950/60 px-4 py-5 space-y-3">
           <button
             onClick={() => handleNavClick('inicio', 'Santa Run 2026')}
             className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-neutral-200 border-b border-white/5 flex items-center justify-between"
@@ -189,7 +189,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             href="https://www.instagram.com/ohanago.peru/"
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full p-2.5 rounded-xl bg-gradient-to-r from-red-950/60 via-slate-900 to-[#070D14] border border-red-500/30 text-white flex items-center justify-between text-xs font-bold"
+            className="w-full p-2.5 rounded-xl bg-gradient-to-r from-red-950/60 via-neutral-900 to-black border border-red-500/30 text-white flex items-center justify-between text-xs font-bold"
           >
             <span className="flex items-center gap-2">
               <Instagram className="w-4 h-4 text-rose-400" /> Instagram: @ohanago.peru

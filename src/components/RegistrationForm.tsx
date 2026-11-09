@@ -192,7 +192,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
   return (
     <section id="formulario-registro" className="py-12 sm:py-20 px-4 max-w-4xl mx-auto scroll-mt-20">
-      <div className="relative overflow-hidden bg-gradient-to-b from-[#0B131E] via-[#0D1624] to-[#070D14] border-2 border-red-500/40 rounded-3xl p-6 sm:p-10 md:p-12 shadow-[0_20px_70px_rgba(212,36,38,0.22)] backdrop-blur-xl">
+      <div className="relative overflow-hidden bg-gradient-to-b from-neutral-950 via-black to-neutral-950 border-2 border-red-500/40 rounded-3xl p-6 sm:p-10 md:p-12 shadow-[0_20px_70px_rgba(212,36,38,0.25)] backdrop-blur-xl">
         {/* Glow ambient background */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-red-600/10 rounded-full blur-[140px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-amber-500/5 rounded-full blur-[140px] pointer-events-none" />
@@ -214,7 +214,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         </div>
 
         {/* Price & Discount Indicator */}
-        <div className="mb-8 p-4 rounded-2xl bg-slate-900/90 border border-red-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mb-8 p-4 rounded-2xl bg-neutral-900/90 border border-red-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 flex items-center justify-center shrink-0">
               <Gift className="w-6 h-6 text-amber-400" />
@@ -241,7 +241,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
             </div>
           ) : (
             <div className="text-xs text-neutral-400 font-mono text-center sm:text-right">
-              <span>¿Corriste en Halloween 5K? Ingresa tu DNI para validar tu 15% OFF</span>
+              <span>¿Corriste en ediciones previas? Ingresa tu DNI para validar tu 15% OFF</span>
             </div>
           )}
         </div>
@@ -276,7 +276,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="Ej: Rafael Carlos"
-                  className="w-full px-4 py-3 rounded-xl bg-slate-900/80 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition backdrop-blur-md"
+                  className="w-full px-4 py-3 rounded-xl bg-neutral-900 border border-neutral-800 text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition backdrop-blur-md"
                 />
               </div>
 
@@ -292,7 +292,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Ej: García Mendoza"
-                  className="w-full px-4 py-3 rounded-xl bg-slate-900/80 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition backdrop-blur-md"
+                  className="w-full px-4 py-3 rounded-xl bg-neutral-900 border border-neutral-800 text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition backdrop-blur-md"
                 />
               </div>
             </div>
@@ -307,7 +307,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   id="documentType"
                   value={documentType}
                   onChange={(e) => setDocumentType(e.target.value as DocumentType)}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-900/80 border border-slate-700/80 text-white text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition"
+                  className="w-full px-4 py-3 rounded-xl bg-neutral-900 border border-neutral-800 text-white text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition"
                 >
                   <option value="DNI">DNI</option>
                   <option value="Carnet de Extranjería">Carnet de Extranjería</option>
@@ -331,10 +331,10 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   value={documentNumber}
                   onChange={(e) => setDocumentNumber(e.target.value)}
                   placeholder="Ej: 47372037"
-                  className={`w-full px-4 py-3 rounded-xl bg-slate-900/80 border text-white placeholder-slate-500 text-sm focus:outline-none transition backdrop-blur-md ${
+                  className={`w-full px-4 py-3 rounded-xl bg-neutral-900 border text-white placeholder-neutral-500 text-sm focus:outline-none transition backdrop-blur-md ${
                     hasPreviousDiscount
                       ? 'border-amber-400 focus:ring-2 focus:ring-amber-400/20'
-                      : 'border-slate-700/80 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
+                      : 'border-neutral-800 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
                   }`}
                 />
               </div>
@@ -354,7 +354,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   value={whatsapp}
                   onChange={(e) => setWhatsapp(e.target.value)}
                   placeholder="9XXXXXXXX"
-                  className="w-full px-4 py-3 rounded-xl bg-slate-900/80 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition"
+                  className="w-full px-4 py-3 rounded-xl bg-neutral-900 border border-neutral-800 text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition"
                 />
               </div>
 
@@ -371,7 +371,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   value={age}
                   onChange={(e) => setAge(e.target.value ? Number(e.target.value) : '')}
                   placeholder="Ej: 28"
-                  className="w-full px-4 py-3 rounded-xl bg-slate-900/80 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition"
+                  className="w-full px-4 py-3 rounded-xl bg-neutral-900 border border-neutral-800 text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition"
                 />
               </div>
 
@@ -384,7 +384,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   id="tShirtSize"
                   value={tShirtSize}
                   onChange={(e) => setTShirtSize(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-900/80 border border-slate-700/80 text-white text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition font-bold"
+                  className="w-full px-4 py-3 rounded-xl bg-neutral-900 border border-neutral-800 text-white text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition font-bold"
                 >
                   <option value="S">S (Small)</option>
                   <option value="M">M (Medium)</option>
@@ -403,20 +403,20 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
               <span>2. Pago y Confirmación</span>
             </h3>
 
-            <div className="p-4 rounded-2xl bg-slate-950/80 border border-red-500/30 text-xs text-neutral-300 space-y-2">
+            <div className="p-4 rounded-2xl bg-black border border-red-500/30 text-xs text-neutral-300 space-y-2">
               <p className="font-bold text-white flex items-center justify-between">
                 <span>Canal de Pago Oficial:</span>
                 <span className="text-amber-400 font-mono text-sm">Monto a Pagar: S/ {finalPrice.toFixed(2)}</span>
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono text-neutral-400">
-                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                <div className="p-2.5 rounded-xl bg-neutral-950 border border-neutral-800">
                   <strong className="text-white block">Yape / Plin:</strong>
-                  <span className="text-emerald-400 font-bold text-sm block">902 227 356</span>
+                  <span className="text-red-400 font-bold text-sm block">902 227 356</span>
                   <span>Titular: OHANA GO RACING</span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                <div className="p-2.5 rounded-xl bg-neutral-950 border border-neutral-800">
                   <strong className="text-white block">WhatsApp de Coordinación:</strong>
-                  <span className="text-emerald-400 font-bold text-sm block">+51 902 227 356</span>
+                  <span className="text-red-400 font-bold text-sm block">+51 902 227 356</span>
                   <span>Envía tu constancia al instante</span>
                 </div>
               </div>
@@ -432,7 +432,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   id="paymentMethod"
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-900/80 border border-slate-700/80 text-white text-sm focus:outline-none focus:border-red-500 transition"
+                  className="w-full px-4 py-3 rounded-xl bg-neutral-900 border border-neutral-800 text-white text-sm focus:outline-none focus:border-red-500 transition"
                 >
                   <option value="Yape">Yape</option>
                   <option value="Plin">Plin</option>
@@ -454,7 +454,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   value={paymentReference}
                   onChange={(e) => setPaymentReference(e.target.value)}
                   placeholder="Ej: 198274 ó YAPE-01"
-                  className="w-full px-4 py-3 rounded-xl bg-slate-900/80 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition"
+                  className="w-full px-4 py-3 rounded-xl bg-neutral-900 border border-neutral-800 text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition"
                 />
               </div>
             </div>
@@ -462,7 +462,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
           {/* Section 3: Terms & Acceptance */}
           <div className="pt-2">
-            <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-950/60 border border-white/10 hover:border-white/20 transition cursor-pointer">
+            <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-black border border-neutral-800 hover:border-neutral-700 transition cursor-pointer">
               <input
                 type="checkbox"
                 name="disclaimerAccepted"
@@ -470,7 +470,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 required
                 checked={disclaimerAccepted}
                 onChange={(e) => setDisclaimerAccepted(e.target.checked)}
-                className="mt-1 w-4 h-4 rounded text-red-600 focus:ring-red-500 border-slate-700 bg-slate-900"
+                className="mt-1 w-4 h-4 rounded text-red-600 focus:ring-red-500 border-neutral-700 bg-neutral-900"
               />
               <span className="text-xs text-neutral-300 leading-relaxed">
                 Acepto el reglamento y deslinde de responsabilidad de <strong>SANTA RUN TARAPOTO 2026</strong>. Declaro encontrarme en condiciones físicas aptas para participar en la carrera este sábado 19 de diciembre.

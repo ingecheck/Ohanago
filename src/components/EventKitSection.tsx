@@ -31,21 +31,21 @@ export const EventKitSection: React.FC<EventKitSectionProps> = () => {
     {
       icon: Sparkles,
       title: 'Artículo Neón Glow',
-      badge: 'Brillo en la Noche',
-      color: 'from-lime-500/20 to-emerald-500/20',
-      borderColor: 'border-lime-500/40',
-      iconColor: 'text-lime-400',
-      description: 'Pulsera o accesorio de luz neón ultra brillante para iluminar las calles de Tarapoto durante los 5 kilómetros nocturnos.',
-      feature: 'Entrega en la Plaza de Armas desde las 5:30 PM (Concentración)'
+      badge: 'Brillo Navideño',
+      color: 'from-red-500/20 to-rose-500/20',
+      borderColor: 'border-red-500/40',
+      iconColor: 'text-red-400',
+      description: 'Gorra navideña o accesorio reflectivo para iluminar las calles de Tarapoto durante la carrera solidaria.',
+      feature: 'Entrega oficial junto al kit del corredor'
     },
     {
       icon: Gift,
       title: 'Sorteos en la Llegada',
-      badge: 'Entre Jarras',
-      color: 'from-purple-500/20 to-fuchsia-500/20',
-      borderColor: 'border-purple-500/40',
-      iconColor: 'text-purple-400',
-      description: 'Sorteos con tu código de inscripción en la llegada de Entre Jarras (Jr. Lima cda. 13) y premiación al mejor disfraz de Halloween.',
+      badge: 'Concha Acústica',
+      color: 'from-amber-500/20 to-orange-500/20',
+      borderColor: 'border-amber-500/40',
+      iconColor: 'text-amber-400',
+      description: 'Sorteos con tu código de inscripción en la llegada de la Concha Acústica incluyendo sorteo de pavo navideño.',
       feature: 'Participas automáticamente con tu código de registro'
     }
   ];
@@ -55,10 +55,10 @@ export const EventKitSection: React.FC<EventKitSectionProps> = () => {
       {/* Section Header */}
       <div className="text-center max-w-3xl mx-auto mb-8">
         <h2 className="font-bebas text-4xl sm:text-5xl md:text-6xl text-white tracking-wider uppercase">
-          Tu Inscripción <span className="text-lime-400 text-glow-lime">Incluye</span>
+          Tu Inscripción <span className="text-red-500">Incluye</span>
         </h2>
         <p className="text-neutral-400 text-sm md:text-base mt-2">
-          Todo lo necesario para participar en la carrera nocturna 5K de Tarapoto el 31 de Octubre.
+          Todo lo necesario para participar en la carrera solidaria Santa Run 5K de Tarapoto el 19 de Diciembre.
         </p>
       </div>
 
@@ -80,7 +80,7 @@ export const EventKitSection: React.FC<EventKitSectionProps> = () => {
                     <h3 className="font-bebas text-2xl text-white tracking-wide uppercase">
                       {item.title}
                     </h3>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-lime-400 bg-lime-950/50 px-2 py-0.5 rounded border border-lime-500/30">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-red-400 bg-red-950/50 px-2 py-0.5 rounded border border-red-500/30">
                       {item.badge}
                     </span>
                   </div>
@@ -95,7 +95,7 @@ export const EventKitSection: React.FC<EventKitSectionProps> = () => {
                 <span className="text-neutral-300 font-medium">
                   ✓ {item.feature}
                 </span>
-                <span className="text-lime-400 font-bold uppercase text-[11px]">
+                <span className="text-red-400 font-bold uppercase text-[11px]">
                   Incluido
                 </span>
               </div>
