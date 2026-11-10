@@ -40,6 +40,12 @@ export const UpcomingRaceTeaser: React.FC<UpcomingRaceTeaserProps> = ({
       badge: 'Oficial Evento',
     },
     {
+      icon: CheckCircle2,
+      name: 'Pulsera Oficial',
+      desc: 'Identificación oficial del atleta para control en Aviación y meta.',
+      badge: 'Acceso Oficial',
+    },
+    {
       icon: Gift,
       name: 'Sorteo de un Pavo Navideño',
       desc: 'Participas automáticamente con tu número de inscripción oficial.',
@@ -134,11 +140,11 @@ export const UpcomingRaceTeaser: React.FC<UpcomingRaceTeaserProps> = ({
           </div>
 
           {/* Official Kit & Pricing Image Banner */}
-          <div className="rounded-3xl overflow-hidden border border-red-500/30 shadow-2xl relative max-w-3xl mx-auto mb-8 group">
+          <div className="rounded-3xl overflow-hidden border border-red-500/30 shadow-2xl relative max-w-2xl mx-auto mb-8 group">
             <img
-              src="/assets/aistudio/santa_run_kit_pricing.jpeg"
+              src="/assets/aistudio/OHANA_GO_PRINCIPAL_3d791120.jpeg"
               alt="Tu Kit Oficial Santa Run Tarapoto 2026 - S/ 70.00"
-              className="w-full h-auto object-cover group-hover:scale-[1.01] transition-transform duration-700"
+              className="w-full h-auto object-cover group-hover:scale-[1.01] transition-transform duration-700 rounded-3xl"
             />
           </div>
 

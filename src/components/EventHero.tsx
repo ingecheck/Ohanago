@@ -40,14 +40,21 @@ export const EventHero: React.FC<EventHeroProps> = ({
 
         {/* Narrative & Slogan */}
         <div className="max-w-3xl mx-auto space-y-3 mb-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-xs font-mono text-neutral-300">
+            <span>EN ALIANZA ESTRATÉGICA CON:</span>
+            <span className="font-bold text-white bg-gradient-to-r from-blue-400 via-amber-300 to-red-400 bg-clip-text text-transparent uppercase tracking-wider">
+              Master Ulala
+            </span>
+          </div>
+
           <h1 className="font-bebas text-4xl sm:text-6xl md:text-7xl text-white tracking-wide uppercase leading-none drop-shadow-xl">
-            SANTA RUN <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-400 to-amber-300">TARAPOTO 2026</span>
+            SANTA RUN <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-400 to-amber-300">TARAPOTO 2026 · 6K</span>
           </h1>
           <p className="font-bebas text-xl sm:text-2xl text-red-400 uppercase tracking-wider flex items-center justify-center gap-2">
             <span>❤️ Corre y regala Sonrisas</span>
           </p>
           <p className="text-sm sm:text-base text-neutral-300 leading-relaxed max-w-2xl mx-auto font-sans">
-            La marea roja se apodera del asfalto nocturno de Tarapoto este fin de año. Una fiesta deportiva, familiar y solidaria con gorros de Santa, medalla conmemorativa, kit completo y sorteo de pavo navideño.
+            La marea roja se apodera del asfalto nocturno de Tarapoto este fin de año en un circuito oficial de <strong>6K</strong>. Una fiesta deportiva, familiar y solidaria con gorros de Santa, medalla conmemorativa, kit oficial completo y sorteo de pavo navideño.
           </p>
         </div>
 
@@ -73,8 +80,8 @@ export const EventHero: React.FC<EventHeroProps> = ({
             <span className="text-[10px] font-mono uppercase text-rose-400 font-bold block flex items-center gap-1.5 mb-1">
               <MapPin className="w-3.5 h-3.5 text-rose-400" /> Partida
             </span>
-            <span className="font-bebas text-lg sm:text-xl text-white block leading-tight truncate">Parque Aviación</span>
-            <span className="text-[11px] text-neutral-400">Av. Aviación</span>
+            <span className="font-bebas text-lg sm:text-xl text-white block leading-tight truncate">Aviación</span>
+            <span className="text-[11px] text-neutral-400">Partida Oficial</span>
           </div>
 
           <div className="bg-neutral-950/80 border border-neutral-800/90 rounded-2xl p-3.5 backdrop-blur-md transition hover:border-red-500/50">

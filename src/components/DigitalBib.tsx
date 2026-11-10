@@ -42,9 +42,9 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({
       `DNI: ${registration.documentNumber}\n` +
       `Fecha: Sábado 19 de Diciembre 2026\n` +
       `Horario: 7:00 P.M. (Partida Nocturna)\n` +
-      `Partida: Parque de la Av. Aviación\n` +
+      `Partida: Aviación\n` +
       `Llegada: Concha Acústica\n` +
-      `Kit Incluido: Medalla Finisher + Polo Oficial + Gorro Santa + Mochila + Sorteo de Pavo 🦃\n\n` +
+      `Kit Incluido: Medalla Finisher Oficial 6K + Polo Oficial + Gorra Santa + Mochila + Pulsera + Sorteo de Pavo 🦃\n\n` +
       `Consulta tu pase oficial en: https://ohanago.pro`
     );
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
@@ -129,7 +129,7 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({
         <div className="space-y-2 mb-4 text-xs text-neutral-300 bg-slate-950/70 p-3 rounded-2xl border border-white/10">
           <div className="flex items-center justify-between">
             <span className="text-neutral-400">Partida:</span>
-            <span className="text-white font-bold">Parque de la Av. Aviación (7:00 PM)</span>
+            <span className="text-white font-bold">Aviación (7:00 PM)</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-neutral-400">Llegada:</span>
@@ -142,26 +142,30 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({
         </div>
 
         {/* Included benefits icons bar */}
-        <div className="grid grid-cols-5 gap-1 py-2 text-center text-[9px] text-neutral-300 border-t border-white/10">
+        <div className="grid grid-cols-6 gap-1 py-2 text-center text-[8px] text-neutral-300 border-t border-white/10">
           <div className="flex flex-col items-center">
-            <Award className="w-4 h-4 text-amber-400 mb-0.5" />
+            <Award className="w-3.5 h-3.5 text-amber-400 mb-0.5" />
             <span>Medalla</span>
           </div>
           <div className="flex flex-col items-center">
-            <Droplets className="w-4 h-4 text-cyan-400 mb-0.5" />
+            <Droplets className="w-3.5 h-3.5 text-cyan-400 mb-0.5" />
             <span>Hidratación</span>
           </div>
           <div className="flex flex-col items-center">
-            <Shirt className="w-4 h-4 text-red-400 mb-0.5" />
-            <span>Polo Oficial</span>
+            <Shirt className="w-3.5 h-3.5 text-red-400 mb-0.5" />
+            <span>Polo</span>
           </div>
           <div className="flex flex-col items-center">
-            <Sparkles className="w-4 h-4 text-rose-400 mb-0.5" />
-            <span>Gorro Santa</span>
+            <Sparkles className="w-3.5 h-3.5 text-rose-400 mb-0.5" />
+            <span>Gorro</span>
           </div>
           <div className="flex flex-col items-center">
-            <ShoppingBag className="w-4 h-4 text-emerald-400 mb-0.5" />
+            <ShoppingBag className="w-3.5 h-3.5 text-emerald-400 mb-0.5" />
             <span>Mochila</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <CheckCircle2 className="w-3.5 h-3.5 text-amber-300 mb-0.5" />
+            <span>Pulsera</span>
           </div>
         </div>
 
@@ -172,7 +176,7 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({
               Válido para Acreditación & Kit
             </span>
             <span className="text-[9px] text-neutral-400">
-              Presenta este pase el día de la carrera
+              Escanea este QR con el personal en Aviación
             </span>
           </div>
           <div className="w-12 h-12 bg-white text-black rounded-xl p-0.5 flex items-center justify-center overflow-hidden border border-red-500/50 shadow-sm">

@@ -38,6 +38,7 @@ export interface RunnerRegistration {
   paymentMethod: PaymentMethod;
   paymentReference: string;
   paymentProofImage?: string; // base64 string
+  voucherUrl?: string; // URL pública del archivo en disco o nube
   paymentStatus: PaymentStatus;
   createdAt: string;
   disclaimerAccepted: boolean;

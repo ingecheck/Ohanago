@@ -311,8 +311,9 @@ export const SantaRunRegistrationModal: React.FC<SantaRunRegistrationModalProps>
             </div>
 
             <div className="text-xs text-neutral-400 space-y-1 pt-2 border-t border-neutral-800/80">
-              <p>• <strong>Yape / Plin / Transferencia</strong> al WhatsApp oficial: <strong className="text-white">+51 902 227 356</strong></p>
-              <p>• Titular: <strong>Ohana Go & Master Ulala</strong></p>
+              <p>• <strong className="text-emerald-400">Yape Oficial (Solo Yape):</strong> <strong className="text-white font-mono text-sm">963 408 328</strong></p>
+              <p>• Titular: <strong className="text-white">GISELA SANTA CRUZ</strong></p>
+              <p>• Coordinación WhatsApp: <strong className="text-red-400 font-mono">+51 902 227 356</strong></p>
             </div>
 
             <div>
@@ -333,7 +334,7 @@ export const SantaRunRegistrationModal: React.FC<SantaRunRegistrationModalProps>
           <div className="p-3 rounded-xl bg-red-950/40 border border-red-900/50 text-[11px] text-neutral-300 flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
             <span>
-              Incluye Medalla Finisher, Polo Dry-Fit, Gorra Navideña, Mochila, Hidratación y tu Ticket Oficial para el <strong>Sorteo del Pavo</strong> en la Concha Acústica.
+              Incluye Medalla Finisher Oficial 6K, Polo Dry-Fit, Gorra Navideña, Mochila, Pulsera Oficial, Hidratación y tu Ticket Oficial para el <strong>Sorteo del Pavo</strong> en la Concha Acústica.
             </span>
           </div>
 

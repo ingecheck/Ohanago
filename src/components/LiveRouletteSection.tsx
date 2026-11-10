@@ -262,13 +262,13 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
 
   if (state && state.isActive === false && !isAdmin) {
     return (
-      <section id="ruleta-sorteo" className="py-8 px-4 bg-neutral-950/90 border-y border-purple-500/30 text-center">
+      <section id="ruleta-sorteo" className="py-8 px-4 bg-neutral-950/90 border-y border-red-500/30 text-center">
         <div className="max-w-xl mx-auto p-5 rounded-3xl bg-neutral-900 border border-neutral-800 space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/10 text-amber-400 border border-amber-400/30 text-xs font-bold font-mono">
             <span>🎡 Ruleta Oficial 5K • 22 Sorteos (266 Tickets)</span>
           </div>
           <h3 className="font-bebas text-2xl text-white uppercase tracking-wider">
-            Sorteos en Vivo • Meta Entre Jarras
+            Sorteos en Vivo • Concha Acústica de Tarapoto
           </h3>
           <p className="text-xs text-neutral-400">
             La ruleta se activará automáticamente en tu pantalla cuando el organizador inicie el sorteo. ¡Conexión en vivo activa sin necesidad de actualizar la página!
@@ -281,9 +281,9 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
 
 
   return (
-    <section id="ruleta-sorteo" className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-neutral-950 via-purple-950/40 to-neutral-950 relative overflow-hidden border-y-2 border-lime-400/50">
+    <section id="ruleta-sorteo" className="py-12 sm:py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-neutral-950 via-red-950/40 to-neutral-950 relative overflow-hidden border-y-2 border-amber-400/50">
       {/* Background Neon Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-600/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-600/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute top-1/3 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-lime-400/10 rounded-full blur-2xl pointer-events-none" />
 
       <div className="max-w-6xl mx-auto relative z-10 space-y-8">
@@ -303,7 +303,7 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
-            <span className="px-3.5 py-1 rounded-xl bg-purple-950/80 border border-purple-500/50 text-purple-200 text-xs font-bold font-mono">
+            <span className="px-3.5 py-1 rounded-xl bg-red-950/80 border border-red-500/50 text-red-200 text-xs font-bold font-mono">
               {state.currentDrawNumber <= 22 ? `Sorteo #${state.currentDrawNumber} de 22` : '¡22 Sorteos Concluidos!'}
             </span>
 
@@ -331,7 +331,7 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
         </div>
 
         {/* Current Prize Banner */}
-        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-amber-950/60 via-neutral-900 to-purple-950/60 border border-amber-500/40 shadow-xl max-w-2xl mx-auto text-center">
+        <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-amber-950/60 via-neutral-900 to-red-950/60 border border-amber-500/40 shadow-xl max-w-2xl mx-auto text-center">
           <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 block mb-0.5">
             🎁 Premio En Disputa
           </span>
@@ -465,7 +465,7 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
           </div>
 
           {/* Real-time Status Card & Winner Announcement */}
-          <div className="w-full max-w-md bg-neutral-900/90 border-2 border-purple-500/40 rounded-3xl p-6 shadow-2xl space-y-4">
+          <div className="w-full max-w-md bg-neutral-900/90 border-2 border-red-500/40 rounded-3xl p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
               <div className="flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-amber-400" />
@@ -480,12 +480,12 @@ export const LiveRouletteSection: React.FC<LiveRouletteSectionProps> = ({
 
             {/* Live Animation Indicator */}
             {isAnimating ? (
-              <div className="p-4 rounded-2xl bg-purple-950/80 border border-purple-500/50 text-center space-y-2 animate-pulse">
-                <div className="w-10 h-10 rounded-full border-3 border-lime-400 border-t-transparent animate-spin mx-auto" />
+              <div className="p-4 rounded-2xl bg-red-950/80 border border-red-500/50 text-center space-y-2 animate-pulse">
+                <div className="w-10 h-10 rounded-full border-3 border-amber-400 border-t-transparent animate-spin mx-auto" />
                 <h5 className="font-bebas text-2xl text-white tracking-wide uppercase">
                   ¡La Ruleta está girando en vivo!
                 </h5>
-                <p className="text-xs text-purple-200">
+                <p className="text-xs text-red-200">
                   Determinando al ganador entre los <strong>266 tickets</strong> para el <strong>{state.currentPrizeName}</strong>...
                 </p>
               </div>

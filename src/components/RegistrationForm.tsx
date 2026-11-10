@@ -17,7 +17,13 @@ import {
   Loader2,
   Check,
   Percent,
-  ChevronDown
+  ChevronDown,
+  Upload,
+  Image as ImageIcon,
+  FileText,
+  X,
+  Lock,
+  Eye
 } from 'lucide-react';
 import { RunnerRegistration, DocumentType, Gender, PaymentMethod } from '../types/race';
 import { getStoredRegistrations } from '../data/initialRegistrations';
@@ -48,6 +54,77 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Yape');
   const [paymentReference, setPaymentReference] = useState('');
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
+
+  // Voucher upload states (100% Optional)
+  const [voucherPreview, setVoucherPreview] = useState<string | null>(null);
+  const [voucherFileName, setVoucherFileName] = useState<string>('');
+  const [voucherFileSize, setVoucherFileSize] = useState<string>('');
+  const [isCompressingVoucher, setIsCompressingVoucher] = useState(false);
+  const [showVoucherModal, setShowVoucherModal] = useState(false);
+
+  const processVoucherFile = (file: File) => {
+    setVoucherFileName(file.name);
+    const sizeKb = Math.round(file.size / 1024);
+    setVoucherFileSize(sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`);
+    setIsCompressingVoucher(true);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const rawData = event.target?.result as string;
+      if (file.type.startsWith('image/')) {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 1200;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressed = canvas.toDataURL('image/jpeg', 0.82);
+            setVoucherPreview(compressed);
+            setIsCompressingVoucher(false);
+            return;
+          }
+          setVoucherPreview(rawData);
+          setIsCompressingVoucher(false);
+        };
+        img.onerror = () => {
+          setVoucherPreview(rawData);
+          setIsCompressingVoucher(false);
+        };
+        img.src = rawData;
+      } else {
+        setVoucherPreview(rawData);
+        setIsCompressingVoucher(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleVoucherChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processVoucherFile(file);
+    }
+  };
+
+  const handleRemoveVoucher = () => {
+    setVoucherPreview(null);
+    setVoucherFileName('');
+    setVoucherFileSize('');
+  };
 
   // Discount detection
   const [hasPreviousDiscount, setHasPreviousDiscount] = useState(false);
@@ -109,14 +186,16 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
     const now = new Date().toISOString();
     const stored = getStoredRegistrations();
-    const nextBib = stored.length > 0
-      ? Math.max(...stored.map((r) => r.registrationNumber || r.bibNumber || 0)) + 1
+    const santaList = stored.filter((r) => r.edition === 'santa-run-2026' || r.id?.startsWith('SR-'));
+    const nextSantaNum = santaList.length > 0
+      ? Math.max(...santaList.map((r) => r.registrationNumber || 0)) + 1
       : 1;
 
     const newRunner: RunnerRegistration = {
-      id: `OHA-2026-${String(nextBib).padStart(4, '0')}`,
-      registrationNumber: nextBib,
-      bibNumber: nextBib,
+      id: `SR-2026-${String(nextSantaNum).padStart(4, '0')}`,
+      edition: 'santa-run-2026',
+      registrationNumber: nextSantaNum,
+      bibNumber: nextSantaNum,
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       documentType,
@@ -130,12 +209,17 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       district: 'Tarapoto',
       runningClub: 'Santa Run Club',
       tShirtSize,
+      amountPaid: finalPrice,
+      hasPreviousDiscount,
+      turkeyRaffleTicket: `PAVO-${String(nextSantaNum).padStart(4, '0')}`,
       emergencyContactName: emergencyContactName.trim() || 'Contacto de Emergencia',
       emergencyContactPhone: emergencyContactPhone.trim() || whatsapp.trim(),
       willWearCostume: true,
-      costumeName: 'Santa Claus / Navideño',
-      paymentMethod,
-      paymentReference: paymentReference.trim() || `PAGO-SANTA-${Date.now().toString().slice(-4)}`,
+      costumeName: 'Gorra Navideña Santa',
+      paymentMethod: 'Yape',
+      paymentReference: paymentReference.trim() || `YAPE-SANTA-${Date.now().toString().slice(-4)}`,
+      paymentProofImage: voucherPreview || undefined,
+      voucherUrl: voucherPreview || undefined,
       paymentStatus: 'Verificado',
       createdAt: now,
       disclaimerAccepted: true,
@@ -417,14 +501,14 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] font-mono text-neutral-400">
                 <div className="p-2.5 rounded-xl bg-neutral-950 border border-neutral-800">
-                  <strong className="text-white block">Yape / Plin:</strong>
-                  <span className="text-red-400 font-bold text-sm block">902 227 356</span>
-                  <span>Titular: OHANA GO RACING</span>
+                  <strong className="text-white block">Yape Oficial (Solo Yape):</strong>
+                  <span className="text-emerald-400 font-bold text-base block font-mono">963 408 328</span>
+                  <span className="text-neutral-200 font-bold">Titular: GISELA SANTA CRUZ</span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-neutral-950 border border-neutral-800">
                   <strong className="text-white block">WhatsApp de Coordinación:</strong>
-                  <span className="text-red-400 font-bold text-sm block">+51 902 227 356</span>
-                  <span>Envía tu constancia al instante</span>
+                  <span className="text-red-400 font-bold text-base block font-mono">+51 902 227 356</span>
+                  <span className="text-neutral-400">Solo coordinaciones y consultas de la carrera</span>
                 </div>
               </div>
             </div>
@@ -434,36 +518,152 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 <label className="block text-xs font-mono text-neutral-300 uppercase mb-1.5 font-bold">
                   Método Utilizado
                 </label>
-                <select
-                  name="paymentMethod"
-                  id="paymentMethod"
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                  className="w-full px-4 py-3 rounded-xl bg-neutral-900 border border-neutral-800 text-white text-sm focus:outline-none focus:border-red-500 transition"
-                >
-                  <option value="Yape">Yape</option>
-                  <option value="Plin">Plin</option>
-                  <option value="Transferencia BCP">Transferencia BCP</option>
-                  <option value="Transferencia BBVA">Transferencia BBVA</option>
-                  <option value="Efectivo / Presencial">Efectivo / Presencial</option>
-                </select>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value="Yape"
+                    readOnly
+                    disabled
+                    className="w-full px-4 py-3 rounded-xl bg-neutral-950 border border-neutral-700 text-white font-mono font-bold text-sm cursor-not-allowed select-none shadow-inner"
+                  />
+                  <div className="absolute right-3.5 top-3 flex items-center gap-1.5 text-emerald-400 text-xs font-bold font-mono">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>Yape</span>
+                  </div>
+                </div>
+                <span className="text-[10px] text-neutral-400 mt-1 block font-sans">
+                  El pago oficial es solo por Yape al <strong>963 408 328</strong> a nombre de <strong>GISELA SANTA CRUZ</strong>.
+                </span>
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-neutral-300 uppercase mb-1.5 font-bold">
-                  N° de Operación o Ref. de Pago *
+                <label className="block text-xs font-mono text-neutral-300 uppercase mb-1.5 font-bold flex items-center justify-between">
+                  <span>N° de Operación o Ref. de Pago</span>
+                  <span className="text-[10px] text-emerald-400 font-mono font-bold">Opcional</span>
                 </label>
                 <input
                   type="text"
                   name="paymentReference"
                   id="paymentReference"
-                  required
                   value={paymentReference}
                   onChange={(e) => setPaymentReference(e.target.value)}
-                  placeholder="Ej: 198274 ó YAPE-01"
+                  placeholder="Ej: 198274 ó Constancia Yape"
                   className="w-full px-4 py-3 rounded-xl bg-neutral-900 border border-neutral-800 text-white placeholder-neutral-500 text-sm focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition"
                 />
+                <span className="text-[10px] text-neutral-400 mt-1 block font-sans">
+                  Si no tienes el código a mano, puedes dejarlo vacío o adjuntar tu captura abajo.
+                </span>
               </div>
+            </div>
+
+            {/* Upload Voucher / Constancia de Pago (100% Opcional) */}
+            <div className="pt-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-mono text-neutral-200 uppercase font-bold flex items-center gap-2">
+                  <Upload className="w-4 h-4 text-red-400" />
+                  <span>Adjuntar Voucher / Constancia de Pago Yape</span>
+                </label>
+                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-400 border border-emerald-500/40">
+                  Opcional
+                </span>
+              </div>
+              <p className="text-xs text-neutral-400 leading-relaxed font-sans">
+                Puedes adjuntar la captura de pantalla o foto de tu constancia de Yape. Si prefieres pagar después o coordinar por WhatsApp al <strong>902 227 356</strong>, puedes dejarlo vacío y continuar tu inscripción sin problema.
+              </p>
+
+              {!voucherPreview ? (
+                <label className="relative border-2 border-dashed border-neutral-700 hover:border-red-500/80 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 cursor-pointer bg-neutral-950/70 hover:bg-neutral-900 transition-all group shadow-inner">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 group-hover:scale-105 transition shrink-0">
+                      <ImageIcon className="w-6 h-6 text-red-400" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-white block group-hover:text-red-300 transition">
+                        {isCompressingVoucher ? 'Procesando comprobante...' : 'Subir captura o foto del voucher Yape'}
+                      </span>
+                      <span className="text-[11px] text-neutral-400 block mt-0.5">
+                        Formatos: JPG, PNG, WEBP o PDF • Se guarda automáticamente con tu inscripción
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="px-4 py-2 rounded-xl bg-neutral-800 text-neutral-200 text-xs font-bold group-hover:bg-red-600 group-hover:text-white transition shadow-sm">
+                      {isCompressingVoucher ? 'Cargando...' : 'Examinar Archivo'}
+                    </span>
+                  </div>
+
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={handleVoucherChange}
+                    disabled={isCompressingVoucher}
+                    className="hidden"
+                  />
+                </label>
+              ) : (
+                <div className="p-3.5 rounded-2xl bg-neutral-900 border-2 border-emerald-500/40 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    {voucherPreview.startsWith('data:image/') ? (
+                      <div
+                        onClick={() => setShowVoucherModal(true)}
+                        className="relative w-14 h-14 rounded-xl overflow-hidden border border-emerald-500/40 shrink-0 cursor-pointer group"
+                        title="Clic para ampliar voucher"
+                      >
+                        <img
+                          src={voucherPreview}
+                          alt="Voucher Yape"
+                          className="w-full h-full object-cover group-hover:scale-110 transition"
+                        />
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                          <Eye className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-14 h-14 rounded-xl bg-neutral-950 border border-neutral-700 flex items-center justify-center text-red-400 shrink-0">
+                        <FileText className="w-7 h-7 text-amber-400" />
+                      </div>
+                    )}
+
+                    <div className="truncate">
+                      <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-bold">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>Voucher Yape adjuntado con éxito</span>
+                      </div>
+                      <span className="text-xs text-white font-mono block truncate max-w-[240px]">
+                        {voucherFileName || 'comprobante_yape.jpg'}
+                      </span>
+                      {voucherFileSize && (
+                        <span className="text-[10px] text-neutral-400 block font-mono">
+                          Tamaño: {voucherFileSize}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+                    {voucherPreview.startsWith('data:image/') && (
+                      <button
+                        type="button"
+                        onClick={() => setShowVoucherModal(true)}
+                        className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-neutral-300" />
+                        <span>Ver Voucher</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleRemoveVoucher}
+                      className="px-3 py-1.5 rounded-xl bg-red-950/80 hover:bg-red-900 text-red-300 text-xs font-bold border border-red-500/40 transition flex items-center gap-1 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5 text-red-400" />
+                      <span>Quitar</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -510,16 +710,56 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         {/* Existing Runners Mi Espacio Quick Access */}
         {onOpenCompetitorLogin && (
           <div className="mt-8 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-neutral-400">
-            <span>¿Ya te inscribiste? Consulta tu pase digital:</span>
+            <span>¿Ya te inscribiste? Escanea tu QR con el personal:</span>
             <button
               onClick={onOpenCompetitorLogin}
               className="text-red-300 hover:text-white font-bold underline cursor-pointer"
             >
-              Consultar mi pase en Mi Espacio 🎒
+              Ver mi QR en Mi Espacio 🎒
             </button>
           </div>
         )}
       </div>
+
+      {/* Modal: Fullscreen Preview of Uploaded Voucher */}
+      {showVoucherModal && voucherPreview && (
+        <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className="relative max-w-lg w-full bg-neutral-900 border-2 border-red-500 rounded-3xl p-6 shadow-2xl space-y-4">
+            <button
+              onClick={() => setShowVoucherModal(false)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-red-400" />
+              <h4 className="font-bebas text-2xl text-white uppercase tracking-wide">
+                Constancia de Pago Yape
+              </h4>
+            </div>
+
+            <div className="rounded-2xl overflow-hidden bg-black border border-neutral-800 max-h-[70vh] flex items-center justify-center">
+              <img
+                src={voucherPreview}
+                alt="Vista previa del comprobante"
+                className="max-h-[68vh] w-auto object-contain"
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-neutral-400 pt-1">
+              <span>{voucherFileName} {voucherFileSize ? `• ${voucherFileSize}` : ''}</span>
+              <button
+                type="button"
+                onClick={() => setShowVoucherModal(false)}
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

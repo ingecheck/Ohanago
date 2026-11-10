@@ -119,7 +119,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAdmin }) => {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 flex items-center justify-center text-white shadow-md">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-600 to-red-600 flex items-center justify-center text-white shadow-md">
                     <Instagram className="w-5 h-5 text-white" />
                   </div>
                   <div>

@@ -22,6 +22,38 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
+// Persistent directory for uploaded payment vouchers
+const VOUCHERS_DIR = path.join(__dirname, 'public', 'uploads', 'vouchers');
+if (!fs.existsSync(VOUCHERS_DIR)) {
+  fs.mkdirSync(VOUCHERS_DIR, { recursive: true });
+}
+
+// Helper to save base64 voucher images to disk
+function saveVoucherFile(base64Data: string, runnerId: string): string | null {
+  if (!base64Data || typeof base64Data !== 'string') return null;
+  if (base64Data.startsWith('/uploads/') || base64Data.startsWith('http')) return base64Data;
+  try {
+    const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) return null;
+    const mime = matches[1];
+    let ext = 'jpg';
+    if (mime.includes('png')) ext = 'png';
+    else if (mime.includes('webp')) ext = 'webp';
+    else if (mime.includes('pdf')) ext = 'pdf';
+    else if (mime.includes('jpeg')) ext = 'jpg';
+
+    const safeId = runnerId.replace(/[^a-zA-Z0-9-_]/g, '_');
+    const filename = `voucher_${safeId}_${Date.now()}.${ext}`;
+    const filePath = path.join(VOUCHERS_DIR, filename);
+    const buffer = Buffer.from(matches[2], 'base64');
+    fs.writeFileSync(filePath, buffer);
+    return `/uploads/vouchers/${filename}`;
+  } catch (err) {
+    console.error('Error saving voucher file to disk:', err);
+    return null;
+  }
+}
+
 const MEDAL_FILE = path.join(DATA_DIR, 'medal.json');
 const REGISTRATIONS_FILE = path.join(DATA_DIR, 'registrations.json');
 const ANALYTICS_FILE = path.join(DATA_DIR, 'analytics.json');
@@ -273,25 +305,80 @@ app.get('/api/registrations', (req, res) => {
 app.post('/api/registrations', (req, res) => {
   const current = readJSON<any[]>(REGISTRATIONS_FILE, []);
   const newRunner = req.body;
+  const isSanta = newRunner.edition === 'santa-run-2026' || !newRunner.edition || (newRunner.id && newRunner.id.startsWith('SR-'));
+  const edition = isSanta ? 'santa-run-2026' : (newRunner.edition || 'halloween-5k-2026');
+
+  const santaRunners = current.filter((r: any) => r.edition === 'santa-run-2026' || (r.id && r.id.startsWith('SR-')));
+  const nextSantaNum = santaRunners.length > 0
+    ? Math.max(...santaRunners.map((r: any) => r.registrationNumber || 0)) + 1
+    : 1;
+
   const nextNum = current.length > 0
     ? Math.max(...current.map((r: any) => r.registrationNumber || r.bibNumber || 0)) + 1
     : 1;
-  const newId = `OHA-2026-${String(nextNum).padStart(4, '0')}`;
+
+  const newId = isSanta
+    ? (newRunner.id && newRunner.id.startsWith('SR-') ? newRunner.id : `SR-2026-${String(nextSantaNum).padStart(4, '0')}`)
+    : (newRunner.id || `OHA-2026-${String(nextNum).padStart(4, '0')}`);
+
+  let voucherUrl = newRunner.voucherUrl;
+  let paymentProofImage = newRunner.paymentProofImage;
+  if (paymentProofImage && typeof paymentProofImage === 'string' && paymentProofImage.startsWith('data:')) {
+    const savedPath = saveVoucherFile(paymentProofImage, newId);
+    if (savedPath) {
+      voucherUrl = savedPath;
+      paymentProofImage = savedPath;
+    }
+  }
+
   const record = {
     ...newRunner,
-    id: newRunner.id || newId,
-    registrationNumber: nextNum,
-    bibNumber: nextNum,
+    id: newId,
+    edition,
+    registrationNumber: isSanta ? nextSantaNum : nextNum,
+    bibNumber: isSanta ? nextSantaNum : nextNum,
+    paymentMethod: 'Yape', // Pago oficial exclusivo vía Yape (Gisela Santa Cruz)
+    paymentProofImage,
+    voucherUrl,
+    amountPaid: newRunner.amountPaid || (newRunner.hasPreviousDiscount ? 59.5 : 70.0),
+    turkeyRaffleTicket: newRunner.turkeyRaffleTicket || (isSanta ? `PAVO-${String(nextSantaNum).padStart(4, '0')}` : undefined),
+    tShirtSize: newRunner.tShirtSize || 'M',
+    runningClub: newRunner.runningClub || 'Santa Run Club',
     modality: newRunner.modality || 'Presencial',
     department: newRunner.department || 'San Martín',
     city: newRunner.city || 'Tarapoto',
     district: newRunner.district || 'Tarapoto',
     confirmedAtStart: false,
-    createdAt: new Date().toISOString(),
+    createdAt: newRunner.createdAt || new Date().toISOString(),
   };
   const updated = [record, ...current];
   writeJSON(REGISTRATIONS_FILE, updated);
+  try {
+    generateStaticExport(updated);
+  } catch (e) {}
   res.json(record);
+});
+
+// Endpoint to upload or update payment voucher for a runner
+app.post('/api/upload-voucher', (req, res) => {
+  const { runnerId, voucherImage } = req.body;
+  if (!runnerId || !voucherImage) {
+    return res.status(400).json({ error: 'Falta runnerId o imagen del voucher' });
+  }
+
+  const savedPath = saveVoucherFile(voucherImage, runnerId);
+  const registrations = readJSON<any[]>(REGISTRATIONS_FILE, []);
+  const idx = registrations.findIndex((r) => r.id === runnerId || r.documentNumber === runnerId);
+  if (idx !== -1) {
+    registrations[idx].voucherUrl = savedPath || voucherImage;
+    registrations[idx].paymentProofImage = savedPath || voucherImage;
+    writeJSON(REGISTRATIONS_FILE, registrations);
+    try {
+      generateStaticExport(registrations);
+    } catch (e) {}
+    return res.json({ success: true, voucherUrl: savedPath || voucherImage, runner: registrations[idx] });
+  }
+  return res.status(404).json({ error: 'Participante no encontrado' });
 });
 
 app.put('/api/registrations', (req, res) => {

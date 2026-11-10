@@ -39,7 +39,8 @@ import {
   Download,
   FileSpreadsheet,
   Database,
-  Gift
+  Gift,
+  Image as ImageIcon
 } from 'lucide-react';
 import { AdminAnalyticsTab } from './AdminAnalyticsTab';
 import { AdminRouletteModal } from './AdminRouletteModal';
@@ -63,11 +64,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCheckin, setFilterCheckin] = useState<'all' | 'confirmed' | 'pending'>('all');
-  const [filterEdition, setFilterEdition] = useState<'all' | 'santa-run-2026' | 'halloween-5k-2026'>('all');
+  const [filterEdition, setFilterEdition] = useState<'all' | 'santa-run-2026' | 'halloween-5k-2026'>('santa-run-2026');
   const [showTurkeyLottery, setShowTurkeyLottery] = useState(false);
 
   // Modals
   const [scannedRunnerModal, setScannedRunnerModal] = useState<RunnerRegistration | null>(null);
+  const [viewingVoucherRunner, setViewingVoucherRunner] = useState<RunnerRegistration | null>(null);
 
   // Edit Runner DNI/Phone modal
   const [editingRunner, setEditingRunner] = useState<RunnerRegistration | null>(null);
@@ -306,7 +308,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   useEffect(() => {
-    // Generate official kit delivery check-in QR code for Plaza de Armas
+    // Generate official kit delivery check-in QR code for Aviación
     const origin = window.location.origin;
     const startUrl = `${origin}/?checkin=start&token=OHANA-START-LINE-TARAPOTO-2026`;
     QRCode.toDataURL(startUrl, {
@@ -483,8 +485,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     return matchSearch && matchCheckin && matchEdition;
   });
 
-  // Sort registrations so the MOST RECENT entries appear FIRST (Newest first)
+  // Sort registrations so Santa Run entries appear first, and within each edition newest entries appear first
   const sortedRegistrations = [...filteredRegistrations].sort((a, b) => {
+    const isSantaA = a.edition === 'santa-run-2026' || a.id.startsWith('SR-');
+    const isSantaB = b.edition === 'santa-run-2026' || b.id.startsWith('SR-');
+    if (isSantaA !== isSantaB) return isSantaA ? -1 : 1;
+
     const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
     const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
     if (timeA !== timeB) return timeB - timeA;
@@ -569,7 +575,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <button
               onClick={() => setShowStartQRModal(true)}
               className="flex items-center gap-1.5 px-3.5 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-bold transition shadow cursor-pointer border border-neutral-700"
-              title="Mostrar y proyectar QR oficial de entrega de kit para la Plaza de Armas"
+              title="Mostrar y proyectar QR oficial de entrega de kit para Aviación"
             >
               <QrCode className="w-4 h-4 text-red-400" />
               <span>Proyectar QR</span>
@@ -844,20 +850,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   {/* Edition Filter (Santa Run 2026 vs Halloween 5K) */}
                   <div className="flex items-center bg-neutral-950 p-1 rounded-xl border border-neutral-800">
                     <button
-                      onClick={() => setFilterEdition('all')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                        filterEdition === 'all'
-                          ? 'bg-neutral-800 text-white font-bold'
-                          : 'text-neutral-400 hover:text-white'
-                      }`}
-                    >
-                      Todas
-                    </button>
-                    <button
                       onClick={() => setFilterEdition('santa-run-2026')}
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
                         filterEdition === 'santa-run-2026'
-                          ? 'bg-red-950 border border-red-500/60 text-red-400 shadow-sm shadow-red-500/20'
+                          ? 'bg-red-950 border border-red-500/60 text-red-400 shadow-sm shadow-red-500/20 font-black'
                           : 'text-neutral-400 hover:text-red-300'
                       }`}
                     >
@@ -872,6 +868,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       }`}
                     >
                       <span>🎃 Halloween ({halloweenTotalCount})</span>
+                    </button>
+                    <button
+                      onClick={() => setFilterEdition('all')}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                        filterEdition === 'all'
+                          ? 'bg-neutral-800 text-white font-bold'
+                          : 'text-neutral-400 hover:text-white'
+                      }`}
+                    >
+                      Todas ({totalCount})
                     </button>
                   </div>
                 </div>
@@ -897,16 +903,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <thead className="bg-neutral-950 border-b border-neutral-800 text-neutral-400 uppercase text-[10px] font-bold tracking-wider">
                 <tr>
                   <th className="py-3.5 px-3">N°</th>
-                  <th className="py-3.5 px-3">Nombres y Apellidos</th>
-                  <th className="py-3.5 px-3">Entrega de Kit Inicial (Check-in QR)</th>
-                  <th className="py-3.5 px-3">DNI / Celular</th>
-                  <th className="py-3.5 px-3 text-right">Edición / Modalidad</th>
+                  <th className="py-3.5 px-3">Atleta & ID Oficial</th>
+                  <th className="py-3.5 px-3">DNI & Celular</th>
+                  <th className="py-3.5 px-3">Polo & Kit Navideño</th>
+                  <th className="py-3.5 px-3">Inversión & Sorteo Pavo</th>
+                  <th className="py-3.5 px-3 text-right">Edición / Registro</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-800/60">
                 {sortedRegistrations.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="py-12 text-center text-neutral-500 text-sm">
+                    <td colSpan={6} className="py-12 text-center text-neutral-500 text-sm">
                       No se encontraron participantes con los filtros seleccionados.
                     </td>
                   </tr>
@@ -926,7 +933,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <div className="font-bold text-white text-sm">
                             {runner.firstName} {runner.lastName}
                           </div>
-                          <div className="text-[11px] text-neutral-400 flex items-center gap-1.5 mt-0.5">
+                          <div className="text-[11px] text-neutral-400 flex flex-wrap items-center gap-1.5 mt-0.5">
                             {isSanta ? (
                               <span className="font-mono text-xs font-black px-2 py-0.5 rounded bg-red-950/90 text-red-400 border border-red-500/50 shadow-sm">
                                 {runner.id.startsWith('SR-') ? runner.id : `SR-${runner.id}`}
@@ -934,49 +941,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             ) : (
                               <span className="font-mono text-neutral-300 font-bold">{runner.id}</span>
                             )}
-                            {runner.willWearCostume && (
-                              <span className="text-[10px] text-purple-400 bg-purple-950/60 px-1.5 py-0.2 rounded border border-purple-500/30">
-                                🎃 {runner.costumeName || 'Disfraz'}
-                              </span>
-                            )}
-                            {runner.runningClub && (
+                            {runner.city && (
                               <span className="text-[10px] text-neutral-400 bg-neutral-800 px-1.5 rounded">
-                                {runner.runningClub}
+                                {runner.city}
                               </span>
                             )}
                           </div>
-                        </td>
-
-                        {/* Entrega de Kit Inicial (Check-in QR) - PRIMERO */}
-                        <td className="py-3.5 px-3">
-                          {runner.confirmedAtStart ? (
-                            <div className="flex items-center gap-1.5">
-                              <button
-                                onClick={() => handleToggleKitDelivery(runner.id, true)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-black uppercase transition cursor-pointer border bg-emerald-950/90 text-emerald-400 border-emerald-500/60 hover:bg-red-950/70 hover:text-red-300 hover:border-red-500/40 shadow-sm shadow-emerald-500/20 group"
-                                title="Kit inicial entregado. Clic para desmarcar."
-                              >
-                                <Check className="w-3.5 h-3.5 text-emerald-400 group-hover:hidden" />
-                                <X className="w-3.5 h-3.5 text-red-400 hidden group-hover:inline" />
-                                <span className="group-hover:hidden">✓ Kit Entregado</span>
-                                <span className="hidden group-hover:inline">Desmarcar</span>
-                              </button>
-                              {runner.startCheckinTime && (
-                                <span className="text-[10px] text-emerald-300 font-mono hidden md:inline">
-                                  {new Date(runner.startCheckinTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <button
-                              onClick={() => handleToggleKitDelivery(runner.id, false)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-bold uppercase transition cursor-pointer border bg-neutral-800 text-neutral-300 border-neutral-700 hover:text-white hover:border-red-500 hover:bg-neutral-700 shadow-sm"
-                              title="Marcar entrega de kit inicial para este participante"
-                            >
-                              <Clock className="w-3.5 h-3.5 text-amber-400" />
-                              <span>Entregar Kit</span>
-                            </button>
-                          )}
                         </td>
 
                         {/* DNI & Phone */}
@@ -987,8 +957,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 ⚠️ Sin DNI (Ingresó correo)
                               </span>
                             ) : (
-                              <span className="font-mono font-bold text-neutral-200 text-xs">
-                                {runner.documentType}: {runner.documentNumber}
+                              <span className="font-mono font-bold text-amber-300 text-xs">
+                                {runner.documentType || 'DNI'}: {runner.documentNumber}
                               </span>
                             )}
                             <button
@@ -1008,35 +978,120 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               href={`https://wa.me/51${runner.whatsapp.replace(/\D/g, '')}`}
                               target="_blank"
                               rel="noreferrer"
-                              className="text-[11px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition"
+                              className="text-[11px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 transition font-mono"
                               title="Contactar por WhatsApp"
                             >
                               <Phone className="w-3 h-3 text-emerald-400" />
                               <span>{runner.whatsapp}</span>
                             </a>
-                            {runner.documentNumber.includes('Pendiente') && runner.email && (
-                              <span className="text-[10px] text-neutral-400 font-mono truncate max-w-[130px]" title={runner.email}>
-                                ({runner.email})
+                            {runner.email && (
+                              <span className="text-[10px] text-neutral-400 font-mono truncate max-w-[120px]" title={runner.email}>
+                                • {runner.email}
                               </span>
                             )}
                           </div>
                         </td>
 
-                        {/* Modality & Edition */}
+                        {/* Talla Polo & Kit Navideño */}
+                        <td className="py-3.5 px-3">
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-2 py-0.5 rounded bg-neutral-800 text-white font-mono font-bold text-xs border border-neutral-700">
+                              Polo: {runner.tShirtSize || 'M'}
+                            </span>
+                            {isSanta && (
+                              <span className="text-[10px] text-red-300 bg-red-950/80 px-1.5 py-0.5 rounded border border-red-500/40">
+                                + Gorra + Mochila
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-1">
+                            {runner.confirmedAtStart ? (
+                              <button
+                                onClick={() => handleToggleKitDelivery(runner.id, true)}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase transition cursor-pointer border bg-emerald-950/90 text-emerald-400 border-emerald-500/60 hover:bg-red-950/70 hover:text-red-300 shadow-sm"
+                                title="Kit entregado. Clic para desmarcar."
+                              >
+                                <Check className="w-3 h-3 text-emerald-400" />
+                                <span>Kit Entregado</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleToggleKitDelivery(runner.id, false)}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase transition cursor-pointer border bg-neutral-800 text-amber-300 border-neutral-700 hover:border-red-500 hover:text-white"
+                                title="Marcar entrega de kit"
+                              >
+                                <Clock className="w-3 h-3 text-amber-400" />
+                                <span>Entregar Kit</span>
+                              </button>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Inversión & Ticket Sorteo Pavo & Voucher */}
+                        <td className="py-3.5 px-3">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-white text-xs">
+                              {runner.amountPaid ? `S/ ${Number(runner.amountPaid).toFixed(2)}` : (isSanta ? 'S/ 70.00' : 'S/ 50.00')}
+                            </span>
+                            {runner.hasPreviousDiscount && (
+                              <span className="text-[9px] bg-red-950 text-red-300 px-1.5 py-0.2 rounded border border-red-500/40 font-bold">
+                                15% OHANA
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-amber-400 font-mono mt-0.5 flex items-center gap-1">
+                            {isSanta ? (
+                              <span>🦃 {runner.turkeyRaffleTicket || `PAVO-${String(runner.registrationNumber || 1).padStart(4, '0')}`}</span>
+                            ) : (
+                              <span className="text-neutral-400">Método: {runner.paymentMethod || 'Yape'}</span>
+                            )}
+                          </div>
+                          {/* Voucher Button / Status */}
+                          <div className="mt-1">
+                            {runner.paymentProofImage || runner.voucherUrl ? (
+                              <button
+                                onClick={() => setViewingVoucherRunner(runner)}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-950/90 text-emerald-300 border border-emerald-500/60 hover:bg-emerald-900 transition cursor-pointer shadow-sm"
+                                title="Ver captura del voucher Yape"
+                              >
+                                <ImageIcon className="w-3 h-3 text-emerald-400" />
+                                <span>🧾 Ver Voucher</span>
+                              </button>
+                            ) : (
+                              <a
+                                href={`https://wa.me/51${runner.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola ${runner.firstName}, te saludamos de la organización de Santa Run Tarapoto 2026. Por favor envíanos la captura de tu voucher Yape para validar tu inscripción oficial.`)}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 text-[10px] text-neutral-400 hover:text-amber-300 font-mono transition"
+                                title="Sin voucher adjunto. Clic para pedir constancia por WhatsApp"
+                              >
+                                <span>Sin voucher</span>
+                                <span className="text-amber-400 font-bold">• Pedir</span>
+                              </a>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Edición / Registro */}
                         <td className="py-3.5 px-3 text-right">
-                          {isSanta ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-red-950/80 text-red-400 border border-red-500/40 shadow-sm">
-                              🎅 Santa Run
-                            </span>
-                          ) : isRunVirtual ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-purple-950/80 text-purple-300 border border-purple-500/40">
-                              Virtual 5K
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-neutral-800 text-neutral-300 border border-neutral-700">
-                              Presencial 5K
-                            </span>
-                          )}
+                          <div>
+                            {isSanta ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-red-950/80 text-red-400 border border-red-500/40 shadow-sm">
+                                🎅 Santa Run
+                              </span>
+                            ) : isRunVirtual ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-neutral-800 text-neutral-300 border border-neutral-700">
+                                Virtual 5K
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-neutral-800 text-neutral-300 border border-neutral-700">
+                                Halloween 5K
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-neutral-400 font-mono mt-0.5">
+                            {runner.createdAt ? new Date(runner.createdAt).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1140,7 +1195,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* Modal: Official Kit Delivery Check-in QR (For Plaza de Armas Accreditation Desk) */}
+      {/* Modal: Official Kit Delivery Check-in QR (For Aviación Accreditation Desk) */}
       {showStartQRModal && (
         <div className={`fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-6 bg-black/95 backdrop-blur-xl overflow-y-auto ${isFullScreenQR ? 'p-0' : ''}`}>
           <div className={`relative w-full ${isFullScreenQR ? 'h-full max-w-none rounded-none p-6 sm:p-10 flex flex-col justify-between' : 'max-w-2xl rounded-3xl p-6'} bg-neutral-900 border border-red-500/50 shadow-[0_0_60px_rgba(212,36,38,0.3)] transition-all`}>
@@ -1216,7 +1271,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
 
               <div className="mt-3 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-950/80 border border-red-500/40 text-red-400 text-xs font-black uppercase tracking-wider">
-                QR Oficial Entrega de Kit • Plaza de Armas
+                QR Oficial Entrega de Kit • Aviación
               </div>
               <p className="text-xs text-neutral-300 max-w-lg mt-2 leading-relaxed">
                 Este código QR se ubica en la carpa de acreditación. Los atletas lo escanean con su cámara desde <strong>Mi Espacio 🎒</strong> para confirmar la entrega de su kit inicial en vivo.
@@ -1260,8 +1315,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           </head>
                           <body>
                             <span class="badge">Acreditación Oficial</span>
-                            <h1>OHANA GO 5K TARAPOTO</h1>
-                            <h2>Plaza de Armas • Control de Acreditación</h2>
+                            <h1>OHANA GO SANTA RUN 2026</h1>
+                            <h2>Aviación • Control de Acreditación</h2>
                             <div class="qr-box">
                               <img src="${startQrDataUrl}" />
                             </div>
@@ -1406,6 +1461,79 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: View Voucher / Constancia de Pago Yape */}
+      {viewingVoucherRunner && (
+        <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
+          <div className="relative max-w-lg w-full bg-neutral-900 border-2 border-emerald-500/60 rounded-3xl p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+            <button
+              onClick={() => setViewingVoucherRunner(null)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-500/40">
+                Constancia de Pago Oficial (Yape)
+              </span>
+              <h4 className="font-bebas text-2xl text-white uppercase mt-1 leading-tight">
+                {viewingVoucherRunner.firstName} {viewingVoucherRunner.lastName}
+              </h4>
+              <p className="text-xs text-neutral-400">
+                DNI: <strong className="text-white font-mono">{viewingVoucherRunner.documentNumber}</strong> • ID: <strong className="text-red-400 font-mono">{viewingVoucherRunner.id}</strong> • Monto: <strong className="text-amber-400 font-mono">S/ {Number(viewingVoucherRunner.amountPaid || 70).toFixed(2)}</strong>
+              </p>
+            </div>
+
+            {/* Image display */}
+            <div className="rounded-2xl overflow-hidden bg-black border border-neutral-800 min-h-[220px] max-h-[60vh] flex items-center justify-center p-2">
+              {viewingVoucherRunner.paymentProofImage || viewingVoucherRunner.voucherUrl ? (
+                <img
+                  src={viewingVoucherRunner.voucherUrl || viewingVoucherRunner.paymentProofImage}
+                  alt={`Voucher de ${viewingVoucherRunner.firstName}`}
+                  className="max-h-[58vh] w-auto max-w-full object-contain rounded-xl"
+                />
+              ) : (
+                <div className="py-12 text-center text-neutral-500 text-xs">
+                  No hay imagen disponible para este comprobante.
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-neutral-800">
+              <a
+                href={viewingVoucherRunner.voucherUrl || viewingVoucherRunner.paymentProofImage}
+                target="_blank"
+                rel="noreferrer"
+                download={`voucher_${viewingVoucherRunner.id}.jpg`}
+                className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <Download className="w-4 h-4 text-emerald-400" />
+                <span>Abrir / Descargar</span>
+              </a>
+
+              <div className="flex items-center gap-2">
+                <a
+                  href={`https://wa.me/51${viewingVoucherRunner.whatsapp.replace(/\D/g, '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-2 rounded-xl bg-neutral-800 text-emerald-400 text-xs font-bold hover:bg-neutral-700 transition flex items-center gap-1"
+                >
+                  <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>WhatsApp</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setViewingVoucherRunner(null)}
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold cursor-pointer"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

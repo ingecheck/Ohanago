@@ -56,7 +56,7 @@ export const RegistrationSuccessModal: React.FC<RegistrationSuccessModalProps> =
             </div>
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-rose-400 shrink-0" />
-              <span><strong>Partida:</strong> Parque de la Av. Aviación</span>
+              <span><strong>Partida:</strong> Aviación</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-amber-400 font-bold font-mono">REGISTRO</span>

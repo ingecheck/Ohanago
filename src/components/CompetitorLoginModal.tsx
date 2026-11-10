@@ -115,7 +115,7 @@ export const CompetitorLoginModal: React.FC<CompetitorLoginModalProps> = ({
             Mi Espacio <span className="text-red-500">OHANA GO</span>
           </h3>
           <p className="text-xs text-neutral-300 mt-2">
-            Ingresa tu número de DNI para acceder a tu pase digital oficial, credencial y validación de asistencia en partida.
+            Ingresa tu número de DNI para acceder a tu código QR y escanearlo con el personal en Aviación para tu acreditación y kit.
           </p>
         </div>
 

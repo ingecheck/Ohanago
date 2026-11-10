@@ -64,7 +64,7 @@ export const FinisherMedalCard: React.FC = () => {
       {/* Title - clean, non-bulky, no 'metálica' */}
       <div className="text-center mb-4">
         <h3 className="font-bebas text-3xl sm:text-4xl tracking-wider text-white uppercase flex items-center justify-center gap-2">
-          Medalla <span className="text-red-500">Finisher 5K</span>
+          Medalla <span className="text-red-500">Finisher 6K</span>
         </h3>
         <p className="text-xs text-neutral-400 font-medium">
           Exclusiva para todos los que crucen la meta en la Concha Acústica

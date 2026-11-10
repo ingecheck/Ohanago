@@ -1,5 +1,5 @@
-import React from 'react';
-import { Calendar, Clock, MapPin, Sparkles, Trophy, Gift, ArrowRight, CheckCircle2, Ticket } from 'lucide-react';
+import React, { useState } from 'react';
+import { Calendar, Clock, MapPin, Sparkles, Trophy, Gift, ArrowRight, CheckCircle2, Ticket, ZoomIn, X, ImageIcon } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
 
 interface SantaRunHeroProps {
@@ -15,6 +15,24 @@ export const SantaRunHero: React.FC<SantaRunHeroProps> = ({
   onOpenCompetitorLogin,
   santaRegistrationsCount,
 }) => {
+  const [selectedPoster, setSelectedPoster] = useState<'launch' | 'kit'>('launch');
+  const [isZoomed, setIsZoomed] = useState(false);
+
+  const posters = {
+    launch: {
+      src: '/assets/aistudio/OHANA_GO_ULALA_3bc4d451.jpeg',
+      title: 'Afiche Oficial 6K · Alianza Master Ulala',
+      badge: 'Gran Carrera 6K',
+    },
+    kit: {
+      src: '/assets/aistudio/OHANA_GO_PRINCIPAL_3d791120.jpeg',
+      title: 'Afiche Oficial · Tu Kit Incluye & Sorteo de Pavo',
+      badge: 'Kit & Sorteo',
+    },
+  };
+
+  const activePoster = posters[selectedPoster];
+
   return (
     <div className="relative overflow-hidden pt-6 pb-16 md:pt-10 md:pb-24 border-b border-red-950/60 bg-gradient-to-b from-black via-neutral-950 to-neutral-900">
       {/* Festive Falling Snow Particles (Subtle and athletic) */}
@@ -52,21 +70,62 @@ export const SantaRunHero: React.FC<SantaRunHeroProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
           {/* Left Column: Official Poster Showcase */}
-          <div className="lg:col-span-5 flex justify-center">
-            <div className="relative group max-w-sm sm:max-w-md w-full rounded-3xl overflow-hidden border-2 border-red-600/40 shadow-[0_0_50px_rgba(220,38,38,0.25)] bg-black">
+          <div className="lg:col-span-5 flex flex-col items-center">
+            {/* Poster Selector Tabs */}
+            <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-neutral-900/90 border border-neutral-800 mb-3 w-full max-w-sm">
+              <button
+                type="button"
+                onClick={() => setSelectedPoster('launch')}
+                className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-mono font-bold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                  selectedPoster === 'launch'
+                    ? 'bg-red-600 text-white shadow-md'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <span>Afiche 6K Carrera</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedPoster('kit')}
+                className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-mono font-bold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                  selectedPoster === 'kit'
+                    ? 'bg-red-600 text-white shadow-md'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <span>Afiche Kit & Premios</span>
+              </button>
+            </div>
+
+            <div
+              onClick={() => setIsZoomed(true)}
+              className="relative group max-w-sm sm:max-w-md w-full rounded-3xl overflow-hidden border-2 border-red-600/50 shadow-[0_0_50px_rgba(220,38,38,0.25)] bg-black cursor-pointer hover:border-red-400 transition"
+              title="Clic para ver afiche en tamaño completo"
+            >
               {/* Image banner from user upload */}
               <img
-                src="/assets/aistudio/SANTA_RUN_MATERULALA_8f51e32f.jpeg"
-                alt="Santa Run Tarapoto 2026 - Ohana Go & Master Ulala"
+                src={activePoster.src}
+                alt={activePoster.title}
                 className="w-full h-auto object-cover transform group-hover:scale-[1.02] transition-transform duration-500"
               />
-              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/60 to-transparent p-4 flex items-center justify-between text-xs font-mono text-white">
+
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+                <span className="px-4 py-2 rounded-xl bg-red-600 text-white text-xs font-mono font-bold flex items-center gap-1.5 shadow-lg">
+                  <ZoomIn className="w-4 h-4" /> Ampliar Afiche
+                </span>
+              </div>
+
+              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/80 to-transparent p-4 flex items-center justify-between text-xs font-mono text-white">
                 <span className="px-2.5 py-1 rounded-full bg-red-600 text-white font-bold uppercase tracking-wider text-[10px]">
-                  Oficial 2026
+                  {activePoster.badge}
                 </span>
                 <span className="text-neutral-300">Tarapoto · San Martín</span>
               </div>
             </div>
+
+            <span className="text-[11px] text-neutral-400 font-mono mt-2 flex items-center gap-1">
+              <ZoomIn className="w-3.5 h-3.5 text-neutral-500" /> Clic en la imagen para ampliar
+            </span>
           </div>
 
           {/* Right Column: Hero Content & CTAs */}
@@ -75,7 +134,7 @@ export const SantaRunHero: React.FC<SantaRunHeroProps> = ({
             {/* Tag Badge */}
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-red-950/80 border border-red-500/40 text-red-400 text-xs font-mono font-bold uppercase tracking-wider shadow-sm">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-              <span>Nueva Gran Carrera Oficial · Navidad 2026</span>
+              <span>Nueva Gran Carrera Oficial · Navidad 2026 · 6K</span>
             </div>
 
             {/* Imposing Title */}
@@ -86,9 +145,14 @@ export const SantaRunHero: React.FC<SantaRunHeroProps> = ({
               <h1 className="font-bebas text-6xl sm:text-7xl md:text-8xl text-white tracking-tight uppercase leading-none drop-shadow-2xl">
                 SANTA <span className="text-red-500 text-glow-red">RUN</span>
               </h1>
-              <p className="font-bebas text-3xl sm:text-4xl text-neutral-300 tracking-wider uppercase mt-1">
-                TARAPOTO 2026
-              </p>
+              <div className="flex items-center justify-center lg:justify-start gap-3 mt-1">
+                <p className="font-bebas text-3xl sm:text-4xl text-neutral-300 tracking-wider uppercase">
+                  TARAPOTO 2026
+                </p>
+                <span className="px-3 py-0.5 rounded-xl bg-red-600 text-white font-bebas text-2xl tracking-wider">
+                  6K
+                </span>
+              </div>
               <div className="inline-block mt-2 px-4 py-1 rounded-xl bg-gradient-to-r from-red-600/20 via-neutral-900 to-red-600/20 border border-red-500/30 text-red-300 font-sans italic font-bold text-base sm:text-lg">
                 "Corre y regala Sonrisas ♡"
               </div>
@@ -96,7 +160,7 @@ export const SantaRunHero: React.FC<SantaRunHeroProps> = ({
 
             {/* Description */}
             <p className="text-sm sm:text-base text-neutral-300 leading-relaxed max-w-xl font-sans">
-              La fiesta deportiva y solidaria más esperada del año en Tarapoto. Vístete de espíritu navideño con el gorro oficial y recorre la ciudad de noche en un ambiente lleno de luces, hidratación, medalla finisher conmemorativa y el gran <strong>Sorteo de un Pavo</strong>.
+              La fiesta deportiva y solidaria más esperada del año en Tarapoto. Vístete de espíritu navideño con el gorro oficial y recorre 6K de noche en un ambiente lleno de luces, hidratación, medalla finisher conmemorativa y el gran <strong>Sorteo de un Pavo</strong>.
             </p>
 
             {/* Quick Event Route & Schedule Pillars */}
@@ -114,15 +178,15 @@ export const SantaRunHero: React.FC<SantaRunHeroProps> = ({
                   <Clock className="w-3.5 h-3.5 text-red-400" /> Hora
                 </span>
                 <span className="font-bebas text-lg text-white block leading-tight">7:00 P.M.</span>
-                <span className="text-[10px] text-neutral-400">Carrera Nocturna</span>
+                <span className="text-[10px] text-neutral-400">Concentración 6:00 PM</span>
               </div>
 
               <div className="p-3 rounded-xl bg-neutral-900/80 border border-neutral-800">
                 <span className="text-[10px] font-mono text-neutral-400 uppercase font-bold flex items-center gap-1 mb-1">
                   <MapPin className="w-3.5 h-3.5 text-red-400" /> Partida
                 </span>
-                <span className="font-bebas text-lg text-white block leading-tight">Parque Av. Aviación</span>
-                <span className="text-[10px] text-neutral-400">Concentración</span>
+                <span className="font-bebas text-lg text-white block leading-tight">Aviación</span>
+                <span className="text-[10px] text-neutral-400">Partida Oficial</span>
               </div>
 
               <div className="p-3 rounded-xl bg-neutral-900/80 border border-neutral-800">
@@ -184,6 +248,41 @@ export const SantaRunHero: React.FC<SantaRunHeroProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Poster Full Size Modal */}
+      {isZoomed && (
+        <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className="relative max-w-xl w-full bg-neutral-900 border-2 border-red-500 rounded-3xl p-4 shadow-2xl space-y-3">
+            <button
+              onClick={() => setIsZoomed(false)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer z-10"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="text-center pt-2">
+              <h4 className="font-bebas text-2xl text-white uppercase tracking-wide">
+                {activePoster.title}
+              </h4>
+            </div>
+            <div className="rounded-2xl overflow-hidden bg-black max-h-[78vh] flex items-center justify-center">
+              <img
+                src={activePoster.src}
+                alt={activePoster.title}
+                className="max-h-[75vh] w-auto object-contain rounded-xl"
+              />
+            </div>
+            <div className="flex items-center justify-between text-xs pt-1 px-2 text-neutral-400">
+              <span className="font-mono text-emerald-400 font-bold">✓ Afiche Oficial Tarapoto 2026</span>
+              <button
+                onClick={() => setIsZoomed(false)}
+                className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold uppercase cursor-pointer text-xs"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

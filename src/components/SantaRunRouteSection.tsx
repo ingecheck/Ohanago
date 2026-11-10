@@ -32,7 +32,7 @@ export const SantaRunRouteSection: React.FC = () => {
               Punto de Concentración & Partida
             </span>
             <h3 className="font-bebas text-2xl sm:text-3xl text-white uppercase tracking-wide mt-1">
-              Parque de la Av. Aviación
+              Aviación
             </h3>
           </div>
           <p className="text-xs text-neutral-300 leading-relaxed">

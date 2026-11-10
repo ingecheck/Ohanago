@@ -260,7 +260,7 @@ export const AdminRouletteModal: React.FC<AdminRouletteModalProps> = ({
                   isAllDrawn
                     ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
                     : isSpinningLocal || rouletteState?.isSpinning
-                    ? 'bg-purple-600 text-white animate-pulse'
+                    ? 'bg-red-600 text-white animate-pulse'
                     : 'bg-gradient-to-r from-lime-400 via-lime-300 to-lime-400 hover:scale-[1.02] text-black shadow-lime-400/30'
                 }`}
               >
