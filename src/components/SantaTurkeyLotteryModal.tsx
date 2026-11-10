@@ -81,7 +81,7 @@ export const SantaTurkeyLotteryModal: React.FC<SantaTurkeyLotteryModalProps> = (
         <div className="flex items-center justify-between pb-4 border-b border-neutral-800">
           <div className="text-left">
             <span className="text-[10px] font-mono text-amber-400 uppercase tracking-widest font-bold block mb-1">
-              OHANA GO & MASTER ULALA · SANTA RUN 2026
+              OHANA GO · SANTA RUN 2026
             </span>
             <h3 className="font-bebas text-3xl sm:text-4xl text-white uppercase tracking-wide leading-none">
               Gran Sorteo del <span className="text-red-500 text-glow-red">Pavo Navideño</span> 🦃

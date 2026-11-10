@@ -306,7 +306,7 @@ export const App: React.FC = () => {
       {/* Top Brand Notification Banner */}
       <div className="bg-black border-b border-red-950/60 py-2.5 px-4 text-center text-xs font-mono tracking-wider uppercase text-neutral-300 relative z-40 flex items-center justify-center gap-2">
         <span className="w-2 h-2 rounded-full bg-red-500 animate-ping shrink-0" />
-        <span className="text-white font-bold">🎅 OHANA GO & MASTER ULALA PRESENTAN: SANTA RUN TARAPOTO 2026 · 6K</span>
+        <span className="text-white font-bold">🎅 OHANA GO PRESENTA: SANTA RUN TARAPOTO 2026 · 6K</span>
         <span className="hidden sm:inline text-neutral-600">|</span>
         <span className="hidden sm:inline text-amber-400 font-bold">SÁBADO 19 DE DICIEMBRE · CORRE Y REGALA SONRISAS</span>
       </div>

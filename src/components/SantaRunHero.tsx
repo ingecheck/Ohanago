@@ -21,7 +21,7 @@ export const SantaRunHero: React.FC<SantaRunHeroProps> = ({
   const posters = {
     launch: {
       src: '/assets/aistudio/OHANA_GO_ULALA_3bc4d451.jpeg',
-      title: 'Afiche Oficial 6K · Alianza Master Ulala',
+      title: 'Afiche Oficial 6K · Santa Run Tarapoto',
       badge: 'Gran Carrera 6K',
     },
     kit: {
@@ -50,7 +50,7 @@ export const SantaRunHero: React.FC<SantaRunHeroProps> = ({
       <div className="absolute bottom-0 right-10 w-80 h-80 bg-red-500/5 rounded-full blur-[130px] pointer-events-none" />
 
       <div className="relative max-w-6xl mx-auto px-4">
-        {/* Strategic Alliance Kicker */}
+        {/* Brand Kicker */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-6 pb-4 border-b border-neutral-900">
           <div className="flex items-center gap-2">
             <span className="font-bebas text-lg sm:text-xl text-neutral-300 uppercase tracking-wider">
@@ -58,10 +58,9 @@ export const SantaRunHero: React.FC<SantaRunHeroProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-neutral-900/90 border border-neutral-800 text-xs font-mono">
-            <span className="text-neutral-400">EN ALIANZA ESTRATÉGICA CON:</span>
-            <span className="font-bold text-white uppercase tracking-wider bg-gradient-to-r from-blue-400 via-amber-300 to-red-400 bg-clip-text text-transparent">
-              Master Ulala
+          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-neutral-900/90 border border-red-500/30 text-xs font-mono">
+            <span className="font-bold text-white uppercase tracking-wider">
+              OHANA GO
             </span>
           </div>
         </div>
@@ -140,7 +139,7 @@ export const SantaRunHero: React.FC<SantaRunHeroProps> = ({
             {/* Imposing Title */}
             <div>
               <span className="text-xs sm:text-sm font-mono tracking-[0.25em] text-neutral-400 uppercase font-black block mb-1">
-                OHANA GO & MASTER ULALA PRESENTAN
+                OHANA GO PRESENTA
               </span>
               <h1 className="font-bebas text-6xl sm:text-7xl md:text-8xl text-white tracking-tight uppercase leading-none drop-shadow-2xl">
                 SANTA <span className="text-red-500 text-glow-red">RUN</span>

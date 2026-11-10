@@ -155,7 +155,7 @@ export const SantaRunRegistrationModal: React.FC<SantaRunRegistrationModalProps>
         <div className="flex items-center justify-between pb-4 border-b border-neutral-800">
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-red-950 text-red-400 border border-red-500/40 text-[10px] font-mono font-bold uppercase tracking-wider mb-1">
-              <span>🎅 OHANA GO & MASTER ULALA</span>
+              <span>🎅 OHANA GO</span>
             </div>
             <h3 className="font-bebas text-3xl sm:text-4xl text-white uppercase tracking-wide leading-none">
               Inscripción Oficial <span className="text-red-500">Santa Run 2026</span>

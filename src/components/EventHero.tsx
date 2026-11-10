@@ -40,10 +40,9 @@ export const EventHero: React.FC<EventHeroProps> = ({
 
         {/* Narrative & Slogan */}
         <div className="max-w-3xl mx-auto space-y-3 mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-xs font-mono text-neutral-300">
-            <span>EN ALIANZA ESTRATÉGICA CON:</span>
-            <span className="font-bold text-white bg-gradient-to-r from-blue-400 via-amber-300 to-red-400 bg-clip-text text-transparent uppercase tracking-wider">
-              Master Ulala
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-neutral-900 border border-red-500/30 text-xs font-mono text-neutral-300">
+            <span className="font-bold text-white tracking-widest uppercase">
+              OHANA GO
             </span>
           </div>
 
