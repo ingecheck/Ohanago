@@ -125,7 +125,7 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({
             ) : (
               <Clock className="w-3.5 h-3.5" />
             )}
-            {registration.paymentStatus || 'Pendiente de Verificación'}
+            {registration.paymentStatus === 'Verificado' ? 'Verificado' : 'No Verificado'}
           </span>
         </div>
 

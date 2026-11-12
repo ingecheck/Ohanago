@@ -220,7 +220,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       paymentReference: paymentReference.trim() || `YAPE-SANTA-${Date.now().toString().slice(-4)}`,
       paymentProofImage: voucherPreview || undefined,
       voucherUrl: voucherPreview || undefined,
-      paymentStatus: 'Pendiente de Verificación',
+      paymentStatus: 'No Verificado',
       createdAt: now,
       disclaimerAccepted: true,
       modality: 'Presencial',
@@ -568,7 +568,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 </span>
               </div>
               <p className="text-xs text-neutral-400 leading-relaxed font-sans">
-                Puedes adjuntar la captura de pantalla o foto de tu constancia de Yape o enviarla por WhatsApp al <strong>+51 902 227 356</strong>. Tu inscripción quedará <strong>pendiente de verificación</strong> hasta que la organización revise tu constancia y la valide manualmente.
+                Puedes adjuntar la captura de pantalla o foto de tu constancia de Yape o enviarla por WhatsApp al <strong>+51 902 227 356</strong>. Al inscribirte aparecerás como <strong>No Verificado</strong> hasta que la organización observe tu constancia y la valide manualmente.
               </p>
 
               {!voucherPreview ? (

@@ -500,7 +500,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         confetti({ particleCount: 60, spread: 55, origin: { y: 0.7 } });
       } catch (e) {}
     } else {
-      setLiveNotice(`⏳ Pago de ${runner.firstName} ${runner.lastName} cambiado a Pendiente de Verificación.`);
+      setLiveNotice(`⏳ Pago de ${runner.firstName} ${runner.lastName} marcado como No Verificado.`);
     }
     setTimeout(() => setLiveNotice(null), 4500);
   };
@@ -952,7 +952,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           : 'text-neutral-400 hover:text-amber-300'
                       }`}
                     >
-                      <span>⏳ Sin Verificar ({filterEdition === 'santa-run-2026' ? santaPaymentsPending : paymentPendingCount})</span>
+                      <span>⏳ No Verificados ({filterEdition === 'santa-run-2026' ? santaPaymentsPending : paymentPendingCount})</span>
                     </button>
                   </div>
 
@@ -1159,9 +1159,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                             {runner.paymentStatus === 'Verificado' ? (
                               <button
-                                onClick={() => handleUpdatePaymentStatus(runner, 'Pendiente de Verificación')}
+                                onClick={() => handleUpdatePaymentStatus(runner, 'No Verificado')}
                                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black bg-emerald-950/90 text-emerald-400 border border-emerald-500/60 hover:bg-amber-950/70 hover:text-amber-300 hover:border-amber-500/60 transition cursor-pointer shadow-sm"
-                                title="Pago Verificado. Clic para cambiar manualmente a Pendiente"
+                                title="Pago Verificado. Clic para cambiar manualmente a No Verificado"
                               >
                                 <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                                 <span>Verificado</span>
@@ -1173,7 +1173,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 title="No verificado aún. Clic para marcar manualmente como Verificado al confirmar su constancia o WhatsApp"
                               >
                                 <Clock className="w-3 h-3 text-amber-400" />
-                                <span>Pendiente • Verificar</span>
+                                <span>No Verificado • Verificar</span>
                               </button>
                             )}
 
@@ -1632,7 +1632,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 ) : (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-950 text-amber-300 border border-amber-500/50">
                     <Clock className="w-4 h-4" />
-                    Pendiente de Verificación
+                    No Verificado
                   </span>
                 )}
               </div>
@@ -1658,11 +1658,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 {viewingVoucherRunner.paymentStatus === 'Verificado' ? (
                   <button
                     type="button"
-                    onClick={() => handleUpdatePaymentStatus(viewingVoucherRunner, 'Pendiente de Verificación')}
+                    onClick={() => handleUpdatePaymentStatus(viewingVoucherRunner, 'No Verificado')}
                     className="px-3.5 py-2 rounded-xl bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-500/40 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
                   >
                     <Clock className="w-4 h-4" />
-                    <span>Marcar Pendiente</span>
+                    <span>Marcar No Verificado</span>
                   </button>
                 ) : (
                   <button

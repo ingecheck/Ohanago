@@ -40,7 +40,7 @@ export const RegistrationSuccessModal: React.FC<RegistrationSuccessModalProps> =
               </>
             ) : (
               <>
-                ¡Gracias <span className="text-amber-400 font-bold">{registration.firstName}</span>! Tu registro fue guardado y está <strong className="text-amber-400">Pendiente de Verificación</strong> hasta que nuestro equipo revise tu voucher Yape (963 408 328) o constancia por WhatsApp (+51 902 227 356).
+                ¡Gracias <span className="text-amber-400 font-bold">{registration.firstName}</span>! Tu registro fue guardado con estado <strong className="text-amber-400">No Verificado</strong> hasta que nuestro equipo observe tu voucher Yape (963 408 328) o constancia enviada por WhatsApp (+51 902 227 356) y lo valide manualmente.
               </>
             )}
           </p>

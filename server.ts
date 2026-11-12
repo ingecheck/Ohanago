@@ -338,7 +338,7 @@ app.post('/api/registrations', (req, res) => {
     registrationNumber: isSanta ? nextSantaNum : nextNum,
     bibNumber: isSanta ? nextSantaNum : nextNum,
     paymentMethod: 'Yape', // Pago oficial exclusivo vía Yape (Gisela Santa Cruz)
-    paymentStatus: newRunner.paymentStatus || 'Pendiente de Verificación',
+    paymentStatus: 'No Verificado', // Todo nuevo registro inicia No Verificado hasta validación manual en el panel
     paymentProofImage,
     voucherUrl,
     amountPaid: newRunner.amountPaid || (newRunner.hasPreviousDiscount ? 59.5 : 70.0),
@@ -469,7 +469,7 @@ function generateStaticExport(list: any[]) {
     `"${r.finishCheckinTime || ''}"`,
     `"${r.medalDelivered ? 'SI' : 'NO'}"`,
     `"${r.createdAt || ''}"`,
-    `"${r.paymentStatus || 'Pendiente de Verificación'}"`
+    `"${r.paymentStatus || 'No Verificado'}"`
   ]);
 
   const csv = '\uFEFF' + [headers.join(','), ...rows.map(row => row.join(','))].join('\r\n');

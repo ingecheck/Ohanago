@@ -52,7 +52,7 @@ export function exportToNativeXLSX(registrations: RunnerRegistration[]): void {
       r.startCheckinTime || '-',
       r.createdAt ? new Date(r.createdAt).toLocaleString('es-PE') : '-',
       r.paymentMethod || 'Yape',
-      r.paymentStatus || 'Pendiente de Verificación',
+      r.paymentStatus || 'No Verificado',
     ]),
   ];
 

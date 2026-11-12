@@ -117,7 +117,7 @@ export const SantaRunRegistrationModal: React.FC<SantaRunRegistrationModalProps>
         costumeName: 'Santa Hat & Running Kit',
         paymentMethod: formData.paymentMethod,
         paymentReference: formData.paymentReference.trim() || `YAPE-SR-${timestampId}`,
-        paymentStatus: 'Pendiente de Verificación',
+        paymentStatus: 'No Verificado',
         createdAt: new Date().toISOString(),
         disclaimerAccepted: true,
         modality: 'Presencial',

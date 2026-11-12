@@ -259,7 +259,7 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
                 ) : (
                   <Clock className="w-3.5 h-3.5" />
                 )}
-                {competitor.paymentStatus || 'Pendiente de Verificación'}
+                {competitor.paymentStatus === 'Verificado' ? 'Verificado' : 'No Verificado'}
               </span>
               {competitor.paymentStatus !== 'Verificado' && (
                 <span className="text-[10px] text-amber-300/90 block mt-1 max-w-[230px]">
