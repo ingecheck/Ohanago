@@ -64,6 +64,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCheckin, setFilterCheckin] = useState<'all' | 'confirmed' | 'pending'>('all');
+  const [filterPayment, setFilterPayment] = useState<'all' | 'verified' | 'pending'>('all');
   const [filterEdition, setFilterEdition] = useState<'all' | 'santa-run-2026' | 'halloween-5k-2026'>('santa-run-2026');
   const [showTurkeyLottery, setShowTurkeyLottery] = useState(false);
 
@@ -422,23 +423,86 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   }, []);
 
   const handleToggleKitDelivery = async (runnerId: string, currentVal: boolean) => {
+    const nextConfirmed = !currentVal;
+    const nextTime = nextConfirmed ? new Date().toISOString() : undefined;
     const updated = registrations.map((r) =>
       r.id === runnerId
         ? {
             ...r,
-            confirmedAtStart: !currentVal,
-            startCheckinTime: !currentVal ? new Date().toISOString() : undefined,
+            confirmedAtStart: nextConfirmed,
+            startCheckinTime: nextTime,
           }
         : r
     );
     onUpdateRegistrations(updated);
     saveRegistrations(updated);
 
-    if (!currentVal) {
+    const targetRunner = updated.find((r) => r.id === runnerId);
+    if (targetRunner) {
+      try {
+        const cleaned = cleanFirestoreData(targetRunner);
+        setDoc(doc(db, 'registrations', runnerId), cleaned, { merge: true }).catch(() => {});
+      } catch (e) {}
+      try {
+        fetch('/api/runner/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            runnerId,
+            confirmedAtStart: nextConfirmed,
+            startCheckinTime: nextTime || null,
+          }),
+        }).catch(() => {});
+      } catch (e) {}
+    }
+
+    if (nextConfirmed) {
       try {
         confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
       } catch (e) {}
     }
+  };
+
+  const handleUpdatePaymentStatus = async (runner: RunnerRegistration, nextStatus: PaymentStatus) => {
+    const updatedRunner: RunnerRegistration = {
+      ...runner,
+      paymentStatus: nextStatus,
+    };
+    const updatedList = registrations.map((r) =>
+      r.id === runner.id ? updatedRunner : r
+    );
+
+    onUpdateRegistrations(updatedList);
+    saveRegistrations(updatedList);
+    if (viewingVoucherRunner && viewingVoucherRunner.id === runner.id) {
+      setViewingVoucherRunner(updatedRunner);
+    }
+
+    try {
+      const cleaned = cleanFirestoreData(updatedRunner);
+      setDoc(doc(db, 'registrations', runner.id), cleaned, { merge: true }).catch(() => {});
+    } catch (e) {}
+
+    try {
+      await fetch('/api/runner/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          runnerId: runner.id,
+          paymentStatus: nextStatus,
+        }),
+      });
+    } catch (e) {}
+
+    if (nextStatus === 'Verificado') {
+      setLiveNotice(`✓ Pago de ${runner.firstName} ${runner.lastName} marcado manualmente como VERIFICADO.`);
+      try {
+        confetti({ particleCount: 60, spread: 55, origin: { y: 0.7 } });
+      } catch (e) {}
+    } else {
+      setLiveNotice(`⏳ Pago de ${runner.firstName} ${runner.lastName} cambiado a Pendiente de Verificación.`);
+    }
+    setTimeout(() => setLiveNotice(null), 4500);
   };
 
   // Santa Run and Halloween specific metrics
@@ -447,6 +511,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const santaTotalCount = santaRunRegistrations.length;
   const santaKitsConfirmed = santaRunRegistrations.filter((r) => r.confirmedAtStart).length;
   const santaKitsPending = santaTotalCount - santaKitsConfirmed;
+  const santaPaymentsVerified = santaRunRegistrations.filter((r) => r.paymentStatus === 'Verificado').length;
+  const santaPaymentsPending = santaTotalCount - santaPaymentsVerified;
   const halloweenTotalCount = halloweenRegistrations.length;
   const halloweenKitsPending = halloweenRegistrations.filter((r) => !r.confirmedAtStart).length;
   const halloweenKitsConfirmed = halloweenRegistrations.filter((r) => r.confirmedAtStart).length;
@@ -455,6 +521,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const totalCount = registrations.length;
   const checkinConfirmedCount = registrations.filter((r) => r.confirmedAtStart).length;
   const checkinPendingCount = totalCount - checkinConfirmedCount;
+  const paymentVerifiedCount = registrations.filter((r) => r.paymentStatus === 'Verificado').length;
+  const paymentPendingCount = totalCount - paymentVerifiedCount;
 
   // Filtered registrations
   const filteredRegistrations = registrations.filter((r) => {
@@ -475,6 +543,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       (filterCheckin === 'confirmed' && !!r.confirmedAtStart) ||
       (filterCheckin === 'pending' && !r.confirmedAtStart);
 
+    // Payment verification filter
+    const isVerified = r.paymentStatus === 'Verificado';
+    const matchPayment =
+      filterPayment === 'all' ||
+      (filterPayment === 'verified' && isVerified) ||
+      (filterPayment === 'pending' && !isVerified);
+
     // Edition filter (Santa Run 2026 vs Halloween 5K)
     const isSanta = r.edition === 'santa-run-2026' || r.id.startsWith('SR-');
     const matchEdition =
@@ -482,7 +557,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       (filterEdition === 'santa-run-2026' && isSanta) ||
       (filterEdition === 'halloween-5k-2026' && !isSanta);
 
-    return matchSearch && matchCheckin && matchEdition;
+    return matchSearch && matchCheckin && matchPayment && matchEdition;
   });
 
   // Sort registrations so Santa Run entries appear first, and within each edition newest entries appear first
@@ -847,6 +922,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </button>
                   </div>
 
+                  {/* Payment Verification Filter */}
+                  <div className="flex items-center bg-neutral-950 p-1 rounded-xl border border-neutral-800">
+                    <button
+                      onClick={() => setFilterPayment('all')}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                        filterPayment === 'all'
+                          ? 'bg-neutral-800 text-white font-bold'
+                          : 'text-neutral-400 hover:text-white'
+                      }`}
+                    >
+                      Pagos: Todos
+                    </button>
+                    <button
+                      onClick={() => setFilterPayment('verified')}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+                        filterPayment === 'verified'
+                          ? 'bg-emerald-950 border border-emerald-500/60 text-emerald-400 shadow-sm'
+                          : 'text-neutral-400 hover:text-emerald-300'
+                      }`}
+                    >
+                      <span>✓ Verificados ({filterEdition === 'santa-run-2026' ? santaPaymentsVerified : paymentVerifiedCount})</span>
+                    </button>
+                    <button
+                      onClick={() => setFilterPayment('pending')}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+                        filterPayment === 'pending'
+                          ? 'bg-amber-950 border border-amber-500/60 text-amber-300 shadow-sm'
+                          : 'text-neutral-400 hover:text-amber-300'
+                      }`}
+                    >
+                      <span>⏳ Sin Verificar ({filterEdition === 'santa-run-2026' ? santaPaymentsPending : paymentPendingCount})</span>
+                    </button>
+                  </div>
+
                   {/* Edition Filter (Santa Run 2026 vs Halloween 5K) */}
                   <div className="flex items-center bg-neutral-950 p-1 rounded-xl border border-neutral-800">
                     <button
@@ -1046,13 +1155,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               <span className="text-neutral-400">Método: {runner.paymentMethod || 'Yape'}</span>
                             )}
                           </div>
-                          {/* Voucher Button / Status */}
-                          <div className="mt-1">
+                          {/* Manual Payment Verification & Voucher Button */}
+                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                            {runner.paymentStatus === 'Verificado' ? (
+                              <button
+                                onClick={() => handleUpdatePaymentStatus(runner, 'Pendiente de Verificación')}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-black bg-emerald-950/90 text-emerald-400 border border-emerald-500/60 hover:bg-amber-950/70 hover:text-amber-300 hover:border-amber-500/60 transition cursor-pointer shadow-sm"
+                                title="Pago Verificado. Clic para cambiar manualmente a Pendiente"
+                              >
+                                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                                <span>Verificado</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleUpdatePaymentStatus(runner, 'Verificado')}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-950/90 text-amber-300 border border-amber-500/60 hover:bg-emerald-600 hover:text-white hover:border-emerald-400 transition cursor-pointer shadow-sm"
+                                title="No verificado aún. Clic para marcar manualmente como Verificado al confirmar su constancia o WhatsApp"
+                              >
+                                <Clock className="w-3 h-3 text-amber-400" />
+                                <span>Pendiente • Verificar</span>
+                              </button>
+                            )}
+
                             {runner.paymentProofImage || runner.voucherUrl ? (
                               <button
                                 onClick={() => setViewingVoucherRunner(runner)}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-950/90 text-emerald-300 border border-emerald-500/60 hover:bg-emerald-900 transition cursor-pointer shadow-sm"
-                                title="Ver captura del voucher Yape"
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-neutral-800 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-950 transition cursor-pointer shadow-sm"
+                                title="Observar captura del voucher Yape"
                               >
                                 <ImageIcon className="w-3 h-3 text-emerald-400" />
                                 <span>🧾 Ver Voucher</span>
@@ -1066,7 +1195,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 title="Sin voucher adjunto. Clic para pedir constancia por WhatsApp"
                               >
                                 <span>Sin voucher</span>
-                                <span className="text-amber-400 font-bold">• Pedir</span>
+                                <span className="text-amber-400 font-bold">• WhatsApp</span>
                               </a>
                             )}
                           </div>
@@ -1476,16 +1605,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <X className="w-5 h-5" />
             </button>
 
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-500/40">
-                Constancia de Pago Oficial (Yape)
-              </span>
-              <h4 className="font-bebas text-2xl text-white uppercase mt-1 leading-tight">
-                {viewingVoucherRunner.firstName} {viewingVoucherRunner.lastName}
-              </h4>
-              <p className="text-xs text-neutral-400">
-                DNI: <strong className="text-white font-mono">{viewingVoucherRunner.documentNumber}</strong> • ID: <strong className="text-red-400 font-mono">{viewingVoucherRunner.id}</strong> • Monto: <strong className="text-amber-400 font-mono">S/ {Number(viewingVoucherRunner.amountPaid || 70).toFixed(2)}</strong>
-              </p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-500/40">
+                  Constancia de Pago Oficial (Yape)
+                </span>
+                <h4 className="font-bebas text-2xl text-white uppercase mt-1 leading-tight">
+                  {viewingVoucherRunner.firstName} {viewingVoucherRunner.lastName}
+                </h4>
+                <p className="text-xs text-neutral-400">
+                  DNI: <strong className="text-white font-mono">{viewingVoucherRunner.documentNumber}</strong> • ID: <strong className="text-red-400 font-mono">{viewingVoucherRunner.id}</strong> • Monto: <strong className="text-amber-400 font-mono">S/ {Number(viewingVoucherRunner.amountPaid || 70).toFixed(2)}</strong>
+                </p>
+                {viewingVoucherRunner.paymentReference && (
+                  <p className="text-[11px] text-neutral-300 font-mono mt-0.5">
+                    Ref. Operación: <strong className="text-white">{viewingVoucherRunner.paymentReference}</strong>
+                  </p>
+                )}
+              </div>
+
+              <div>
+                {viewingVoucherRunner.paymentStatus === 'Verificado' ? (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-950 text-emerald-400 border border-emerald-500/50">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Pago Verificado
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-950 text-amber-300 border border-amber-500/50">
+                    <Clock className="w-4 h-4" />
+                    Pendiente de Verificación
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Image display */}
@@ -1503,17 +1653,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               )}
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-neutral-800">
-              <a
-                href={viewingVoucherRunner.voucherUrl || viewingVoucherRunner.paymentProofImage}
-                target="_blank"
-                rel="noreferrer"
-                download={`voucher_${viewingVoucherRunner.id}.jpg`}
-                className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
-              >
-                <Download className="w-4 h-4 text-emerald-400" />
-                <span>Abrir / Descargar</span>
-              </a>
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-neutral-800">
+              <div className="flex items-center gap-2">
+                {viewingVoucherRunner.paymentStatus === 'Verificado' ? (
+                  <button
+                    type="button"
+                    onClick={() => handleUpdatePaymentStatus(viewingVoucherRunner, 'Pendiente de Verificación')}
+                    className="px-3.5 py-2 rounded-xl bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-500/40 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Clock className="w-4 h-4" />
+                    <span>Marcar Pendiente</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleUpdatePaymentStatus(viewingVoucherRunner, 'Verificado')}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-600/30"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>✓ Verificar Pago</span>
+                  </button>
+                )}
+
+                <a
+                  href={viewingVoucherRunner.voucherUrl || viewingVoucherRunner.paymentProofImage}
+                  target="_blank"
+                  rel="noreferrer"
+                  download={`voucher_${viewingVoucherRunner.id}.jpg`}
+                  className="px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Download className="w-4 h-4 text-emerald-400" />
+                  <span>Descargar</span>
+                </a>
+              </div>
 
               <div className="flex items-center gap-2">
                 <a

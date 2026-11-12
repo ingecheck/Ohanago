@@ -132,8 +132,8 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
 
       onUpdateCompetitor(updatedRunner);
       setIsUploadingVoucher(false);
-      setActionSuccessMessage('✓ ¡Tu comprobante Yape se ha adjuntado exitosamente!');
-      setTimeout(() => setActionSuccessMessage(null), 4500);
+      setActionSuccessMessage('✓ ¡Comprobante Yape adjuntado! Nuestro equipo lo revisará para marcar tu pago como Verificado.');
+      setTimeout(() => setActionSuccessMessage(null), 5500);
     };
     reader.readAsDataURL(file);
   };
@@ -254,9 +254,18 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
                   ? 'bg-emerald-950/80 text-emerald-400 border-emerald-500/50'
                   : 'bg-amber-950/80 text-amber-400 border-amber-500/50'
               }`}>
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                {competitor.paymentStatus}
+                {competitor.paymentStatus === 'Verificado' ? (
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                ) : (
+                  <Clock className="w-3.5 h-3.5" />
+                )}
+                {competitor.paymentStatus || 'Pendiente de Verificación'}
               </span>
+              {competitor.paymentStatus !== 'Verificado' && (
+                <span className="text-[10px] text-amber-300/90 block mt-1 max-w-[230px]">
+                  Se validará manualmente al revisar tu voucher o envío por WhatsApp (+51 902 227 356).
+                </span>
+              )}
             </div>
 
             {/* Voucher status / upload */}

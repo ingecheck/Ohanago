@@ -31,6 +31,7 @@ export function exportToNativeXLSX(registrations: RunnerRegistration[]): void {
       'Hora Check-in',
       'Fecha Registro',
       'Método Pago',
+      'Estado de Pago',
     ],
     ...santaList.map((r) => [
       r.id.startsWith('SR-') ? r.id : `SR-2026-${String(r.registrationNumber || 1).padStart(4, '0')}`,
@@ -51,6 +52,7 @@ export function exportToNativeXLSX(registrations: RunnerRegistration[]): void {
       r.startCheckinTime || '-',
       r.createdAt ? new Date(r.createdAt).toLocaleString('es-PE') : '-',
       r.paymentMethod || 'Yape',
+      r.paymentStatus || 'Pendiente de Verificación',
     ]),
   ];
 
@@ -60,7 +62,7 @@ export function exportToNativeXLSX(registrations: RunnerRegistration[]): void {
     { wch: 14 }, { wch: 15 }, { wch: 25 }, { wch: 12 },
     { wch: 14 }, { wch: 16 }, { wch: 20 }, { wch: 20 },
     { wch: 18 }, { wch: 14 }, { wch: 18 }, { wch: 16 },
-    { wch: 22 }, { wch: 14 }
+    { wch: 22 }, { wch: 14 }, { wch: 24 }
   ];
   XLSX.utils.book_append_sheet(wb, wsSanta, 'Santa Run 2026');
 

@@ -31,10 +31,18 @@ export const RegistrationSuccessModal: React.FC<RegistrationSuccessModalProps> =
             <CheckCircle className="w-10 h-10" />
           </div>
           <h2 className="font-bebas text-4xl sm:text-5xl text-white tracking-wide uppercase">
-            ¡Inscripción Exitosa!
+            {registration.paymentStatus === 'Verificado' ? '¡Inscripción Confirmada!' : '¡Pre-Inscripción Registrada!'}
           </h2>
           <p className="text-sm text-neutral-300 max-w-md mx-auto">
-            ¡Felicitaciones <span className="text-amber-400 font-bold">{registration.firstName}</span>! Tu cupo oficial para la <strong>SANTA RUN TARAPOTO 2026</strong> está confirmado.
+            {registration.paymentStatus === 'Verificado' ? (
+              <>
+                ¡Felicitaciones <span className="text-amber-400 font-bold">{registration.firstName}</span>! Tu cupo oficial para la <strong>SANTA RUN TARAPOTO 2026</strong> está verificado.
+              </>
+            ) : (
+              <>
+                ¡Gracias <span className="text-amber-400 font-bold">{registration.firstName}</span>! Tu registro fue guardado y está <strong className="text-amber-400">Pendiente de Verificación</strong> hasta que nuestro equipo revise tu voucher Yape (963 408 328) o constancia por WhatsApp (+51 902 227 356).
+              </>
+            )}
           </p>
         </div>
 

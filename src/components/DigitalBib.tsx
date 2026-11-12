@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { RunnerRegistration } from '../types/race';
-import { Printer, Share2, CheckCircle2, QrCode, Award, Droplets, Sparkles, Gift, ArrowLeft, Shirt, ShoppingBag } from 'lucide-react';
+import { Printer, Share2, CheckCircle2, Clock, QrCode, Award, Droplets, Sparkles, Gift, ArrowLeft, Shirt, ShoppingBag } from 'lucide-react';
 import QRCode from 'qrcode';
 
 interface DigitalBibProps {
@@ -120,8 +120,12 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({
               ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40'
               : 'bg-amber-950 text-amber-400 border border-amber-500/40'
           }`}>
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            {registration.paymentStatus}
+            {registration.paymentStatus === 'Verificado' ? (
+              <CheckCircle2 className="w-3.5 h-3.5" />
+            ) : (
+              <Clock className="w-3.5 h-3.5" />
+            )}
+            {registration.paymentStatus || 'Pendiente de Verificación'}
           </span>
         </div>
 

@@ -338,6 +338,7 @@ app.post('/api/registrations', (req, res) => {
     registrationNumber: isSanta ? nextSantaNum : nextNum,
     bibNumber: isSanta ? nextSantaNum : nextNum,
     paymentMethod: 'Yape', // Pago oficial exclusivo vía Yape (Gisela Santa Cruz)
+    paymentStatus: newRunner.paymentStatus || 'Pendiente de Verificación',
     paymentProofImage,
     voucherUrl,
     amountPaid: newRunner.amountPaid || (newRunner.hasPreviousDiscount ? 59.5 : 70.0),
@@ -394,7 +395,7 @@ app.put('/api/registrations', (req, res) => {
 });
 
 app.post('/api/runner/update', (req, res) => {
-  const { runnerId, documentNumber, whatsapp, firstName, lastName, tShirtSize } = req.body;
+  const { runnerId, documentNumber, whatsapp, firstName, lastName, tShirtSize, paymentStatus, confirmedAtStart, startCheckinTime } = req.body;
   if (!runnerId) {
     return res.status(400).json({ error: 'Falta runnerId' });
   }
@@ -408,6 +409,9 @@ app.post('/api/runner/update', (req, res) => {
       ...(firstName !== undefined ? { firstName } : {}),
       ...(lastName !== undefined ? { lastName } : {}),
       ...(tShirtSize !== undefined ? { tShirtSize } : {}),
+      ...(paymentStatus !== undefined ? { paymentStatus } : {}),
+      ...(confirmedAtStart !== undefined ? { confirmedAtStart } : {}),
+      ...(startCheckinTime !== undefined ? { startCheckinTime } : {}),
     };
     writeJSON(REGISTRATIONS_FILE, registrations);
     try {
@@ -465,7 +469,7 @@ function generateStaticExport(list: any[]) {
     `"${r.finishCheckinTime || ''}"`,
     `"${r.medalDelivered ? 'SI' : 'NO'}"`,
     `"${r.createdAt || ''}"`,
-    `"${r.paymentStatus || 'Verificado'}"`
+    `"${r.paymentStatus || 'Pendiente de Verificación'}"`
   ]);
 
   const csv = '\uFEFF' + [headers.join(','), ...rows.map(row => row.join(','))].join('\r\n');
