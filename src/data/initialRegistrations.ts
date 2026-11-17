@@ -4065,6 +4065,15 @@ export const INITIAL_REGISTRATIONS: RunnerRegistration[] = [
 ];
 
 export const getStoredRegistrations = (): RunnerRegistration[] => {
+  let deletedSet = new Set<string>();
+  try {
+    const rawDel = localStorage.getItem("ohana_deleted_runner_ids");
+    if (rawDel) {
+      const parsedDel = JSON.parse(rawDel);
+      if (Array.isArray(parsedDel)) deletedSet = new Set(parsedDel);
+    }
+  } catch (e) {}
+
   try {
     const stored = localStorage.getItem("ohana_registrations");
     if (stored) {
@@ -4072,31 +4081,33 @@ export const getStoredRegistrations = (): RunnerRegistration[] => {
       if (Array.isArray(parsed)) {
         let hasChanges = false;
         const initialMap = new Map(INITIAL_REGISTRATIONS.map((r) => [r.id, r]));
-        const updated = parsed.map((r: any) => {
-          const init = initialMap.get(r.id);
-          if (init) {
-            if (
-              init.documentNumber !== r.documentNumber ||
-              init.firstName !== r.firstName ||
-              init.lastName !== r.lastName
-            ) {
-              hasChanges = true;
-              return {
-                ...r,
-                firstName: init.firstName,
-                lastName: init.lastName,
-                documentNumber: init.documentNumber,
-                email: init.email,
-                whatsapp: init.whatsapp,
-              };
+        const updated = parsed
+          .filter((r: any) => r?.id && !deletedSet.has(r.id))
+          .map((r: any) => {
+            const init = initialMap.get(r.id);
+            if (init) {
+              if (
+                init.documentNumber !== r.documentNumber ||
+                init.firstName !== r.firstName ||
+                init.lastName !== r.lastName
+              ) {
+                hasChanges = true;
+                return {
+                  ...r,
+                  firstName: init.firstName,
+                  lastName: init.lastName,
+                  documentNumber: init.documentNumber,
+                  email: init.email,
+                  whatsapp: init.whatsapp,
+                };
+              }
             }
-          }
-          return r;
-        });
+            return r;
+          });
 
         // Asegurar que cualquier corredor nuevo agregado al formulario oficial se incorpore automáticamente
         const existingIds = new Set(updated.map((r: any) => r.id));
-        const missingRunners = INITIAL_REGISTRATIONS.filter((r) => !existingIds.has(r.id));
+        const missingRunners = INITIAL_REGISTRATIONS.filter((r) => !existingIds.has(r.id) && !deletedSet.has(r.id));
         if (missingRunners.length > 0 || hasChanges) {
           const merged = [...updated, ...missingRunners];
           try {
@@ -4110,7 +4121,7 @@ export const getStoredRegistrations = (): RunnerRegistration[] => {
   } catch (e) {
     console.error("Error loading registrations from localStorage", e);
   }
-  return INITIAL_REGISTRATIONS;
+  return INITIAL_REGISTRATIONS.filter((r) => !deletedSet.has(r.id));
 };
 
 export const saveRegistrations = (registrations: RunnerRegistration[]): void => {

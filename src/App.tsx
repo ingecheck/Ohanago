@@ -20,6 +20,7 @@ import {
   subscribeToRegistrationsCollection,
   mergeRegistrationsLists,
   saveRegistrationFirestore,
+  fetchDeletedRunnerIdsFirestore,
 } from './utils/checkinManager';
 import { CheckCircle2, AlertCircle, X, Sparkles, MapPin, QrCode } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -59,8 +60,15 @@ export const App: React.FC = () => {
     trackPageView();
 
     // 1. Carga inmediata desde local para no bloquear la vista inicial
-    const initialLocal = getStoredRegistrations();
+    const initialLocal = mergeRegistrationsLists([], getStoredRegistrations());
     setRegistrations(initialLocal);
+
+    fetchDeletedRunnerIdsFirestore().then((deletedIds) => {
+      if (deletedIds.length > 0) {
+        const deletedSet = new Set(deletedIds);
+        setRegistrations((prev) => prev.filter((r) => !deletedSet.has(r.id)));
+      }
+    });
 
     // 2. Sincronización en tiempo real con el servidor o local (Hostinger static fallback)
     const syncRegistrations = () => {
@@ -154,13 +162,17 @@ export const App: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
 
-    // Detectar si el usuario escaneó el QR con su cámara nativa (?checkin=start o ?runner=... o ?dni=...)
+    // Detectar si el usuario escaneó el QR con su cámara nativa (?checkin=start o ?runner=... o ?dni=...) o si abrió ?admin=1
     try {
       const urlParams = new URLSearchParams(window.location.search);
+      const adminParam = urlParams.get('admin');
       const runnerParam = urlParams.get('runner') || urlParams.get('runnerId');
       const dniParam = urlParams.get('dni');
 
-      if (runnerParam || dniParam) {
+      if (adminParam === '1' || adminParam === 'true') {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        handleAdminAccess();
+      } else if (runnerParam || dniParam) {
         // Limpiar URL sin recargar
         window.history.replaceState({}, document.title, window.location.pathname);
         processStartCheckinSafe({

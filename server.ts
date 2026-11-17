@@ -704,6 +704,22 @@ app.post('/api/runner/update', (req, res) => {
   return res.status(404).json({ error: 'Runner no encontrado' });
 });
 
+app.post('/api/runner/delete', (req, res) => {
+  const { runnerId } = req.body || {};
+  if (!runnerId) {
+    return res.status(400).json({ error: 'Falta runnerId' });
+  }
+  const registrations = readJSON<any[]>(REGISTRATIONS_FILE, []);
+  const filtered = registrations.filter((r) => r.id !== runnerId);
+  if (filtered.length !== registrations.length) {
+    writeJSON(REGISTRATIONS_FILE, filtered);
+    try {
+      generateStaticExport(filtered);
+    } catch (e) {}
+  }
+  return res.json({ success: true, registrations: filtered });
+});
+
 // Helper to write static synchronized CSV in public/ folder
 function generateStaticExport(list: any[]) {
   const headers = [

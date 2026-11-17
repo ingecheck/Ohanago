@@ -33,6 +33,7 @@ import {
   fetchRegistrationsFirestore,
   mergeRegistrationsLists,
 } from '../utils/checkinManager';
+import { syncRunnerMediaViaAppsScript } from '../services/googleDriveService';
 import { trackEvent } from '../utils/analytics';
 
 interface RegistrationFormProps {
@@ -341,6 +342,25 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
       // 2. Always persist to Cloud Firestore so Admin & Mi Espacio sync across all cellphones and Hostinger
       await saveRegistrationFirestore(finalRecord);
+
+      // 3. Envío directo y automático a las 2 carpetas de Google Drive (sin popup ni Sign-In)
+      if (finalRecord.voucherUrl || finalRecord.paymentProofImage || finalRecord.personalPhotoUrl) {
+        syncRunnerMediaViaAppsScript(finalRecord)
+          .then(async (driveFields) => {
+            if (driveFields) {
+              const syncedRecord: RunnerRegistration = { ...finalRecord, ...driveFields };
+              await saveRegistrationFirestore(syncedRecord);
+              try {
+                await fetch('/api/runner/update', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ runnerId: finalRecord.id, ...driveFields }),
+                });
+              } catch (e) {}
+            }
+          })
+          .catch(() => {});
+      }
 
       trackEvent({
         type: 'runner_login',

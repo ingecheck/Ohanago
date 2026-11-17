@@ -5,11 +5,18 @@ import {
   onAuthStateChanged,
   User,
 } from 'firebase/auth';
-import app from '../firebase';
+import app, { db } from '../firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { RunnerRegistration } from '../types/race';
 
-export const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
+export const SCOPES = [
+  'https://www.googleapis.com/auth/drive.file',
+  'https://www.googleapis.com/auth/drive',
+];
+
+export const DEFAULT_YAPE_FOLDER_ID = '1bXSZLVKnVNT8MWBJNiA8mIoB5tsp7nze';
+export const DEFAULT_PHOTOS_FOLDER_ID = '1_OFzWdhJ1CFltSleo1uJYyTzVfLF2StG';
 
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
@@ -29,6 +36,15 @@ export interface OhanaDriveFolders {
   vouchersFolderUrl: string;
   photosFolderUrl: string;
 }
+
+export const DEFAULT_OHANA_DRIVE_FOLDERS: OhanaDriveFolders = {
+  rootFolderId: DEFAULT_YAPE_FOLDER_ID,
+  vouchersFolderId: DEFAULT_YAPE_FOLDER_ID,
+  photosFolderId: DEFAULT_PHOTOS_FOLDER_ID,
+  rootFolderUrl: `https://drive.google.com/drive/folders/${DEFAULT_YAPE_FOLDER_ID}`,
+  vouchersFolderUrl: `https://drive.google.com/drive/folders/${DEFAULT_YAPE_FOLDER_ID}`,
+  photosFolderUrl: `https://drive.google.com/drive/folders/${DEFAULT_PHOTOS_FOLDER_ID}`,
+};
 
 let cachedFolders: OhanaDriveFolders | null = null;
 
@@ -111,8 +127,58 @@ export const signInWithGoogleDrive = async (): Promise<{
   user: User | { email: string | null };
   accessToken: string;
 } | null> => {
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  const isHostedAppOrigin =
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.endsWith('.run.app') ||
+    hostname.endsWith('.firebaseapp.com') ||
+    hostname.endsWith('.web.app');
+
   try {
     isSigningIn = true;
+
+    // On custom domains (e.g. www.ohanago.pro), trigger GIS synchronously first so the browser doesn't block the popup after an async Firebase call
+    if (!isHostedAppOrigin) {
+      let gisErrMsg = '';
+      try {
+        const gisRes = await signInWithGisFallback();
+        return {
+          user: { email: gisRes.email },
+          accessToken: gisRes.accessToken,
+        };
+      } catch (gisErr: any) {
+        gisErrMsg = gisErr?.message || String(gisErr || '');
+        if (
+          gisErrMsg.toLowerCase().includes('popup_closed') ||
+          gisErrMsg.toLowerCase().includes('cerr')
+        ) {
+          throw new Error('Cerraste la ventana de inicio de sesión de Google antes de completar.');
+        }
+      }
+
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        if (credential?.accessToken) {
+          cachedAccessToken = credential.accessToken;
+          cachedUserEmail = result.user?.email || null;
+          cachedFolders = null;
+          return { user: result.user, accessToken: cachedAccessToken };
+        }
+      } catch (firebaseErr: any) {
+        const code = firebaseErr?.code || '';
+        if (code === 'auth/unauthorized-domain') {
+          throw new Error(
+            `Dominio no autorizado (${hostname}). Asegúrate de haber agregado "https://${hostname}" en Google Cloud OAuth (Orígenes JavaScript autorizados) y "${hostname}" en Firebase Auth (${gisErrMsg || code}), o abre el Panel desde la URL oficial de la app.`
+          );
+        }
+        throw new Error(
+          firebaseErr?.message || gisErrMsg || 'Error al iniciar sesión con Google Drive.'
+        );
+      }
+    }
+
     try {
       const result = await signInWithPopup(auth, provider);
       const credential = GoogleAuthProvider.credentialFromResult(result);
@@ -130,12 +196,10 @@ export const signInWithGoogleDrive = async (): Promise<{
       };
     } catch (firebaseErr: any) {
       const code = firebaseErr?.code || '';
-      // If user explicitly closed the popup, do not open another popup automatically
       if (code === 'auth/popup-closed-by-user' || code === 'auth/user-cancelled') {
         throw new Error('Cerraste la ventana de inicio de sesión antes de completar.');
       }
 
-      // Attempt Google Identity Services token client fallback for popup/handler/domain issues
       try {
         const gisRes = await signInWithGisFallback();
         return {
@@ -145,7 +209,7 @@ export const signInWithGoogleDrive = async (): Promise<{
       } catch (gisErr: any) {
         if (code === 'auth/unauthorized-domain') {
           throw new Error(
-            `Dominio no autorizado (${window.location.hostname}). Abre el panel desde la URL oficial de la app o autoriza "${window.location.hostname}" en Firebase Auth y Google Cloud OAuth.`
+            `Dominio no autorizado (${hostname}). Abre el panel desde la URL oficial de la app o autoriza "${hostname}" en Firebase Auth y Google Cloud OAuth.`
           );
         }
         if (code === 'auth/popup-blocked') {
@@ -180,65 +244,31 @@ function escapeDriveQuery(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
-async function findOrCreateFolder(
+async function verifyDriveFolderAccess(
   accessToken: string,
-  folderName: string,
-  parentId?: string
-): Promise<string> {
-  const parentFilter = parentId ? ` and '${parentId}' in parents` : '';
-  const query = `name = '${escapeDriveQuery(folderName)}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false${parentFilter}`;
-
-  const searchRes = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)&spaces=drive`,
+  folderId: string,
+  folderLabel: string
+): Promise<{ id: string; name?: string; parents?: string[] }> {
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${folderId}?fields=id,name,parents&supportsAllDrives=true`,
     {
       headers: { Authorization: `Bearer ${accessToken}` },
     }
   );
 
-  if (searchRes.status === 401) {
+  if (res.status === 401) {
     cachedAccessToken = null;
     throw new Error('AUTH_EXPIRED');
   }
 
-  if (!searchRes.ok) {
-    const errText = await searchRes.text();
-    throw new Error(`Error buscando carpeta "${folderName}": ${errText}`);
+  if (!res.ok) {
+    const accountHint = cachedUserEmail ? ` (${cachedUserEmail})` : '';
+    throw new Error(
+      `La cuenta de Google conectada${accountHint} no tiene acceso de Editor a la carpeta "${folderLabel}". Inicia sesión con la cuenta dueña de esas carpetas o compártele permisos de Editor.`
+    );
   }
 
-  const searchData = await searchRes.json();
-  if (Array.isArray(searchData.files) && searchData.files.length > 0) {
-    return searchData.files[0].id;
-  }
-
-  const metadata: Record<string, any> = {
-    name: folderName,
-    mimeType: 'application/vnd.google-apps.folder',
-  };
-  if (parentId) {
-    metadata.parents = [parentId];
-  }
-
-  const createRes = await fetch('https://www.googleapis.com/drive/v3/files?fields=id,name', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(metadata),
-  });
-
-  if (createRes.status === 401) {
-    cachedAccessToken = null;
-    throw new Error('AUTH_EXPIRED');
-  }
-
-  if (!createRes.ok) {
-    const errText = await createRes.text();
-    throw new Error(`Error creando carpeta "${folderName}": ${errText}`);
-  }
-
-  const created = await createRes.json();
-  return created.id;
+  return res.json();
 }
 
 export async function ensureOhanaDriveFolders(
@@ -246,28 +276,21 @@ export async function ensureOhanaDriveFolders(
 ): Promise<OhanaDriveFolders> {
   if (cachedFolders) return cachedFolders;
 
-  const rootFolderId = await findOrCreateFolder(
-    accessToken,
-    'OHANA GO - Santa Run 2026'
-  );
-  const vouchersFolderId = await findOrCreateFolder(
-    accessToken,
-    'Constancias Yape - Santa Run 2026',
-    rootFolderId
-  );
-  const photosFolderId = await findOrCreateFolder(
-    accessToken,
-    'Fotos Atletas - Santa Run 2026',
-    rootFolderId
-  );
+  const [vouchersMeta, photosMeta] = await Promise.all([
+    verifyDriveFolderAccess(accessToken, DEFAULT_YAPE_FOLDER_ID, 'Constancias Yape'),
+    verifyDriveFolderAccess(accessToken, DEFAULT_PHOTOS_FOLDER_ID, 'Fotos Atletas'),
+  ]);
+
+  const sharedParentId =
+    vouchersMeta.parents?.find((p) => photosMeta.parents?.includes(p)) || DEFAULT_YAPE_FOLDER_ID;
 
   cachedFolders = {
-    rootFolderId,
-    vouchersFolderId,
-    photosFolderId,
-    rootFolderUrl: `https://drive.google.com/drive/folders/${rootFolderId}`,
-    vouchersFolderUrl: `https://drive.google.com/drive/folders/${vouchersFolderId}`,
-    photosFolderUrl: `https://drive.google.com/drive/folders/${photosFolderId}`,
+    rootFolderId: sharedParentId,
+    vouchersFolderId: DEFAULT_YAPE_FOLDER_ID,
+    photosFolderId: DEFAULT_PHOTOS_FOLDER_ID,
+    rootFolderUrl: `https://drive.google.com/drive/folders/${sharedParentId}`,
+    vouchersFolderUrl: `https://drive.google.com/drive/folders/${DEFAULT_YAPE_FOLDER_ID}`,
+    photosFolderUrl: `https://drive.google.com/drive/folders/${DEFAULT_PHOTOS_FOLDER_ID}`,
   };
 
   return cachedFolders;
@@ -333,7 +356,7 @@ export async function uploadFileToDriveFolder(params: {
   // If updating an already-synced Drive file ID
   if (existingFileId) {
     const updateRes = await fetch(
-      `https://www.googleapis.com/upload/drive/v3/files/${existingFileId}?uploadType=media&fields=id,name,webViewLink`,
+      `https://www.googleapis.com/upload/drive/v3/files/${existingFileId}?uploadType=media&supportsAllDrives=true&fields=id,name,webViewLink`,
       {
         method: 'PATCH',
         headers: {
@@ -362,7 +385,7 @@ export async function uploadFileToDriveFolder(params: {
   // Check if file already exists in folder by exact name to prevent duplicates
   const existingQuery = `name = '${escapeDriveQuery(fullName)}' and '${folderId}' in parents and trashed = false`;
   const checkRes = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(existingQuery)}&fields=files(id,name,webViewLink)&spaces=drive`,
+    `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(existingQuery)}&fields=files(id,name,webViewLink)&spaces=drive&supportsAllDrives=true&includeItemsFromAllDrives=true`,
     {
       headers: { Authorization: `Bearer ${accessToken}` },
     }
@@ -408,7 +431,7 @@ export async function uploadFileToDriveFolder(params: {
   });
 
   const uploadRes = await fetch(
-    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,name,webViewLink',
     {
       method: 'POST',
       headers: {
@@ -435,3 +458,288 @@ export async function uploadFileToDriveFolder(params: {
     webViewLink: uploaded.webViewLink || `https://drive.google.com/file/d/${uploaded.id}/view`,
   };
 }
+
+// ================= GOOGLE APPS SCRIPT DIRECT BRIDGE (NO OAUTH SIGN-IN NEEDED) =================
+
+const BRIDGE_STORAGE_KEY = 'ohana_drive_bridge_url';
+export const DEFAULT_APPS_SCRIPT_BRIDGE_URL = '';
+
+let cachedBridgeUrl: string | null = null;
+
+export const GOOGLE_APPS_SCRIPT_TEMPLATE = `// Pega este código completo en https://script.google.com (Nuevo proyecto)
+// Carpetas oficiales de OHANA GO - Santa Run Tarapoto 2026
+var YAPE_FOLDER_ID = '${DEFAULT_YAPE_FOLDER_ID}';
+var PHOTOS_FOLDER_ID = '${DEFAULT_PHOTOS_FOLDER_ID}';
+
+function doGet() {
+  return ContentService
+    .createTextOutput(JSON.stringify({ ok: true, service: 'OHANA GO Google Drive Direct Bridge' }))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    var raw = (e && e.postData && e.postData.contents) ? e.postData.contents : '{}';
+    var data = JSON.parse(raw);
+    var targetFolderId = data.folderId || (data.kind === 'photo' ? PHOTOS_FOLDER_ID : YAPE_FOLDER_ID);
+    var folder = DriveApp.getFolderById(targetFolderId);
+
+    var fileName = String(data.fileName || ('archivo_' + Date.now() + '.jpg'));
+    var mimeType = String(data.mimeType || 'image/jpeg');
+    var base64 = String(data.base64 || '');
+    var overwrite = !!data.overwrite;
+
+    if (!base64) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ ok: false, error: 'Archivo vacío' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    var existing = folder.getFilesByName(fileName);
+    if (existing.hasNext()) {
+      var prevFile = existing.next();
+      if (!overwrite) {
+        return ContentService
+          .createTextOutput(JSON.stringify({
+            ok: true,
+            id: prevFile.getId(),
+            name: prevFile.getName(),
+            webViewLink: prevFile.getUrl(),
+            existed: true
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      prevFile.setTrashed(true);
+    }
+
+    var bytes = Utilities.base64Decode(base64);
+    var blob = Utilities.newBlob(bytes, mimeType, fileName);
+    var created = folder.createFile(blob);
+
+    return ContentService
+      .createTextOutput(JSON.stringify({
+        ok: true,
+        id: created.getId(),
+        name: created.getName(),
+        webViewLink: created.getUrl()
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ ok: false, error: String(err) }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+
+export function isValidAppsScriptUrl(url: string): boolean {
+  const clean = (url || '').trim();
+  return /^https:\/\/script\.google\.com\/(macros\/s\/|a\/macros\/)/i.test(clean);
+}
+
+export async function getDriveBridgeUrl(): Promise<string | null> {
+  if (cachedBridgeUrl && isValidAppsScriptUrl(cachedBridgeUrl)) {
+    return cachedBridgeUrl;
+  }
+
+  try {
+    const snap = await getDoc(doc(db, 'analytics', 'drive_bridge'));
+    if (snap.exists()) {
+      const cloudUrl = String(snap.data()?.url || '').trim();
+      if (isValidAppsScriptUrl(cloudUrl)) {
+        cachedBridgeUrl = cloudUrl;
+        try {
+          localStorage.setItem(BRIDGE_STORAGE_KEY, cloudUrl);
+        } catch (e) {}
+        return cloudUrl;
+      }
+    }
+  } catch (e) {}
+
+  try {
+    const local = (localStorage.getItem(BRIDGE_STORAGE_KEY) || '').trim();
+    if (isValidAppsScriptUrl(local)) {
+      cachedBridgeUrl = local;
+      return local;
+    }
+  } catch (e) {}
+
+  if (isValidAppsScriptUrl(DEFAULT_APPS_SCRIPT_BRIDGE_URL)) {
+    cachedBridgeUrl = DEFAULT_APPS_SCRIPT_BRIDGE_URL;
+    return DEFAULT_APPS_SCRIPT_BRIDGE_URL;
+  }
+
+  return null;
+}
+
+export async function saveDriveBridgeUrl(url: string): Promise<string> {
+  const clean = (url || '').trim();
+  if (clean && !isValidAppsScriptUrl(clean)) {
+    throw new Error('El enlace debe empezar con https://script.google.com/macros/s/...');
+  }
+
+  cachedBridgeUrl = clean || null;
+  try {
+    if (clean) localStorage.setItem(BRIDGE_STORAGE_KEY, clean);
+    else localStorage.removeItem(BRIDGE_STORAGE_KEY);
+  } catch (e) {}
+
+  try {
+    await setDoc(
+      doc(db, 'analytics', 'drive_bridge'),
+      { url: clean, updatedAt: new Date().toISOString() },
+      { merge: true }
+    );
+  } catch (e) {}
+
+  return clean;
+}
+
+async function sourceToBase64Payload(source: string): Promise<{ base64: string; mimeType: string; ext: string }> {
+  if (source.startsWith('data:')) {
+    const matches = source.match(/^data:([^;]+);base64,(.+)$/);
+    if (!matches) {
+      throw new Error('Formato de imagen inválido');
+    }
+    const mimeType = matches[1] || 'image/jpeg';
+    const ext = mimeType.includes('png')
+      ? 'png'
+      : mimeType.includes('pdf')
+        ? 'pdf'
+        : mimeType.includes('webp')
+          ? 'webp'
+          : 'jpg';
+    return { base64: matches[2], mimeType, ext };
+  }
+
+  const { blob, mimeType, ext } = await sourceToBlob(source);
+  const buffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return { base64: btoa(binary), mimeType, ext };
+}
+
+export async function uploadFileViaAppsScript(params: {
+  bridgeUrl: string;
+  folderId: string;
+  kind: 'voucher' | 'photo';
+  baseFileName: string;
+  source: string;
+  overwrite?: boolean;
+}): Promise<{ id: string; webViewLink: string }> {
+  const { bridgeUrl, folderId, kind, baseFileName, source, overwrite = false } = params;
+  const { base64, mimeType, ext } = await sourceToBase64Payload(source);
+  const fileName = baseFileName.endsWith(`.${ext}`) ? baseFileName : `${baseFileName}.${ext}`;
+
+  const body = JSON.stringify({
+    folderId,
+    kind,
+    fileName,
+    mimeType,
+    base64,
+    overwrite,
+  });
+
+  try {
+    const res = await fetch(bridgeUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body,
+    });
+
+    if (res.ok) {
+      const text = await res.text();
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed?.ok === false) {
+          throw new Error(parsed.error || 'Google Apps Script devolvió un error');
+        }
+        if (parsed?.id) {
+          return {
+            id: parsed.id,
+            webViewLink: parsed.webViewLink || `https://drive.google.com/file/d/${parsed.id}/view`,
+          };
+        }
+      } catch (jsonErr: any) {
+        if (jsonErr?.message && !jsonErr.message.includes('JSON')) {
+          throw jsonErr;
+        }
+      }
+    }
+  } catch (err: any) {
+    if (err?.message && !err.message.toLowerCase().includes('fetch') && !err.message.toLowerCase().includes('cors')) {
+      throw err;
+    }
+    // Fallback with no-cors when strict browser blocks reading Google Apps Script redirect
+    await fetch(bridgeUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body,
+    });
+    return {
+      id: `bridge_${Date.now()}`,
+      webViewLink: `https://drive.google.com/drive/folders/${folderId}`,
+    };
+  }
+
+  return {
+    id: `bridge_${Date.now()}`,
+    webViewLink: `https://drive.google.com/drive/folders/${folderId}`,
+  };
+}
+
+export async function syncRunnerMediaViaAppsScript(
+  runner: RunnerRegistration,
+  options?: { overwrite?: boolean; bridgeUrl?: string }
+): Promise<{
+  driveVoucherFileId?: string;
+  driveVoucherUrl?: string;
+  drivePhotoFileId?: string;
+  drivePhotoUrl?: string;
+} | null> {
+  const bridgeUrl = options?.bridgeUrl || (await getDriveBridgeUrl());
+  if (!bridgeUrl) return null;
+
+  const overwrite = !!options?.overwrite;
+  const personName = buildRunnerPersonName(runner);
+  const result: {
+    driveVoucherFileId?: string;
+    driveVoucherUrl?: string;
+    drivePhotoFileId?: string;
+    drivePhotoUrl?: string;
+  } = {};
+
+  const voucherSrc = runner.voucherUrl || runner.paymentProofImage;
+  if (voucherSrc && (overwrite || !runner.driveVoucherFileId)) {
+    const uploadedVoucher = await uploadFileViaAppsScript({
+      bridgeUrl,
+      folderId: DEFAULT_YAPE_FOLDER_ID,
+      kind: 'voucher',
+      baseFileName: `Constancia_Yape_${personName} (${runner.id})`,
+      source: voucherSrc,
+      overwrite,
+    });
+    result.driveVoucherFileId = uploadedVoucher.id;
+    result.driveVoucherUrl = uploadedVoucher.webViewLink;
+  }
+
+  if (runner.personalPhotoUrl && (overwrite || !runner.drivePhotoFileId)) {
+    const uploadedPhoto = await uploadFileViaAppsScript({
+      bridgeUrl,
+      folderId: DEFAULT_PHOTOS_FOLDER_ID,
+      kind: 'photo',
+      baseFileName: `${personName} (${runner.id})`,
+      source: runner.personalPhotoUrl,
+      overwrite,
+    });
+    result.drivePhotoFileId = uploadedPhoto.id;
+    result.drivePhotoUrl = uploadedPhoto.webViewLink;
+  }
+
+  return Object.keys(result).length > 0 ? result : null;
+}
+

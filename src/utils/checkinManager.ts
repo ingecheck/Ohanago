@@ -1,9 +1,90 @@
 import { RunnerRegistration } from '../types/race';
 import { getStoredRegistrations, saveRegistrations } from '../data/initialRegistrations';
-import { doc, setDoc, collection, onSnapshot, getDocs, Unsubscribe } from 'firebase/firestore';
+import {
+  doc,
+  setDoc,
+  deleteDoc,
+  getDoc,
+  collection,
+  onSnapshot,
+  getDocs,
+  arrayUnion,
+  Unsubscribe,
+} from 'firebase/firestore';
 import { db } from '../firebase';
 
 const CHECKIN_CHANNEL_NAME = 'ohana_checkin_channel';
+const DELETED_IDS_STORAGE_KEY = 'ohana_deleted_runner_ids';
+
+export function getDeletedRunnerIdsLocal(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DELETED_IDS_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return new Set(parsed.filter((id) => typeof id === 'string'));
+      }
+    }
+  } catch (e) {}
+  return new Set();
+}
+
+export function addDeletedRunnerIdsLocal(ids: string[]): void {
+  if (!ids.length) return;
+  try {
+    const current = getDeletedRunnerIdsLocal();
+    ids.forEach((id) => {
+      if (id) current.add(id);
+    });
+    localStorage.setItem(DELETED_IDS_STORAGE_KEY, JSON.stringify(Array.from(current)));
+  } catch (e) {}
+}
+
+export async function fetchDeletedRunnerIdsFirestore(): Promise<string[]> {
+  try {
+    const snap = await getDoc(doc(db, 'analytics', 'deleted_runners'));
+    if (snap.exists()) {
+      const data = snap.data();
+      if (Array.isArray(data?.ids)) {
+        addDeletedRunnerIdsLocal(data.ids);
+        return data.ids;
+      }
+    }
+  } catch (e) {}
+  return Array.from(getDeletedRunnerIdsLocal());
+}
+
+export async function deleteRegistrationEverywhere(runnerId: string): Promise<void> {
+  if (!runnerId) return;
+  addDeletedRunnerIdsLocal([runnerId]);
+
+  try {
+    const current = getStoredRegistrations().filter((r) => r.id !== runnerId);
+    saveRegistrations(current);
+  } catch (e) {}
+
+  try {
+    await deleteDoc(doc(db, 'registrations', runnerId));
+  } catch (e) {
+    console.warn('Firestore deleteDoc fallback:', e);
+  }
+
+  try {
+    await setDoc(
+      doc(db, 'analytics', 'deleted_runners'),
+      { ids: arrayUnion(runnerId), updatedAt: new Date().toISOString() },
+      { merge: true }
+    );
+  } catch (e) {}
+
+  try {
+    await fetch('/api/runner/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ runnerId }),
+    });
+  } catch (e) {}
+}
 
 export function cleanFirestoreData<T>(data: T): T {
   if (data === null || data === undefined) return null as any;
@@ -31,11 +112,12 @@ export async function saveRegistrationFirestore(runner: RunnerRegistration): Pro
 
 export async function fetchRegistrationsFirestore(): Promise<RunnerRegistration[]> {
   try {
+    const deletedSet = new Set(await fetchDeletedRunnerIdsFirestore());
     const snap = await getDocs(collection(db, 'registrations'));
     const list: RunnerRegistration[] = [];
     snap.forEach((docSnap) => {
       const data = docSnap.data() as RunnerRegistration;
-      if (data && data.id) {
+      if (data && data.id && !deletedSet.has(data.id)) {
         list.push(data);
       }
     });
@@ -49,12 +131,13 @@ export function mergeRegistrationsLists(
   baseList: RunnerRegistration[],
   incomingList: RunnerRegistration[]
 ): RunnerRegistration[] {
+  const deletedSet = getDeletedRunnerIdsLocal();
   const map = new Map<string, RunnerRegistration>();
   for (const r of baseList) {
-    if (r?.id) map.set(r.id, r);
+    if (r?.id && !deletedSet.has(r.id)) map.set(r.id, r);
   }
   for (const r of incomingList) {
-    if (r?.id) {
+    if (r?.id && !deletedSet.has(r.id)) {
       const existing = map.get(r.id);
       map.set(r.id, existing ? { ...existing, ...r } : r);
     }
@@ -93,16 +176,15 @@ export function subscribeToRegistrationsCollection(
     return onSnapshot(
       collection(db, 'registrations'),
       (snapshot) => {
+        const deletedSet = getDeletedRunnerIdsLocal();
         const runners: RunnerRegistration[] = [];
         snapshot.docs.forEach((docSnap) => {
           const runner = docSnap.data() as RunnerRegistration;
-          if (runner && runner.id) {
+          if (runner && runner.id && !deletedSet.has(runner.id)) {
             runners.push(runner);
           }
         });
-        if (runners.length > 0) {
-          onSnapshotList(runners);
-        }
+        onSnapshotList(runners);
       },
       (err) => {
         console.warn('Notice: Firestore registrations collection listener:', err);
