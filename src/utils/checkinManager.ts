@@ -1,6 +1,6 @@
 import { RunnerRegistration } from '../types/race';
 import { getStoredRegistrations, saveRegistrations } from '../data/initialRegistrations';
-import { doc, setDoc, collection, onSnapshot, Unsubscribe } from 'firebase/firestore';
+import { doc, setDoc, collection, onSnapshot, getDocs, Unsubscribe } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const CHECKIN_CHANNEL_NAME = 'ohana_checkin_channel';
@@ -20,10 +20,55 @@ export function cleanFirestoreData<T>(data: T): T {
   return data;
 }
 
+export async function saveRegistrationFirestore(runner: RunnerRegistration): Promise<void> {
+  try {
+    const cleaned = cleanFirestoreData(runner);
+    await setDoc(doc(db, 'registrations', runner.id), cleaned, { merge: true });
+  } catch (err) {
+    console.warn('Firestore saveRegistration fallback:', err);
+  }
+}
+
+export async function fetchRegistrationsFirestore(): Promise<RunnerRegistration[]> {
+  try {
+    const snap = await getDocs(collection(db, 'registrations'));
+    const list: RunnerRegistration[] = [];
+    snap.forEach((docSnap) => {
+      const data = docSnap.data() as RunnerRegistration;
+      if (data && data.id) {
+        list.push(data);
+      }
+    });
+    return list;
+  } catch (err) {
+    return [];
+  }
+}
+
+export function mergeRegistrationsLists(
+  baseList: RunnerRegistration[],
+  incomingList: RunnerRegistration[]
+): RunnerRegistration[] {
+  const map = new Map<string, RunnerRegistration>();
+  for (const r of baseList) {
+    if (r?.id) map.set(r.id, r);
+  }
+  for (const r of incomingList) {
+    if (r?.id) {
+      const existing = map.get(r.id);
+      map.set(r.id, existing ? { ...existing, ...r } : r);
+    }
+  }
+  return Array.from(map.values());
+}
+
 export function broadcastCheckinLocal(runner: RunnerRegistration) {
   try {
     const currentList = getStoredRegistrations();
-    const updated = currentList.map((r) => (r.id === runner.id ? runner : r));
+    const exists = currentList.some((r) => r.id === runner.id);
+    const updated = exists
+      ? currentList.map((r) => (r.id === runner.id ? runner : r))
+      : [runner, ...currentList];
     saveRegistrations(updated);
   } catch (e) {}
 
@@ -38,14 +83,33 @@ export function broadcastCheckinLocal(runner: RunnerRegistration) {
     window.dispatchEvent(new Event('storage'));
   } catch (e) {}
 
-  // Sync to Cloud Firestore (sanitizing undefined fields)
+  saveRegistrationFirestore(runner);
+}
+
+export function subscribeToRegistrationsCollection(
+  onSnapshotList: (runners: RunnerRegistration[]) => void
+): Unsubscribe {
   try {
-    const cleaned = cleanFirestoreData(runner);
-    setDoc(doc(db, 'registrations', runner.id), cleaned, { merge: true })
-      .then(() => console.log(`[Firestore] Registered check-in for ${runner.firstName} ${runner.lastName} (${runner.id})`))
-      .catch((err) => console.error('Firestore checkin write error:', err));
+    return onSnapshot(
+      collection(db, 'registrations'),
+      (snapshot) => {
+        const runners: RunnerRegistration[] = [];
+        snapshot.docs.forEach((docSnap) => {
+          const runner = docSnap.data() as RunnerRegistration;
+          if (runner && runner.id) {
+            runners.push(runner);
+          }
+        });
+        if (runners.length > 0) {
+          onSnapshotList(runners);
+        }
+      },
+      (err) => {
+        console.warn('Notice: Firestore registrations collection listener:', err);
+      }
+    );
   } catch (e) {
-    console.error('Firestore checkin dispatch error:', e);
+    return () => {};
   }
 }
 
@@ -56,7 +120,7 @@ export function subscribeToRegistrationsFirestore(callback: (runner: RunnerRegis
       (snapshot) => {
         snapshot.docs.forEach((docSnap) => {
           const runner = docSnap.data() as RunnerRegistration;
-          if (runner && runner.id) {
+          if (runner && runner.id && runner.confirmedAtStart) {
             callback(runner);
           }
         });
@@ -96,8 +160,10 @@ export async function processStartCheckinSafe(params: {
     console.warn('Backend check-in endpoint unavailable, executing client-side check-in fallback for Hostinger:', e);
   }
 
-  // 2. Client-Side Fallback for Hostinger or Offline
-  const registrations = getStoredRegistrations();
+  // 2. Client-Side Fallback for Hostinger or Offline (Local + Cloud Firestore)
+  const localRegs = getStoredRegistrations();
+  const cloudRegs = await fetchRegistrationsFirestore();
+  const registrations = mergeRegistrationsLists(localRegs, cloudRegs);
   const searchInput = (params.code || params.runnerId || params.dni || '').trim();
 
   // Normalize search input (in case full URL was passed)

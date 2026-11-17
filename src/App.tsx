@@ -15,7 +15,12 @@ import { Footer } from './components/Footer';
 import { RunnerRegistration } from './types/race';
 import { getStoredRegistrations, saveRegistrations } from './data/initialRegistrations';
 import { isAdminAuthenticated } from './data/auth';
-import { processStartCheckinSafe, subscribeToRegistrationsFirestore } from './utils/checkinManager';
+import {
+  processStartCheckinSafe,
+  subscribeToRegistrationsCollection,
+  mergeRegistrationsLists,
+  saveRegistrationFirestore,
+} from './utils/checkinManager';
 import { CheckCircle2, AlertCircle, X, Sparkles, MapPin, QrCode } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { trackPageView, trackMiEspacioClick, trackRunnerLogin } from './utils/analytics';
@@ -61,12 +66,13 @@ export const App: React.FC = () => {
     const syncRegistrations = () => {
       fetch('/api/registrations')
         .then((res) => {
-          if (!res.ok) throw new Error('Network error');
+          const contentType = res.headers.get('content-type') || '';
+          if (!res.ok || !contentType.includes('application/json')) throw new Error('Network error');
           return res.json();
         })
         .then((serverData) => {
           if (Array.isArray(serverData) && serverData.length > 0) {
-            setRegistrations(serverData);
+            setRegistrations((prev) => mergeRegistrationsLists(prev, serverData));
 
             // Sincroniza al competidor activo si está logueado
             const currentComp = activeCompetitorRef.current;
@@ -83,7 +89,7 @@ export const App: React.FC = () => {
           // Fallback resiliente para Hostinger www.ohanago.pro sin backend Node activo
           const localData = getStoredRegistrations();
           if (Array.isArray(localData) && localData.length > 0) {
-            setRegistrations(localData);
+            setRegistrations((prev) => mergeRegistrationsLists(prev, localData));
             const currentComp = activeCompetitorRef.current;
             if (currentComp) {
               const found = localData.find((r: RunnerRegistration) => r.id === currentComp.id || r.documentNumber === currentComp.documentNumber);
@@ -111,21 +117,30 @@ export const App: React.FC = () => {
       };
     } catch (e) {}
 
-    // Cloud Firestore real-time listener para acreditación y entrega de kit entre todos los celulares
+    // Cloud Firestore real-time listener para nuevas inscripciones, pagos, fotos y entrega de kit
     let unsubCheckins: (() => void) | null = null;
     try {
-      unsubCheckins = subscribeToRegistrationsFirestore((runner) => {
+      unsubCheckins = subscribeToRegistrationsCollection((cloudRunners) => {
         setRegistrations((prev) => {
-          const next = prev.map((r) => (r.id === runner.id ? { ...r, ...runner, confirmedAtStart: true } : r));
-          return next;
+          const base = prev.length > 0 ? prev : getStoredRegistrations();
+          const merged = mergeRegistrationsLists(base, cloudRunners);
+          try {
+            localStorage.setItem('ohana_registrations', JSON.stringify(merged));
+          } catch (e) {}
+          return merged;
         });
 
-        // Actualizar sesión si el corredor activo es este participante
+        // Actualizar sesión si el corredor activo recibió verificación, foto o check-in
         const currentComp = activeCompetitorRef.current;
-        if (currentComp && (currentComp.id === runner.id || currentComp.documentNumber === runner.documentNumber)) {
-          const updatedComp = { ...currentComp, ...runner, confirmedAtStart: true };
-          setActiveCompetitor(updatedComp);
-          localStorage.setItem('ohana_active_competitor', JSON.stringify(updatedComp));
+        if (currentComp) {
+          const match = cloudRunners.find(
+            (r) => r.id === currentComp.id || r.documentNumber === currentComp.documentNumber
+          );
+          if (match) {
+            const updatedComp = { ...currentComp, ...match };
+            setActiveCompetitor(updatedComp);
+            localStorage.setItem('ohana_active_competitor', JSON.stringify(updatedComp));
+          }
         }
       });
     } catch (e) {}
@@ -393,9 +408,12 @@ export const App: React.FC = () => {
           onUpdateCompetitor={(updated) => {
             setActiveCompetitor(updated);
             localStorage.setItem('ohana_active_competitor', JSON.stringify(updated));
-            setRegistrations((prev) =>
-              prev.map((r) => (r.id === updated.id ? updated : r))
-            );
+            setRegistrations((prev) => {
+              const next = prev.map((r) => (r.id === updated.id ? updated : r));
+              saveRegistrations(next);
+              return next;
+            });
+            saveRegistrationFirestore(updated);
           }}
         />
       )}

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Sparkles, User, AlertCircle, X, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
 import { RunnerRegistration } from '../types/race';
-import { INITIAL_REGISTRATIONS, getStoredRegistrations } from '../data/initialRegistrations';
+import { getStoredRegistrations } from '../data/initialRegistrations';
+import { fetchRegistrationsFirestore, mergeRegistrationsLists } from '../utils/checkinManager';
 import { trackEvent } from '../utils/analytics';
 
 interface CompetitorLoginModalProps {
@@ -39,25 +40,23 @@ export const CompetitorLoginModal: React.FC<CompetitorLoginModalProps> = ({
         body: JSON.stringify({ dni: raw }),
       });
 
-      if (res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
         const data = await res.json();
         if (data.success && data.runner) {
           onSuccess(data.runner);
           return;
         }
-      } else {
-        const data = await res.json().catch(() => null);
-        if (data?.error) {
-          // keep for fallback check
-        }
       }
     } catch (netErr) {
-      // Continue to local fallback
+      // Continue to local + Firestore fallback
     }
 
-    // 2. Client-side fallback from getStoredRegistrations (syncs replacements & additions)
+    // 2. Client-side fallback (localStorage + Cloud Firestore for multi-device Hostinger support)
     try {
-      const allList: RunnerRegistration[] = getStoredRegistrations();
+      const localList: RunnerRegistration[] = getStoredRegistrations();
+      const cloudList = await fetchRegistrationsFirestore();
+      const allList = mergeRegistrationsLists(localList, cloudList);
 
       const matches = allList.filter((r) => {
         const rDni = String(r.documentNumber || '').trim().toLowerCase().replace(/[\s\.\-#]/g, '');

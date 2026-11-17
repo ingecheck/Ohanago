@@ -27,7 +27,12 @@ import {
   Camera
 } from 'lucide-react';
 import { RunnerRegistration, DocumentType, Gender, PaymentMethod } from '../types/race';
-import { getStoredRegistrations } from '../data/initialRegistrations';
+import { getStoredRegistrations, saveRegistrations } from '../data/initialRegistrations';
+import {
+  saveRegistrationFirestore,
+  fetchRegistrationsFirestore,
+  mergeRegistrationsLists,
+} from '../utils/checkinManager';
 import { trackEvent } from '../utils/analytics';
 
 interface RegistrationFormProps {
@@ -78,7 +83,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          const maxDim = 1200;
+          const maxDim = 900;
           if (width > maxDim || height > maxDim) {
             if (width > height) {
               height = Math.round((height * maxDim) / width);
@@ -93,7 +98,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
           const ctx = canvas.getContext('2d');
           if (ctx) {
             ctx.drawImage(img, 0, 0, width, height);
-            const compressed = canvas.toDataURL('image/jpeg', 0.82);
+            const compressed = canvas.toDataURL('image/jpeg', 0.78);
             setVoucherPreview(compressed);
             setIsCompressingVoucher(false);
             return;
@@ -148,7 +153,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
-        const maxDim = 1200;
+        const maxDim = 900;
         if (width > maxDim || height > maxDim) {
           if (width > height) {
             height = Math.round((height * maxDim) / width);
@@ -163,7 +168,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          const compressed = canvas.toDataURL('image/jpeg', 0.85);
+          const compressed = canvas.toDataURL('image/jpeg', 0.8);
           setPersonalPhotoPreview(compressed);
           setIsCompressingPhoto(false);
           return;
@@ -252,7 +257,16 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     setIsSubmitting(true);
 
     const now = new Date().toISOString();
-    const stored = getStoredRegistrations();
+    const localStored = getStoredRegistrations();
+    let cloudStored: RunnerRegistration[] = [];
+    try {
+      cloudStored = await Promise.race([
+        fetchRegistrationsFirestore(),
+        new Promise<RunnerRegistration[]>((resolve) => setTimeout(() => resolve([]), 1500)),
+      ]);
+    } catch (e) {}
+
+    const stored = mergeRegistrationsLists(localStored, cloudStored);
     const santaList = stored.filter((r) => r.edition === 'santa-run-2026' || r.id?.startsWith('SR-'));
     const nextSantaNum = santaList.length > 0
       ? Math.max(...santaList.map((r) => r.registrationNumber || 0)) + 1
@@ -297,50 +311,62 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       medalDelivered: false,
     };
 
+    let finalRecord: RunnerRegistration = newRunner;
+
     try {
-      // 1. Try server endpoint
+      // 1. Try server endpoint (active on AI Studio full-stack server)
       const res = await fetch('/api/registrations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newRunner),
       });
 
-      if (res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
         const savedRecord = await res.json();
-        try {
-          const updatedList = [savedRecord, ...stored.filter((r) => r.id !== savedRecord.id)];
-          localStorage.setItem('ohana_registrations', JSON.stringify(updatedList));
-          localStorage.setItem('ohana_local_registrations', JSON.stringify(updatedList));
-          localStorage.setItem('ohana_active_competitor', JSON.stringify(savedRecord));
-        } catch (e) {}
-
-        trackEvent({
-          type: 'runner_login',
-          runner: savedRecord,
-          title: 'Nueva Inscripción Oficial',
-          description: `${savedRecord.firstName} ${savedRecord.lastName} (${savedRecord.documentNumber})`,
-        });
-        if (onRegistrationSuccess) {
-          onRegistrationSuccess(savedRecord);
+        if (savedRecord && savedRecord.id) {
+          finalRecord = savedRecord;
         }
-        return;
       }
     } catch (netErr) {
-      // Continue to local storage fallback
+      // Static Hostinger hosting: continues to Firestore + localStorage sync
     }
 
-    // 2. Client fallback
     try {
-      const updatedList = [newRunner, ...stored];
-      localStorage.setItem('ohana_local_registrations', JSON.stringify(updatedList));
+      const updatedList = [finalRecord, ...stored.filter((r) => r.id !== finalRecord.id)];
+      saveRegistrations(updatedList);
+      try {
+        localStorage.setItem('ohana_active_competitor', JSON.stringify(finalRecord));
+      } catch (e) {}
+
+      // 2. Always persist to Cloud Firestore so Admin & Mi Espacio sync across all cellphones and Hostinger
+      await saveRegistrationFirestore(finalRecord);
+
       trackEvent({
         type: 'runner_login',
-        runner: newRunner,
-        title: 'Nueva Inscripción Local',
-        description: `${newRunner.firstName} ${newRunner.lastName} (${newRunner.documentNumber})`,
+        runner: finalRecord,
+        title: 'Nueva Inscripción Oficial',
+        description: `${finalRecord.firstName} ${finalRecord.lastName} (${finalRecord.documentNumber})`,
       });
+
+      // Reset form inputs cleanly
+      setFirstName('');
+      setLastName('');
+      setDocumentNumber('');
+      setEmail('');
+      setWhatsapp('');
+      setAge('');
+      setPaymentReference('');
+      setVoucherPreview(null);
+      setVoucherFileName('');
+      setVoucherFileSize('');
+      setPersonalPhotoPreview(null);
+      setPersonalPhotoFileName('');
+      setPersonalPhotoSize('');
+      setDisclaimerAccepted(false);
+
       if (onRegistrationSuccess) {
-        onRegistrationSuccess(newRunner);
+        onRegistrationSuccess(finalRecord);
       }
     } catch (err) {
       setErrorMessage('Hubo un error al procesar tu registro. Por favor intenta de nuevo.');

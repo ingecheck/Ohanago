@@ -2,9 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { RunnerRegistration, PaymentStatus, RaceModality } from '../types/race';
 import { saveRegistrations, getStoredRegistrations } from '../data/initialRegistrations';
 import { adminLogout, updateAdminPassword } from '../data/auth';
-import { processStartCheckinSafe, subscribeToRegistrationsFirestore, cleanFirestoreData } from '../utils/checkinManager';
+import {
+  processStartCheckinSafe,
+  subscribeToRegistrationsCollection,
+  fetchRegistrationsFirestore,
+  mergeRegistrationsLists,
+  cleanFirestoreData,
+} from '../utils/checkinManager';
 import { resetAnalyticsSafe } from '../utils/analytics';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import QRCode from 'qrcode';
 import confetti from 'canvas-confetti';
@@ -378,11 +384,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const fetchSavedDriveFolders = async () => {
     try {
+      const local = localStorage.getItem('ohana_drive_folders');
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (parsed?.rootFolderId) setDriveFolders(parsed);
+      }
+    } catch (e) {}
+
+    try {
       const res = await fetch('/api/admin/drive-folders');
-      if (res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
         const data = await res.json();
         if (data?.folders) {
           setDriveFolders(data.folders);
+          try {
+            localStorage.setItem('ohana_drive_folders', JSON.stringify(data.folders));
+          } catch (e) {}
+          return;
+        }
+      }
+    } catch (e) {}
+
+    try {
+      const snap = await getDoc(doc(db, 'analytics', 'drive_folders'));
+      if (snap.exists()) {
+        const folders = snap.data() as OhanaDriveFolders;
+        if (folders?.rootFolderId) {
+          setDriveFolders(folders);
+          try {
+            localStorage.setItem('ohana_drive_folders', JSON.stringify(folders));
+          } catch (e) {}
         }
       }
     } catch (e) {}
@@ -390,6 +422,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const persistDriveFolders = async (folders: OhanaDriveFolders) => {
     setDriveFolders(folders);
+    try {
+      localStorage.setItem('ohana_drive_folders', JSON.stringify(folders));
+    } catch (e) {}
+    try {
+      setDoc(doc(db, 'analytics', 'drive_folders'), cleanFirestoreData(folders), { merge: true }).catch(() => {});
+    } catch (e) {}
     try {
       await fetch('/api/admin/drive-folders', {
         method: 'POST',
@@ -534,22 +572,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       }
 
       if (updates.length > 0) {
-        const syncRes = await fetch('/api/admin/drive-synced', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ updates, cleanupLocal: false }),
-        });
-
         let nextList = registrations.map((r) => {
           const u = updates.find((item) => item.runnerId === r.id);
           return u ? { ...r, ...u } : r;
         });
 
-        if (syncRes.ok) {
-          const data = await syncRes.json();
-          if (Array.isArray(data.registrations)) {
-            nextList = data.registrations;
+        try {
+          const syncRes = await fetch('/api/admin/drive-synced', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ updates, cleanupLocal: false }),
+          });
+          const contentType = syncRes.headers.get('content-type') || '';
+          if (syncRes.ok && contentType.includes('application/json')) {
+            const data = await syncRes.json();
+            if (Array.isArray(data.registrations)) {
+              nextList = data.registrations;
+            }
           }
+        } catch (e) {}
+
+        // Persist Drive links to Cloud Firestore as well
+        for (const u of updates) {
+          try {
+            const { runnerId, ...fields } = u;
+            setDoc(doc(db, 'registrations', runnerId), cleanFirestoreData(fields), { merge: true }).catch(() => {});
+          } catch (e) {}
         }
 
         onUpdateRegistrations(nextList);
@@ -632,28 +680,36 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const fetchLiveRegistrations = async () => {
     setIsRefreshing(true);
     loadAnalytics();
+    let mergedList: RunnerRegistration[] = getStoredRegistrations();
+
     try {
       const res = await fetch('/api/registrations');
       const contentType = res.headers.get('content-type') || '';
       if (res.ok && contentType.includes('application/json')) {
         const serverList: RunnerRegistration[] = await res.json();
         if (Array.isArray(serverList) && serverList.length > 0) {
-          onUpdateRegistrations(serverList);
-          saveRegistrations(serverList);
-          return;
+          mergedList = mergeRegistrationsLists(mergedList, serverList);
         }
       }
     } catch (err) {
       // Backend unavailable (Hostinger static hosting)
-    } finally {
-      setTimeout(() => setIsRefreshing(false), 400);
     }
 
-    // Hostinger static or offline fallback: load from persistent local store
-    const local = getStoredRegistrations();
-    if (local && local.length > 0) {
-      onUpdateRegistrations(local);
+    try {
+      const cloudList = await fetchRegistrationsFirestore();
+      if (Array.isArray(cloudList) && cloudList.length > 0) {
+        mergedList = mergeRegistrationsLists(mergedList, cloudList);
+      }
+    } catch (e) {}
+
+    if (mergedList.length > 0) {
+      onUpdateRegistrations(mergedList);
+      try {
+        localStorage.setItem('ohana_registrations', JSON.stringify(mergedList));
+      } catch (e) {}
     }
+
+    setTimeout(() => setIsRefreshing(false), 400);
   };
 
   useEffect(() => {
@@ -703,16 +759,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       };
     } catch (e) {}
 
-    // Real-time Cloud Firestore check-in listener (updates admin phone when runner scans anywhere)
+    // Real-time Cloud Firestore collection listener (adds new inscriptions + syncs payments, photos & check-ins)
     let unsubFirestore: (() => void) | null = null;
     try {
-      unsubFirestore = subscribeToRegistrationsFirestore((runner) => {
+      unsubFirestore = subscribeToRegistrationsCollection((cloudRunners) => {
         const currentList = getStoredRegistrations();
-        const updated = currentList.map((r) => (r.id === runner.id ? { ...r, ...runner, confirmedAtStart: true } : r));
+        const updated = mergeRegistrationsLists(currentList, cloudRunners);
         onUpdateRegistrations(updated);
-        saveRegistrations(updated);
-        setLiveNotice(`🎉 ¡${runner.firstName} ${runner.lastName} confirmó entrega de kit inicial en vivo!`);
-        setTimeout(() => setLiveNotice(null), 5000);
+        try {
+          localStorage.setItem('ohana_registrations', JSON.stringify(updated));
+        } catch (e) {}
       });
     } catch (e) {}
 
