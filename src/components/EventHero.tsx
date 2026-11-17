@@ -23,13 +23,6 @@ export const EventHero: React.FC<EventHeroProps> = ({
       <div className="absolute bottom-0 left-10 w-72 h-72 bg-amber-500/5 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="relative max-w-6xl mx-auto px-4 text-center">
-        {/* Festive Holiday Edition Pill */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-950/80 border border-red-500/40 text-red-200 text-xs font-mono font-bold uppercase tracking-widest mb-6 shadow-lg shadow-red-950/50 backdrop-blur-md">
-          <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-          <span>🎅 EDICIÓN OFICIAL NAVIDEÑA · TARAPOTO 2026</span>
-          <span className="text-amber-400 font-black">★</span>
-        </div>
-
         {/* Brand Official Native Logo */}
         <div className="flex flex-col items-center justify-center mb-6">
           <BrandLogo size="xl" showSubtitle={false} variant="crimson" className="py-2 hover:scale-[1.01] transition-transform duration-300" />
@@ -47,7 +40,7 @@ export const EventHero: React.FC<EventHeroProps> = ({
           </div>
 
           <h1 className="font-bebas text-4xl sm:text-6xl md:text-7xl text-white tracking-wide uppercase leading-none drop-shadow-xl">
-            SANTA RUN <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-400 to-amber-300">TARAPOTO 2026 · 6K</span>
+            SANTA RUN <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-rose-400 to-amber-300">TARAPOTO 2026 6K</span>
           </h1>
           <p className="font-bebas text-xl sm:text-2xl text-red-400 uppercase tracking-wider flex items-center justify-center gap-2">
             <span>❤️ Corre y regala Sonrisas</span>

@@ -41,9 +41,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           className="flex items-center gap-2.5 cursor-pointer group hover:opacity-90 transition"
         >
           <BrandLogo size="sm" variant="crimson" />
-          <span className="hidden sm:inline-block text-[9px] tracking-widest font-black uppercase text-red-400 border border-red-500/40 px-2 py-0.5 rounded-md bg-red-950/60 font-mono shadow-sm">
-            SANTA RUN 2026
-          </span>
         </div>
 
         {/* Desktop Navigation Links */}

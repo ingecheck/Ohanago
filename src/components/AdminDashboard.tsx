@@ -92,7 +92,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Google Drive integration & Server Storage monitor states (Admin Panel ONLY)
   const [needsDriveAuth, setNeedsDriveAuth] = useState(true);
-  const [driveUser, setDriveUser] = useState<FirebaseUser | null>(null);
+  const [driveUser, setDriveUser] = useState<FirebaseUser | { email: string | null } | null>(null);
+  const [driveAuthError, setDriveAuthError] = useState<string | null>(null);
   const [driveFolders, setDriveFolders] = useState<OhanaDriveFolders | null>(null);
   const [isLoggingInDrive, setIsLoggingInDrive] = useState(false);
   const [isSyncingDrive, setIsSyncingDrive] = useState(false);
@@ -405,6 +406,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       (user) => {
         setDriveUser(user);
         setNeedsDriveAuth(false);
+        setDriveAuthError(null);
       },
       () => {
         setDriveUser(null);
@@ -416,19 +418,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const handleDriveSignIn = async () => {
     setIsLoggingInDrive(true);
+    setDriveAuthError(null);
     try {
       const result = await signInWithGoogleDrive();
       if (result) {
         setDriveUser(result.user);
         setNeedsDriveAuth(false);
+        setDriveAuthError(null);
         const folders = await ensureOhanaDriveFolders(result.accessToken);
         await persistDriveFolders(folders);
-        setLiveNotice(`✓ Google Drive conectado (${result.user.email}). Carpetas listas para Constancias Yape y Fotos de Atletas.`);
+        setLiveNotice(`✓ Google Drive conectado (${result.user.email || 'Cuenta Google'}). Carpetas listas para Constancias Yape y Fotos de Atletas.`);
         setTimeout(() => setLiveNotice(null), 5000);
       }
     } catch (err: any) {
-      setLiveNotice(`❌ No se pudo conectar Google Drive: ${err?.message || 'Error de autenticación'}`);
-      setTimeout(() => setLiveNotice(null), 5000);
+      const errMsg = err?.message || 'Error de autenticación con Google';
+      setDriveAuthError(errMsg);
+      setLiveNotice(`❌ No se pudo conectar Google Drive: ${errMsg}`);
+      setTimeout(() => setLiveNotice(null), 7000);
     } finally {
       setIsLoggingInDrive(false);
     }
@@ -438,6 +444,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     await logoutGoogleDrive();
     setDriveUser(null);
     setNeedsDriveAuth(true);
+    setDriveAuthError(null);
     setLiveNotice('Sesión de Google Drive desconectada.');
     setTimeout(() => setLiveNotice(null), 3500);
   };
@@ -804,19 +811,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setTimeout(() => setLiveNotice(null), 4500);
   };
 
-  // Santa Run and Halloween specific metrics
+  // Santa Run 2026 metrics
   const santaRunRegistrations = registrations.filter((r) => r.edition === 'santa-run-2026' || r.id.startsWith('SR-'));
-  const halloweenRegistrations = registrations.filter((r) => r.edition !== 'santa-run-2026' && !r.id.startsWith('SR-'));
   const santaTotalCount = santaRunRegistrations.length;
   const santaKitsConfirmed = santaRunRegistrations.filter((r) => r.confirmedAtStart).length;
   const santaKitsPending = santaTotalCount - santaKitsConfirmed;
   const santaPaymentsVerified = santaRunRegistrations.filter((r) => r.paymentStatus === 'Verificado').length;
   const santaPaymentsPending = santaTotalCount - santaPaymentsVerified;
-  const halloweenTotalCount = halloweenRegistrations.length;
-  const halloweenKitsPending = halloweenRegistrations.filter((r) => !r.confirmedAtStart).length;
-  const halloweenKitsConfirmed = halloweenRegistrations.filter((r) => r.confirmedAtStart).length;
+  const santaPhotosCount = santaRunRegistrations.filter((r) => !!r.personalPhotoUrl).length;
+  const santaVouchersCount = santaRunRegistrations.filter((r) => !!(r.voucherUrl || r.paymentProofImage)).length;
+  const santaDriveSyncedCount = santaRunRegistrations.filter((r) => !!(r.driveVoucherFileId || r.drivePhotoFileId)).length;
 
-  // Metrics calculation
+  // General metrics calculation
   const totalCount = registrations.length;
   const checkinConfirmedCount = registrations.filter((r) => r.confirmedAtStart).length;
   const checkinPendingCount = totalCount - checkinConfirmedCount;
@@ -898,7 +904,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-neutral-400 mt-0.5 hidden md:block">
-                Tarapoto • {totalCount} atletas en base de datos • {santaTotalCount} Santa Run · {halloweenTotalCount} Halloween
+                Tarapoto • {santaTotalCount} atletas inscritos en Santa Run Tarapoto 2026
               </p>
             </div>
           </div>
@@ -915,11 +921,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <span>📷 Lector QR Atletas</span>
             </button>
 
-            {/* DESCARGA DE REPORTES (HALLOWEEN Y SANTA RUN) */}
+            {/* DESCARGA DE REPORTES */}
             <button
               onClick={() => setShowExportModal(true)}
               className="flex items-center gap-1.5 px-3.5 py-2 bg-neutral-800 hover:bg-neutral-700 text-amber-300 rounded-xl text-xs font-black transition border border-amber-500/40 shadow-sm cursor-pointer hover:scale-[1.02]"
-              title="Descargar reportes oficiales de Halloween 5K (kits pendientes y QR) y Santa Run"
+              title="Descargar reportes oficiales de Santa Run Tarapoto 2026"
             >
               <Download className="w-4 h-4 text-amber-400" />
               <span>📥 Descargar Reportes</span>
@@ -1012,7 +1018,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               }`}
             >
               <Users className="w-4 h-4" />
-              <span>Control de Atletas ({totalCount})</span>
+              <span>Control de Atletas ({santaTotalCount})</span>
             </button>
 
             <button
@@ -1038,10 +1044,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <button
               onClick={() => setShowExportModal(true)}
               className="px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition flex items-center gap-2 cursor-pointer bg-neutral-900 text-amber-300 hover:text-white hover:bg-neutral-800 border border-amber-500/40 shadow-sm"
-              title="Descargar reportes de Halloween y Santa Run"
+              title="Descargar reportes y respaldos de Santa Run 2026"
             >
               <FileSpreadsheet className="w-4 h-4 text-amber-400" />
-              <span>Reporte Halloween & Santa Run</span>
+              <span>Reportes & Backup</span>
             </button>
 
             <button
@@ -1051,7 +1057,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 setTimeout(() => setLiveNotice(null), 4000);
               }}
               className="px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition flex items-center gap-2 cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500 shadow-md shadow-emerald-950/40"
-              title="Descargar archivo Excel oficial nativo (.xlsx) con pestañas de Santa Run y Halloween"
+              title="Descargar archivo Excel oficial nativo (.xlsx) de Santa Run 2026"
             >
               <Download className="w-4 h-4 text-white" />
               <span>Descargar Excel Oficial (.xlsx)</span>
@@ -1090,42 +1096,56 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
                 <div className="text-[10px] text-neutral-400 mt-1 flex items-center justify-between border-t border-neutral-800 pt-1">
                   <span>Kits entregados:</span>
-                  <span className="text-red-400 font-mono font-bold">{santaKitsConfirmed}</span>
-                </div>
-              </div>
-
-              {/* Halloween Finishers Totales */}
-              <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-neutral-800 shadow-md">
-                <span className="text-[10px] uppercase font-bold text-neutral-400 block">🎃 Halloween 5K</span>
-                <div className="flex items-baseline gap-1.5 mt-1">
-                  <span className="font-bebas text-3xl sm:text-4xl text-white">{halloweenTotalCount}</span>
-                  <span className="text-[11px] text-neutral-500">atletas meta</span>
-                </div>
-                <div className="text-[10px] text-neutral-400 mt-1 flex items-center justify-between border-t border-neutral-800 pt-1">
-                  <span>Check-in QR partida:</span>
-                  <span className="text-emerald-400 font-mono font-bold">{halloweenKitsConfirmed}</span>
-                </div>
-              </div>
-
-              {/* Kits Pendientes de Entrega (Halloween) */}
-              <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-amber-500/50 shadow-md">
-                <span className="text-[10px] uppercase font-bold text-amber-400 flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-amber-400" />
-                  Kits Halloween Pendientes
-                </span>
-                <div className="flex items-baseline gap-1.5 mt-1">
-                  <span className="font-bebas text-3xl sm:text-4xl text-amber-400">
-                    {String(halloweenKitsPending).padStart(2, '0')}
+                  <span className="text-red-400 font-mono font-bold">
+                    {santaKitsConfirmed} / {santaTotalCount} ({santaKitsPending} pend.)
                   </span>
-                  <span className="text-[11px] text-neutral-500">sin entregar</span>
+                </div>
+              </div>
+
+              {/* Pagos Yape (Verificación Manual) */}
+              <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-amber-500/50 shadow-md flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-amber-400 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-amber-400" />
+                    💳 Pagos Yape · Verificación
+                  </span>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="font-bebas text-3xl sm:text-4xl text-emerald-400">{santaPaymentsVerified}</span>
+                    <span className="text-[11px] text-neutral-400">verificados</span>
+                    <span className="text-neutral-600">·</span>
+                    <span className="font-bebas text-2xl text-amber-400">{santaPaymentsPending}</span>
+                    <span className="text-[11px] text-amber-300/80">por revisar</span>
+                  </div>
                 </div>
                 <button
-                  onClick={() => handleExportHalloweenAuditCSV('pending')}
-                  className="mt-1 w-full text-left text-[10px] text-amber-300 font-bold hover:underline flex items-center gap-1 pt-1 border-t border-neutral-800 cursor-pointer"
+                  type="button"
+                  onClick={() => setFilterPayment(filterPayment === 'pending' ? 'all' : 'pending')}
+                  className="mt-1 w-full text-left text-[10px] text-amber-300 font-bold hover:underline flex items-center justify-between pt-1 border-t border-neutral-800 cursor-pointer"
                 >
-                  <Download className="w-3 h-3 text-amber-400" />
-                  Descargar pendientes (CSV)
+                  <span>{filterPayment === 'pending' ? 'Mostrar todos los pagos' : 'Filtrar no verificados'}</span>
+                  <span className="font-mono">→</span>
                 </button>
+              </div>
+
+              {/* Fotos Marco & Vouchers */}
+              <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border border-blue-500/40 shadow-md flex flex-col justify-between">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-blue-400 flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5 text-blue-400" />
+                    📷 Fotos Marco & Vouchers
+                  </span>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="font-bebas text-3xl sm:text-4xl text-white">{santaPhotosCount}</span>
+                    <span className="text-[11px] text-neutral-400">fotos marco</span>
+                    <span className="text-neutral-600">·</span>
+                    <span className="font-bebas text-2xl text-emerald-400">{santaVouchersCount}</span>
+                    <span className="text-[11px] text-neutral-400">vouchers</span>
+                  </div>
+                </div>
+                <div className="text-[10px] text-neutral-400 mt-1 flex items-center justify-between border-t border-neutral-800 pt-1">
+                  <span>Respaldados en Drive:</span>
+                  <span className="text-blue-400 font-mono font-bold">{santaDriveSyncedCount} registros</span>
+                </div>
               </div>
 
               {/* Descargas & Respaldo Oficial Directo */}
@@ -1141,7 +1161,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     </span>
                   </span>
                   <div className="text-xs text-neutral-300 mt-1 font-sans">
-                    Nómina oficial de Santa Run & Halloween
+                    Nómina oficial de Santa Run 2026
                   </div>
                 </div>
                 <div className="mt-2 flex flex-col gap-1.5">
@@ -1260,6 +1280,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   )}
                 </div>
               </div>
+
+              {driveAuthError && needsDriveAuth && (
+                <div className="p-3 rounded-xl bg-red-950/70 border border-red-500/50 text-red-200 text-xs flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <p className="font-bold text-red-300">No se pudo completar el inicio de sesión con Google Drive:</p>
+                    <p className="leading-relaxed">{driveAuthError}</p>
+                    {typeof window !== 'undefined' &&
+                      !window.location.hostname.endsWith('.run.app') &&
+                      window.location.hostname !== 'localhost' && (
+                        <p className="text-[11px] text-amber-300 font-semibold">
+                          Consejo: Estás abriendo la web desde "{window.location.hostname}". Si publicaste en un dominio propio, autorízalo en Firebase Console & Google Cloud OAuth o ingresa desde la URL oficial de la app.
+                        </p>
+                      )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setDriveAuthError(null)}
+                    className="text-red-400 hover:text-white p-1 rounded cursor-pointer shrink-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
 
               {/* Drive folders quick links + Server Storage Usage */}
               <div className="pt-2 border-t border-neutral-800/80 flex flex-wrap items-center justify-between gap-3 text-[11px]">
@@ -1407,7 +1450,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           : 'text-neutral-400 hover:text-white'
                       }`}
                     >
-                      Todos ({totalCount})
+                      Todos ({santaTotalCount})
                     </button>
                     <button
                       onClick={() => setFilterCheckin('confirmed')}
@@ -1419,7 +1462,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       title="Mostrar participantes con kit entregado"
                     >
                       <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>✓ Kit Entregado ({checkinConfirmedCount})</span>
+                      <span>✓ Kit Entregado ({santaKitsConfirmed})</span>
                     </button>
                     <button
                       onClick={() => setFilterCheckin('pending')}
@@ -1431,7 +1474,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       title="Mostrar participantes pendientes de entrega de kit"
                     >
                       <Clock className="w-3.5 h-3.5 text-amber-400" />
-                      <span>⏳ Pendiente de Kit ({checkinPendingCount})</span>
+                      <span>⏳ Pendiente de Kit ({santaKitsPending})</span>
                     </button>
                   </div>
 
@@ -1455,7 +1498,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           : 'text-neutral-400 hover:text-emerald-300'
                       }`}
                     >
-                      <span>✓ Verificados ({filterEdition === 'santa-run-2026' ? santaPaymentsVerified : paymentVerifiedCount})</span>
+                      <span>✓ Verificados ({santaPaymentsVerified})</span>
                     </button>
                     <button
                       onClick={() => setFilterPayment('pending')}
@@ -1465,41 +1508,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           : 'text-neutral-400 hover:text-amber-300'
                       }`}
                     >
-                      <span>⏳ No Verificados ({filterEdition === 'santa-run-2026' ? santaPaymentsPending : paymentPendingCount})</span>
-                    </button>
-                  </div>
-
-                  {/* Edition Filter (Santa Run 2026 vs Halloween 5K) */}
-                  <div className="flex items-center bg-neutral-950 p-1 rounded-xl border border-neutral-800">
-                    <button
-                      onClick={() => setFilterEdition('santa-run-2026')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
-                        filterEdition === 'santa-run-2026'
-                          ? 'bg-red-950 border border-red-500/60 text-red-400 shadow-sm shadow-red-500/20 font-black'
-                          : 'text-neutral-400 hover:text-red-300'
-                      }`}
-                    >
-                      <span>🎅 Santa Run ({santaTotalCount})</span>
-                    </button>
-                    <button
-                      onClick={() => setFilterEdition('halloween-5k-2026')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
-                        filterEdition === 'halloween-5k-2026'
-                          ? 'bg-amber-950 border border-amber-500/60 text-amber-400 shadow-sm shadow-amber-500/20'
-                          : 'text-neutral-400 hover:text-amber-300'
-                      }`}
-                    >
-                      <span>🎃 Halloween ({halloweenTotalCount})</span>
-                    </button>
-                    <button
-                      onClick={() => setFilterEdition('all')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                        filterEdition === 'all'
-                          ? 'bg-neutral-800 text-white font-bold'
-                          : 'text-neutral-400 hover:text-white'
-                      }`}
-                    >
-                      Todas ({totalCount})
+                      <span>⏳ No Verificados ({santaPaymentsPending})</span>
                     </button>
                   </div>
                 </div>
@@ -1896,13 +1905,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   Kits Entregados en Tiempo Real:
                 </span>
                 <span className="font-mono text-white text-sm">
-                  {checkinConfirmedCount} de {totalCount} ({Math.round((checkinConfirmedCount / (totalCount || 1)) * 100)}%)
+                  {santaKitsConfirmed} de {santaTotalCount} ({Math.round((santaKitsConfirmed / (santaTotalCount || 1)) * 100)}%)
                 </span>
               </div>
               <div className="w-full bg-neutral-800 h-2.5 rounded-full overflow-hidden">
                 <div
                   className="bg-gradient-to-r from-red-600 via-rose-500 to-amber-400 h-full transition-all duration-500"
-                  style={{ width: `${Math.min(100, Math.round((checkinConfirmedCount / (totalCount || 1)) * 100))}%` }}
+                  style={{ width: `${Math.min(100, Math.round((santaKitsConfirmed / (santaTotalCount || 1)) * 100))}%` }}
                 />
               </div>
             </div>
@@ -2253,47 +2262,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 Exportar Reportes & Google Drive
               </h3>
               <p className="text-xs text-neutral-400 mt-1">
-                Descarga la nómina de atletas con auditoría de entrega de kits y registro en QR para Halloween 5K y Santa Run 2026.
+                Descarga la nómina oficial de atletas con control de entrega de kits, pagos Yape y respaldo para Santa Run Tarapoto 2026.
               </p>
             </div>
 
-            {/* Section 1: Reportes Halloween 5K (Kits y QR) */}
-            <div className="p-4 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-3">
-              <h4 className="font-bebas text-xl text-amber-400 uppercase tracking-wide flex items-center gap-2">
-                <span>🎃 Reportes Oficiales Halloween 5K</span>
-              </h4>
-              <p className="text-xs text-neutral-400">
-                Verifica a quién se le entregó el kit, quién tiene pendiente y quién registró con código QR.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
-                <button
-                  onClick={() => handleExportHalloweenAuditCSV('all')}
-                  className="p-3 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-neutral-700 hover:border-amber-400/60 text-xs font-bold text-left transition flex flex-col justify-between cursor-pointer"
-                >
-                  <span className="text-white font-bold block mb-1">📄 Reporte Completo</span>
-                  <span className="text-[10px] text-neutral-400">Todos los {halloweenTotalCount} atletas con kits y QR</span>
-                </button>
-
-                <button
-                  onClick={() => handleExportHalloweenAuditCSV('pending')}
-                  className="p-3 rounded-xl bg-amber-950/40 hover:bg-amber-950/70 text-amber-200 border border-amber-500/50 text-xs font-bold text-left transition flex flex-col justify-between cursor-pointer"
-                >
-                  <span className="text-amber-300 font-bold block mb-1">⚠️ Solo Kits Pendientes</span>
-                  <span className="text-[10px] text-amber-400/80">{halloweenKitsPending} atletas sin entrega</span>
-                </button>
-
-                <button
-                  onClick={() => handleExportHalloweenAuditCSV('qr-confirmed')}
-                  className="p-3 rounded-xl bg-emerald-950/40 hover:bg-emerald-950/70 text-emerald-200 border border-emerald-500/50 text-xs font-bold text-left transition flex flex-col justify-between cursor-pointer"
-                >
-                  <span className="text-emerald-300 font-bold block mb-1">🏁 Con Check-in QR</span>
-                  <span className="text-[10px] text-emerald-400/80">{halloweenKitsConfirmed} con QR verificado</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Section 2: Reporte Santa Run 2026 */}
+            {/* Section 1: Reporte Santa Run 2026 */}
             <div className="p-4 rounded-2xl bg-neutral-950 border border-red-500/40 space-y-3">
               <h4 className="font-bebas text-xl text-red-400 uppercase tracking-wide flex items-center gap-2">
                 <span>🎅 Inscripciones Santa Run Tarapoto 2026</span>

@@ -6,6 +6,7 @@ import {
   User,
 } from 'firebase/auth';
 import app from '../firebase';
+import firebaseConfig from '../../firebase-applet-config.json';
 import { RunnerRegistration } from '../types/race';
 
 export const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
@@ -18,6 +19,7 @@ provider.setCustomParameters({ prompt: 'select_account' });
 let isSigningIn = false;
 // Access token cached strictly in memory (never localStorage or sessionStorage)
 let cachedAccessToken: string | null = null;
+let cachedUserEmail: string | null = null;
 
 export interface OhanaDriveFolders {
   rootFolderId: string;
@@ -31,18 +33,16 @@ export interface OhanaDriveFolders {
 let cachedFolders: OhanaDriveFolders | null = null;
 
 export const initDriveAuth = (
-  onAuthSuccess?: (user: User, token: string) => void,
+  onAuthSuccess?: (user: User | { email: string | null }, token: string) => void,
   onAuthFailure?: () => void
 ) => {
   return onAuthStateChanged(auth, (user: User | null) => {
-    if (user) {
-      if (cachedAccessToken) {
-        if (onAuthSuccess) onAuthSuccess(user, cachedAccessToken);
-      } else if (!isSigningIn) {
-        cachedAccessToken = null;
-        if (onAuthFailure) onAuthFailure();
-      }
-    } else {
+    if (cachedAccessToken) {
+      if (onAuthSuccess) onAuthSuccess(user || { email: cachedUserEmail }, cachedAccessToken);
+    } else if (user && !isSigningIn) {
+      cachedAccessToken = null;
+      if (onAuthFailure) onAuthFailure();
+    } else if (!user && !cachedAccessToken) {
       cachedAccessToken = null;
       cachedFolders = null;
       if (onAuthFailure) onAuthFailure();
@@ -50,23 +50,114 @@ export const initDriveAuth = (
   });
 };
 
+async function fetchDriveAccountEmail(accessToken: string): Promise<string | null> {
+  try {
+    const res = await fetch('https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data?.user?.emailAddress || null;
+    }
+  } catch (e) {}
+  return null;
+}
+
+function signInWithGisFallback(): Promise<{ email: string | null; accessToken: string }> {
+  return new Promise((resolve, reject) => {
+    const win = window as any;
+    const oauth2 = win?.google?.accounts?.oauth2;
+    const clientId = (firebaseConfig as any)?.oAuthClientId;
+
+    if (!oauth2 || !clientId) {
+      reject(new Error('GIS_UNAVAILABLE'));
+      return;
+    }
+
+    try {
+      const tokenClient = oauth2.initTokenClient({
+        client_id: clientId,
+        scope: SCOPES.join(' '),
+        prompt: 'select_account',
+        callback: async (tokenResponse: any) => {
+          if (tokenResponse?.error) {
+            reject(new Error(tokenResponse.error_description || tokenResponse.error));
+            return;
+          }
+          if (!tokenResponse?.access_token) {
+            reject(new Error('No se recibió token de acceso de Google Drive.'));
+            return;
+          }
+          cachedAccessToken = tokenResponse.access_token;
+          cachedUserEmail = await fetchDriveAccountEmail(tokenResponse.access_token);
+          cachedFolders = null;
+          resolve({
+            email: cachedUserEmail,
+            accessToken: tokenResponse.access_token,
+          });
+        },
+        error_callback: (err: any) => {
+          reject(new Error(err?.message || err?.type || 'Ventana de Google cerrada o bloqueada.'));
+        },
+      });
+      tokenClient.requestAccessToken();
+    } catch (err: any) {
+      reject(err);
+    }
+  });
+}
+
 export const signInWithGoogleDrive = async (): Promise<{
-  user: User;
+  user: User | { email: string | null };
   accessToken: string;
 } | null> => {
   try {
     isSigningIn = true;
-    const result = await signInWithPopup(auth, provider);
-    const credential = GoogleAuthProvider.credentialFromResult(result);
-    if (!credential?.accessToken) {
-      throw new Error('No se pudo obtener el token de acceso de Google Drive.');
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential?.accessToken) {
+        cachedAccessToken = credential.accessToken;
+        cachedUserEmail = result.user?.email || null;
+        cachedFolders = null;
+        return { user: result.user, accessToken: cachedAccessToken };
+      }
+      // If Firebase returned user without OAuth accessToken, fall back to GIS token client
+      const gisRes = await signInWithGisFallback();
+      return {
+        user: result.user || { email: gisRes.email },
+        accessToken: gisRes.accessToken,
+      };
+    } catch (firebaseErr: any) {
+      const code = firebaseErr?.code || '';
+      // If user explicitly closed the popup, do not open another popup automatically
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/user-cancelled') {
+        throw new Error('Cerraste la ventana de inicio de sesión antes de completar.');
+      }
+
+      // Attempt Google Identity Services token client fallback for popup/handler/domain issues
+      try {
+        const gisRes = await signInWithGisFallback();
+        return {
+          user: { email: gisRes.email },
+          accessToken: gisRes.accessToken,
+        };
+      } catch (gisErr: any) {
+        if (code === 'auth/unauthorized-domain') {
+          throw new Error(
+            `Dominio no autorizado (${window.location.hostname}). Abre el panel desde la URL oficial de la app o autoriza "${window.location.hostname}" en Firebase Auth y Google Cloud OAuth.`
+          );
+        }
+        if (code === 'auth/popup-blocked') {
+          throw new Error(
+            'Tu navegador bloqueó la ventana emergente de Google. Permite las ventanas emergentes (pop-ups) para este sitio e intenta de nuevo.'
+          );
+        }
+        throw new Error(
+          firebaseErr?.message || gisErr?.message || 'Error al iniciar sesión con Google Drive.'
+        );
+      }
     }
-    cachedAccessToken = credential.accessToken;
-    cachedFolders = null;
-    return { user: result.user, accessToken: cachedAccessToken };
-  } catch (error) {
-    console.error('Google Drive sign in error:', error);
-    throw error;
   } finally {
     isSigningIn = false;
   }
@@ -77,8 +168,11 @@ export const getDriveAccessToken = async (): Promise<string | null> => {
 };
 
 export const logoutGoogleDrive = async (): Promise<void> => {
-  await auth.signOut();
+  try {
+    await auth.signOut();
+  } catch (e) {}
   cachedAccessToken = null;
+  cachedUserEmail = null;
   cachedFolders = null;
 };
 

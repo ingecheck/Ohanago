@@ -60,7 +60,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       {showSubtitle && (
         <span className="font-mono text-[9px] sm:text-[11px] tracking-[0.25em] text-red-200/80 uppercase mt-1 text-center font-bold flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-          <span>{subtitleText || 'TARAPOTO 2026 · SANTA RUN'}</span>
+          <span>{subtitleText || 'TARAPOTO 2026 SANTA RUN'}</span>
         </span>
       )}
     </div>
