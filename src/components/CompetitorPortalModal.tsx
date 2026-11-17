@@ -23,12 +23,19 @@ import {
   Image as ImageIcon,
   FileText,
   X,
-  Eye
+  Eye,
+  ExternalLink
 } from 'lucide-react';
 import { RunnerRegistration } from '../types/race';
 import { QRScannerModal } from './QRScannerModal';
 import { processStartCheckinSafe } from '../utils/checkinManager';
 import { DigitalBib } from './DigitalBib';
+import {
+  syncRunnerMediaViaAppsScript,
+  readImageFileHighQuality,
+  getDriveImagePreviewUrl,
+  getDriveFileLink,
+} from '../services/googleDriveService';
 
 interface CompetitorPortalModalProps {
   competitor: RunnerRegistration;
@@ -66,146 +73,101 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
   const [isUploadingVoucher, setIsUploadingVoucher] = useState(false);
   const [showCompetitorPhotoModal, setShowCompetitorPhotoModal] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [voucherPreviewError, setVoucherPreviewError] = useState(false);
+  const [photoPreviewError, setPhotoPreviewError] = useState(false);
+
+  const hasVoucher = !!(
+    competitor.voucherUrl ||
+    competitor.paymentProofImage ||
+    competitor.driveVoucherFileId ||
+    competitor.driveVoucherUrl
+  );
+  const hasPhoto = !!(
+    competitor.personalPhotoUrl ||
+    competitor.drivePhotoFileId ||
+    competitor.drivePhotoUrl
+  );
 
   const handleCompetitorUploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setIsUploadingPhoto(true);
+    setActionErrorMessage(null);
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const rawData = event.target?.result as string;
-      let finalData = rawData;
+    try {
+      const highQualityData = await readImageFileHighQuality(file);
+      const driveFields = await syncRunnerMediaViaAppsScript(
+        {
+          ...competitor,
+          personalPhotoUrl: highQualityData,
+          voucherUrl: undefined,
+          paymentProofImage: undefined,
+        },
+        { overwrite: true }
+      );
 
-      try {
-        const img = new Image();
-        await new Promise<void>((resolve, reject) => {
-          img.onload = () => resolve();
-          img.onerror = () => reject();
-          img.src = rawData;
-        });
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        const maxDim = 1200;
-        if (width > maxDim || height > maxDim) {
-          if (width > height) {
-            height = Math.round((height * maxDim) / width);
-            width = maxDim;
-          } else {
-            width = Math.round((width * maxDim) / height);
-            height = maxDim;
-          }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          finalData = canvas.toDataURL('image/jpeg', 0.85);
-        }
-      } catch (e) {}
-
-      try {
-        const res = await fetch('/api/upload-photo', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            runnerId: competitor.id,
-            photoImage: finalData,
-          }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.personalPhotoUrl) {
-            finalData = data.personalPhotoUrl;
-          }
-        }
-      } catch (err) {}
+      if (!driveFields?.drivePhotoFileId) {
+        throw new Error('No se recibió confirmación de Google Drive.');
+      }
 
       const updatedRunner: RunnerRegistration = {
         ...competitor,
-        personalPhotoUrl: finalData,
+        personalPhotoUrl: undefined,
+        drivePhotoFileId: driveFields.drivePhotoFileId,
+        drivePhotoUrl: driveFields.drivePhotoUrl,
       };
       onUpdateCompetitor(updatedRunner);
-      setIsUploadingPhoto(false);
-      setActionSuccessMessage('✓ ¡Tu foto personal para el marco oficial fue guardada con tu nombre!');
+      setPhotoPreviewError(false);
+      setActionSuccessMessage('✓ ¡Tu foto personal en alta calidad fue guardada directo en Google Drive con tu nombre!');
       setTimeout(() => setActionSuccessMessage(null), 5500);
-    };
-    reader.readAsDataURL(file);
+    } catch (err: any) {
+      setActionErrorMessage(err?.message || 'No se pudo subir tu foto a Google Drive. Intenta nuevamente.');
+      setTimeout(() => setActionErrorMessage(null), 6000);
+    } finally {
+      setIsUploadingPhoto(false);
+    }
   };
 
   const handleCompetitorUploadVoucher = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setIsUploadingVoucher(true);
+    setActionErrorMessage(null);
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const rawData = event.target?.result as string;
-      let finalData = rawData;
+    try {
+      const highQualityData = await readImageFileHighQuality(file);
+      const driveFields = await syncRunnerMediaViaAppsScript(
+        {
+          ...competitor,
+          voucherUrl: highQualityData,
+          paymentProofImage: undefined,
+          personalPhotoUrl: undefined,
+        },
+        { overwrite: true }
+      );
 
-      if (file.type.startsWith('image/')) {
-        try {
-          const img = new Image();
-          await new Promise<void>((resolve, reject) => {
-            img.onload = () => resolve();
-            img.onerror = () => reject();
-            img.src = rawData;
-          });
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-          const maxDim = 1200;
-          if (width > maxDim || height > maxDim) {
-            if (width > height) {
-              height = Math.round((height * maxDim) / width);
-              width = maxDim;
-            } else {
-              width = Math.round((width * maxDim) / height);
-              height = maxDim;
-            }
-          }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, width, height);
-            finalData = canvas.toDataURL('image/jpeg', 0.82);
-          }
-        } catch (e) {}
+      if (!driveFields?.driveVoucherFileId) {
+        throw new Error('No se recibió confirmación de Google Drive.');
       }
-
-      // 1. Try server upload
-      try {
-        const res = await fetch('/api/upload-voucher', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            runnerId: competitor.id,
-            voucherImage: finalData,
-          }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.voucherUrl) {
-            finalData = data.voucherUrl;
-          }
-        }
-      } catch (err) {}
 
       const updatedRunner: RunnerRegistration = {
         ...competitor,
-        voucherUrl: finalData,
-        paymentProofImage: finalData,
+        voucherUrl: undefined,
+        paymentProofImage: undefined,
+        driveVoucherFileId: driveFields.driveVoucherFileId,
+        driveVoucherUrl: driveFields.driveVoucherUrl,
       };
 
       onUpdateCompetitor(updatedRunner);
-      setIsUploadingVoucher(false);
-      setActionSuccessMessage('✓ ¡Comprobante Yape adjuntado! Nuestro equipo lo revisará para marcar tu pago como Verificado.');
+      setVoucherPreviewError(false);
+      setActionSuccessMessage('✓ ¡Comprobante Yape enviado en alta calidad directo a Google Drive! Nuestro equipo validará tu pago.');
       setTimeout(() => setActionSuccessMessage(null), 5500);
-    };
-    reader.readAsDataURL(file);
+    } catch (err: any) {
+      setActionErrorMessage(err?.message || 'No se pudo subir el comprobante a Google Drive. Intenta nuevamente.');
+      setTimeout(() => setActionErrorMessage(null), 6000);
+    } finally {
+      setIsUploadingVoucher(false);
+    }
   };
 
   const handleStartQRScan = async (scannedToken: string) => {
@@ -340,20 +302,23 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
 
             {/* Voucher & Personal Photo status / upload */}
             <div className="flex flex-wrap items-center gap-2 justify-end">
-              {competitor.voucherUrl || competitor.paymentProofImage ? (
+              {hasVoucher ? (
                 <button
                   type="button"
-                  onClick={() => setShowCompetitorVoucherModal(true)}
+                  onClick={() => {
+                    setVoucherPreviewError(false);
+                    setShowCompetitorVoucherModal(true);
+                  }}
                   className="px-2.5 py-1 rounded-xl bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 text-[11px] font-bold flex items-center gap-1.5 hover:bg-emerald-900 transition cursor-pointer shadow-sm"
-                  title="Ver comprobante Yape que adjuntaste"
+                  title="Ver comprobante Yape guardado en Drive"
                 >
                   <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>🧾 Ver Voucher Yape</span>
+                  <span>🧾 Voucher en Drive ✓</span>
                 </button>
               ) : (
                 <label className="px-2.5 py-1 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-neutral-700 hover:border-red-500 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition shadow-sm">
                   <Upload className="w-3.5 h-3.5 text-amber-400" />
-                  <span>{isUploadingVoucher ? 'Subiendo...' : '+ Adjuntar Voucher Yape'}</span>
+                  <span>{isUploadingVoucher ? 'Subiendo a Drive...' : '+ Adjuntar Voucher Yape'}</span>
                   <input
                     type="file"
                     accept="image/*,application/pdf"
@@ -364,20 +329,23 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
                 </label>
               )}
 
-              {competitor.personalPhotoUrl ? (
+              {hasPhoto ? (
                 <button
                   type="button"
-                  onClick={() => setShowCompetitorPhotoModal(true)}
+                  onClick={() => {
+                    setPhotoPreviewError(false);
+                    setShowCompetitorPhotoModal(true);
+                  }}
                   className="px-2.5 py-1 rounded-xl bg-amber-950/90 text-amber-300 border border-amber-500/50 text-[11px] font-bold flex items-center gap-1.5 hover:bg-amber-900 transition cursor-pointer shadow-sm"
                   title="Ver o actualizar tu foto para el marco oficial"
                 >
                   <Camera className="w-3.5 h-3.5 text-amber-400" />
-                  <span>📷 Foto para Marco</span>
+                  <span>📷 Foto en Drive ✓</span>
                 </button>
               ) : (
                 <label className="px-2.5 py-1 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-amber-300 border border-amber-500/40 hover:border-amber-400 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition shadow-sm">
                   <Camera className="w-3.5 h-3.5 text-amber-400" />
-                  <span>{isUploadingPhoto ? 'Subiendo...' : '+ Subir Foto (Marco)'}</span>
+                  <span>{isUploadingPhoto ? 'Subiendo a Drive...' : '+ Subir Foto (Marco)'}</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -763,101 +731,165 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
       )}
 
       {/* Modal: Competitor View Voucher */}
-      {showCompetitorVoucherModal && (competitor.voucherUrl || competitor.paymentProofImage) && (
-        <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
-          <div className="relative max-w-lg w-full bg-neutral-900 border-2 border-emerald-500/60 rounded-3xl p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
-            <button
-              onClick={() => setShowCompetitorVoucherModal(false)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-500/40">
-                Tu Comprobante Oficial Yape
-              </span>
-              <h4 className="font-bebas text-2xl text-white uppercase mt-1 leading-tight">
-                Voucher de Inscripción
-              </h4>
-              <p className="text-xs text-neutral-400">
-                {competitor.firstName} {competitor.lastName} • DNI: {competitor.documentNumber}
-              </p>
-            </div>
-
-            <div className="rounded-2xl overflow-hidden bg-black border border-neutral-800 min-h-[220px] max-h-[60vh] flex items-center justify-center p-2">
-              <img
-                src={competitor.voucherUrl || competitor.paymentProofImage}
-                alt="Comprobante de pago Yape"
-                className="max-h-[58vh] w-auto max-w-full object-contain rounded-xl"
-              />
-            </div>
-
-            <div className="flex items-center justify-between pt-1 border-t border-neutral-800 text-xs">
-              <span className="text-neutral-400">Canal: Yape (963 408 328 - Gisela Santa Cruz)</span>
+      {showCompetitorVoucherModal && hasVoucher && (() => {
+        const previewSrc = getDriveImagePreviewUrl(
+          competitor.driveVoucherFileId,
+          competitor.voucherUrl || competitor.paymentProofImage
+        );
+        const driveLink = getDriveFileLink(
+          competitor.driveVoucherFileId,
+          competitor.driveVoucherUrl,
+          competitor.voucherUrl || competitor.paymentProofImage
+        );
+        return (
+          <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
+            <div className="relative max-w-lg w-full bg-neutral-900 border-2 border-emerald-500/60 rounded-3xl p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
               <button
-                type="button"
                 onClick={() => setShowCompetitorVoucherModal(false)}
-                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold cursor-pointer"
+                className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
               >
-                Cerrar
+                <X className="w-5 h-5" />
               </button>
+
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-500/40">
+                  Tu Comprobante Oficial Yape
+                </span>
+                <h4 className="font-bebas text-2xl text-white uppercase mt-1 leading-tight">
+                  Voucher de Inscripción
+                </h4>
+                <p className="text-xs text-neutral-400">
+                  {competitor.firstName} {competitor.lastName} • DNI: {competitor.documentNumber}
+                </p>
+              </div>
+
+              <div className="rounded-2xl overflow-hidden bg-black border border-neutral-800 min-h-[200px] max-h-[60vh] flex items-center justify-center p-4">
+                {previewSrc && !voucherPreviewError ? (
+                  <img
+                    src={previewSrc}
+                    alt="Comprobante de pago Yape"
+                    onError={() => setVoucherPreviewError(true)}
+                    className="max-h-[58vh] w-auto max-w-full object-contain rounded-xl"
+                  />
+                ) : (
+                  <div className="text-center space-y-3 py-6">
+                    <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
+                    <p className="text-xs text-neutral-300 font-semibold">
+                      ✓ Tu comprobante Yape ya fue recibido en Google Drive de la organización.
+                    </p>
+                    {driveLink && (
+                      <a
+                        href={driveLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Ver Archivo en Drive</span>
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between pt-1 border-t border-neutral-800 text-xs">
+                <span className="text-neutral-400">Canal: Yape (963 408 328 - Gisela Santa Cruz)</span>
+                <button
+                  type="button"
+                  onClick={() => setShowCompetitorVoucherModal(false)}
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold cursor-pointer"
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Modal: Competitor View / Update Personal Photo for Frame */}
-      {showCompetitorPhotoModal && competitor.personalPhotoUrl && (
-        <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
-          <div className="relative max-w-lg w-full bg-neutral-900 border-2 border-amber-500/60 rounded-3xl p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
-            <button
-              onClick={() => setShowCompetitorPhotoModal(false)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 bg-amber-950/80 px-2.5 py-0.5 rounded-full border border-amber-500/40">
-                Tu Foto para Marco Oficial
-              </span>
-              <h4 className="font-bebas text-2xl text-white uppercase mt-1 leading-tight">
-                {competitor.firstName} {competitor.lastName}
-              </h4>
-            </div>
-
-            <div className="rounded-2xl overflow-hidden bg-black border border-neutral-800 min-h-[220px] max-h-[60vh] flex items-center justify-center p-2">
-              <img
-                src={competitor.personalPhotoUrl}
-                alt="Foto personal del corredor"
-                className="max-h-[58vh] w-auto max-w-full object-contain rounded-xl"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-neutral-800 text-xs">
-              <label className="px-3.5 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-amber-300 font-bold cursor-pointer flex items-center gap-1.5">
-                <Upload className="w-3.5 h-3.5" />
-                <span>{isUploadingPhoto ? 'Actualizando...' : 'Cambiar Foto'}</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleCompetitorUploadPhoto}
-                  disabled={isUploadingPhoto}
-                  className="hidden"
-                />
-              </label>
+      {showCompetitorPhotoModal && hasPhoto && (() => {
+        const previewSrc = getDriveImagePreviewUrl(
+          competitor.drivePhotoFileId,
+          competitor.personalPhotoUrl
+        );
+        const driveLink = getDriveFileLink(
+          competitor.drivePhotoFileId,
+          competitor.drivePhotoUrl,
+          competitor.personalPhotoUrl
+        );
+        return (
+          <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
+            <div className="relative max-w-lg w-full bg-neutral-900 border-2 border-amber-500/60 rounded-3xl p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
               <button
-                type="button"
                 onClick={() => setShowCompetitorPhotoModal(false)}
-                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold cursor-pointer"
+                className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
               >
-                Cerrar
+                <X className="w-5 h-5" />
               </button>
+
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 bg-amber-950/80 px-2.5 py-0.5 rounded-full border border-amber-500/40">
+                  Tu Foto para Marco Oficial
+                </span>
+                <h4 className="font-bebas text-2xl text-white uppercase mt-1 leading-tight">
+                  {competitor.firstName} {competitor.lastName}
+                </h4>
+              </div>
+
+              <div className="rounded-2xl overflow-hidden bg-black border border-neutral-800 min-h-[200px] max-h-[60vh] flex items-center justify-center p-4">
+                {previewSrc && !photoPreviewError ? (
+                  <img
+                    src={previewSrc}
+                    alt="Foto personal del corredor"
+                    onError={() => setPhotoPreviewError(true)}
+                    className="max-h-[58vh] w-auto max-w-full object-contain rounded-xl"
+                  />
+                ) : (
+                  <div className="text-center space-y-3 py-6">
+                    <CheckCircle2 className="w-10 h-10 text-amber-400 mx-auto" />
+                    <p className="text-xs text-neutral-300 font-semibold">
+                      ✓ Tu foto personal en alta calidad ya está guardada en Google Drive para tu marco oficial.
+                    </p>
+                    {driveLink && (
+                      <a
+                        href={driveLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Ver Foto en Drive</span>
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-neutral-800 text-xs">
+                <label className="px-3.5 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-amber-300 font-bold cursor-pointer flex items-center gap-1.5">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{isUploadingPhoto ? 'Actualizando en Drive...' : 'Cambiar Foto'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCompetitorUploadPhoto}
+                    disabled={isUploadingPhoto}
+                    className="hidden"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowCompetitorPhotoModal(false)}
+                  className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold cursor-pointer"
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };

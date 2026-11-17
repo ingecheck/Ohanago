@@ -11,7 +11,7 @@ import {
   deleteRegistrationEverywhere,
 } from '../utils/checkinManager';
 import { resetAnalyticsSafe } from '../utils/analytics';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, deleteField } from 'firebase/firestore';
 import { db } from '../firebase';
 import QRCode from 'qrcode';
 import confetti from 'canvas-confetti';
@@ -76,6 +76,8 @@ import {
   getDriveAccessToken,
   ensureOhanaDriveFolders,
   uploadFileToDriveFolder,
+  getDriveImagePreviewUrl,
+  getDriveFileLink,
 } from '../services/googleDriveService';
 
 interface AdminDashboardProps {
@@ -101,6 +103,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [scannedRunnerModal, setScannedRunnerModal] = useState<RunnerRegistration | null>(null);
   const [viewingVoucherRunner, setViewingVoucherRunner] = useState<RunnerRegistration | null>(null);
   const [viewingPhotoRunner, setViewingPhotoRunner] = useState<RunnerRegistration | null>(null);
+  const [voucherModalImgError, setVoucherModalImgError] = useState(false);
+  const [photoModalImgError, setPhotoModalImgError] = useState(false);
 
   // Google Drive integration & Server Storage monitor states (Admin Panel ONLY)
   const [needsDriveAuth, setNeedsDriveAuth] = useState(true);
@@ -607,14 +611,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       if (updates.length > 0) {
         let nextList = registrations.map((r) => {
           const u = updates.find((item) => item.runnerId === r.id);
-          return u ? { ...r, ...u } : r;
+          if (!u) return r;
+          const updated: RunnerRegistration = { ...r, ...u };
+          // Una vez guardado en Drive, limpiar copias base64 pesadas locales/Firestore
+          if (u.driveVoucherFileId && !u.driveVoucherFileId.startsWith('bridge_')) {
+            if (updated.voucherUrl?.startsWith('data:')) updated.voucherUrl = undefined;
+            if (updated.paymentProofImage?.startsWith('data:')) updated.paymentProofImage = undefined;
+          }
+          if (u.drivePhotoFileId && !u.drivePhotoFileId.startsWith('bridge_')) {
+            if (updated.personalPhotoUrl?.startsWith('data:')) updated.personalPhotoUrl = undefined;
+          }
+          return updated;
         });
 
         try {
           const syncRes = await fetch('/api/admin/drive-synced', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ updates, cleanupLocal: false }),
+            body: JSON.stringify({ updates, cleanupLocal: true }),
           });
           const contentType = syncRes.headers.get('content-type') || '';
           if (syncRes.ok && contentType.includes('application/json')) {
@@ -625,11 +639,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           }
         } catch (e) {}
 
-        // Persist Drive links to Cloud Firestore as well
+        // Persist Drive links to Cloud Firestore and strip legacy inline base64 blobs
         for (const u of updates) {
           try {
             const { runnerId, ...fields } = u;
-            setDoc(doc(db, 'registrations', runnerId), cleanFirestoreData(fields), { merge: true }).catch(() => {});
+            const firestorePayload: any = cleanFirestoreData(fields);
+            const orig = registrations.find((item) => item.id === runnerId);
+            if (u.driveVoucherFileId && !u.driveVoucherFileId.startsWith('bridge_')) {
+              if (orig?.voucherUrl?.startsWith('data:')) firestorePayload.voucherUrl = deleteField();
+              if (orig?.paymentProofImage?.startsWith('data:')) firestorePayload.paymentProofImage = deleteField();
+            }
+            if (u.drivePhotoFileId && !u.drivePhotoFileId.startsWith('bridge_')) {
+              if (orig?.personalPhotoUrl?.startsWith('data:')) firestorePayload.personalPhotoUrl = deleteField();
+            }
+            setDoc(doc(db, 'registrations', runnerId), firestorePayload, { merge: true }).catch(() => {});
           } catch (e) {}
         }
 
@@ -924,8 +947,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const santaKitsPending = santaTotalCount - santaKitsConfirmed;
   const santaPaymentsVerified = santaRunRegistrations.filter((r) => r.paymentStatus === 'Verificado').length;
   const santaPaymentsPending = santaTotalCount - santaPaymentsVerified;
-  const santaPhotosCount = santaRunRegistrations.filter((r) => !!r.personalPhotoUrl).length;
-  const santaVouchersCount = santaRunRegistrations.filter((r) => !!(r.voucherUrl || r.paymentProofImage)).length;
+  const santaPhotosCount = santaRunRegistrations.filter(
+    (r) => !!(r.personalPhotoUrl || r.drivePhotoFileId || r.drivePhotoUrl)
+  ).length;
+  const santaVouchersCount = santaRunRegistrations.filter(
+    (r) => !!(r.voucherUrl || r.paymentProofImage || r.driveVoucherFileId || r.driveVoucherUrl)
+  ).length;
   const santaDriveSyncedCount = santaRunRegistrations.filter((r) => !!(r.driveVoucherFileId || r.drivePhotoFileId)).length;
 
   // General metrics calculation
@@ -1763,11 +1790,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               </button>
                             )}
 
-                            {runner.paymentProofImage || runner.voucherUrl ? (
+                            {runner.paymentProofImage || runner.voucherUrl || runner.driveVoucherFileId || runner.driveVoucherUrl ? (
                               <button
-                                onClick={() => setViewingVoucherRunner(runner)}
+                                onClick={() => {
+                                  setVoucherModalImgError(false);
+                                  setViewingVoucherRunner(runner);
+                                }}
                                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-neutral-800 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-950 transition cursor-pointer shadow-sm"
-                                title="Observar captura del voucher Yape"
+                                title="Observar comprobante del voucher Yape"
                               >
                                 <ImageIcon className="w-3 h-3 text-emerald-400" />
                                 <span>🧾 Ver Voucher{runner.driveVoucherFileId ? ' (Drive ✓)' : ''}</span>
@@ -1785,9 +1815,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               </a>
                             )}
 
-                            {runner.personalPhotoUrl && (
+                            {(runner.personalPhotoUrl || runner.drivePhotoFileId || runner.drivePhotoUrl) && (
                               <button
-                                onClick={() => setViewingPhotoRunner(runner)}
+                                onClick={() => {
+                                  setPhotoModalImgError(false);
+                                  setViewingPhotoRunner(runner);
+                                }}
                                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-950/70 text-amber-300 border border-amber-500/40 hover:bg-amber-900 transition cursor-pointer shadow-sm"
                                 title="Ver y descargar foto personal del corredor para su marco"
                               >
@@ -2247,53 +2280,83 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
 
             {/* Image display */}
-            <div className="rounded-2xl overflow-hidden bg-black border border-neutral-800 min-h-[220px] max-h-[60vh] flex items-center justify-center p-2">
-              {viewingVoucherRunner.paymentProofImage || viewingVoucherRunner.voucherUrl ? (
-                <img
-                  src={viewingVoucherRunner.voucherUrl || viewingVoucherRunner.paymentProofImage}
-                  alt={`Voucher de ${viewingVoucherRunner.firstName}`}
-                  className="max-h-[58vh] w-auto max-w-full object-contain rounded-xl"
-                />
-              ) : (
-                <div className="py-12 text-center text-neutral-500 text-xs">
-                  No hay imagen disponible para este comprobante.
-                </div>
-              )}
-            </div>
+            {(() => {
+              const voucherPreviewSrc = getDriveImagePreviewUrl(
+                viewingVoucherRunner.driveVoucherFileId,
+                viewingVoucherRunner.voucherUrl || viewingVoucherRunner.paymentProofImage
+              );
+              const voucherDriveLink = getDriveFileLink(
+                viewingVoucherRunner.driveVoucherFileId,
+                viewingVoucherRunner.driveVoucherUrl,
+                viewingVoucherRunner.voucherUrl || viewingVoucherRunner.paymentProofImage
+              );
+              return (
+                <>
+                  <div className="rounded-2xl overflow-hidden bg-black border border-neutral-800 min-h-[220px] max-h-[60vh] flex items-center justify-center p-2">
+                    {voucherPreviewSrc && !voucherModalImgError ? (
+                      <img
+                        src={voucherPreviewSrc}
+                        alt={`Voucher de ${viewingVoucherRunner.firstName}`}
+                        onError={() => setVoucherModalImgError(true)}
+                        className="max-h-[58vh] w-auto max-w-full object-contain rounded-xl"
+                      />
+                    ) : voucherDriveLink ? (
+                      <div className="py-10 px-4 text-center space-y-3">
+                        <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto" />
+                        <p className="text-xs text-neutral-300 font-semibold max-w-xs mx-auto">
+                          ✓ Voucher guardado directamente en tu carpeta oficial de Google Drive (0 MB en la web).
+                        </p>
+                        <a
+                          href={voucherDriveLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition shadow-lg"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          <span>Abrir Voucher Original en Google Drive</span>
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="py-12 text-center text-neutral-500 text-xs">
+                        No hay imagen disponible para este comprobante.
+                      </div>
+                    )}
+                  </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-neutral-800">
-              <div className="flex items-center gap-2">
-                {viewingVoucherRunner.paymentStatus === 'Verificado' ? (
-                  <button
-                    type="button"
-                    onClick={() => handleUpdatePaymentStatus(viewingVoucherRunner, 'No Verificado')}
-                    className="px-3.5 py-2 rounded-xl bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-500/40 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Clock className="w-4 h-4" />
-                    <span>Marcar No Verificado</span>
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleUpdatePaymentStatus(viewingVoucherRunner, 'Verificado')}
-                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-600/30"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>✓ Verificar Pago</span>
-                  </button>
-                )}
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-neutral-800">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {viewingVoucherRunner.paymentStatus === 'Verificado' ? (
+                        <button
+                          type="button"
+                          onClick={() => handleUpdatePaymentStatus(viewingVoucherRunner, 'No Verificado')}
+                          className="px-3.5 py-2 rounded-xl bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-500/40 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Clock className="w-4 h-4" />
+                          <span>Marcar No Verificado</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleUpdatePaymentStatus(viewingVoucherRunner, 'Verificado')}
+                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-600/30"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>✓ Verificar Pago</span>
+                        </button>
+                      )}
 
-                <a
-                  href={viewingVoucherRunner.voucherUrl || viewingVoucherRunner.paymentProofImage}
-                  target="_blank"
-                  rel="noreferrer"
-                  download={`voucher_${viewingVoucherRunner.id}.jpg`}
-                  className="px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Download className="w-4 h-4 text-emerald-400" />
-                  <span>Descargar</span>
-                </a>
-              </div>
+                      {voucherDriveLink && (
+                        <a
+                          href={voucherDriveLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-3 py-2 rounded-xl bg-blue-950/80 hover:bg-blue-900 text-blue-300 border border-blue-500/40 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          <span>Ver en Drive</span>
+                        </a>
+                      )}
+                    </div>
 
               <div className="flex items-center gap-2">
                 <a
@@ -2313,7 +2376,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   Cerrar
                 </button>
               </div>
-            </div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -2432,73 +2498,107 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       )}
 
       {/* Modal: View & Download Runner Personal Photo (For Official Frame) */}
-      {viewingPhotoRunner && viewingPhotoRunner.personalPhotoUrl && (
-        <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
-          <div className="relative max-w-lg w-full bg-neutral-900 border-2 border-amber-500/60 rounded-3xl p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
-            <button
-              onClick={() => setViewingPhotoRunner(null)}
-              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
+      {viewingPhotoRunner && (viewingPhotoRunner.personalPhotoUrl || viewingPhotoRunner.drivePhotoFileId || viewingPhotoRunner.drivePhotoUrl) && (() => {
+        const photoPreviewSrc = getDriveImagePreviewUrl(
+          viewingPhotoRunner.drivePhotoFileId,
+          viewingPhotoRunner.personalPhotoUrl
+        );
+        const photoDriveLink = getDriveFileLink(
+          viewingPhotoRunner.drivePhotoFileId,
+          viewingPhotoRunner.drivePhotoUrl,
+          viewingPhotoRunner.personalPhotoUrl
+        );
+        return (
+          <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
+            <div className="relative max-w-lg w-full bg-neutral-900 border-2 border-amber-500/60 rounded-3xl p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+              <button
+                onClick={() => setViewingPhotoRunner(null)}
+                className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
 
-            <div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 bg-amber-950/80 px-2.5 py-0.5 rounded-full border border-amber-500/40">
-                Foto Personal del Corredor (Para Marco)
-              </span>
-              <h4 className="font-bebas text-2xl text-white uppercase mt-1 leading-tight">
-                {viewingPhotoRunner.firstName} {viewingPhotoRunner.lastName}
-              </h4>
-              <p className="text-xs text-neutral-400">
-                DNI: <strong className="text-white font-mono">{viewingPhotoRunner.documentNumber}</strong> • ID: <strong className="text-red-400 font-mono">{viewingPhotoRunner.id}</strong>
-              </p>
-            </div>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 bg-amber-950/80 px-2.5 py-0.5 rounded-full border border-amber-500/40">
+                  Foto Personal del Corredor (Para Marco)
+                </span>
+                <h4 className="font-bebas text-2xl text-white uppercase mt-1 leading-tight">
+                  {viewingPhotoRunner.firstName} {viewingPhotoRunner.lastName}
+                </h4>
+                <p className="text-xs text-neutral-400">
+                  DNI: <strong className="text-white font-mono">{viewingPhotoRunner.documentNumber}</strong> • ID: <strong className="text-red-400 font-mono">{viewingPhotoRunner.id}</strong>
+                </p>
+              </div>
 
-            <div className="rounded-2xl overflow-hidden bg-black border border-neutral-800 min-h-[220px] max-h-[60vh] flex items-center justify-center p-2">
-              <img
-                src={viewingPhotoRunner.personalPhotoUrl}
-                alt={`Foto de ${viewingPhotoRunner.firstName} ${viewingPhotoRunner.lastName}`}
-                className="max-h-[58vh] w-auto max-w-full object-contain rounded-xl"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-neutral-800">
-              <div className="flex items-center gap-2">
-                <a
-                  href={viewingPhotoRunner.personalPhotoUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  download={`${buildRunnerPersonName(viewingPhotoRunner).replace(/\s+/g, '_')}.jpg`}
-                  className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow"
-                >
-                  <Download className="w-4 h-4" />
-                  <span>Descargar con Nombre</span>
-                </a>
-
-                {viewingPhotoRunner.drivePhotoUrl && (
-                  <a
-                    href={viewingPhotoRunner.drivePhotoUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-3 py-2 rounded-xl bg-blue-950/80 hover:bg-blue-900 text-blue-300 border border-blue-500/40 text-xs font-bold transition flex items-center gap-1.5"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    <span>Ver en Drive</span>
-                  </a>
+              <div className="rounded-2xl overflow-hidden bg-black border border-neutral-800 min-h-[220px] max-h-[60vh] flex items-center justify-center p-2">
+                {photoPreviewSrc && !photoModalImgError ? (
+                  <img
+                    src={photoPreviewSrc}
+                    alt={`Foto de ${viewingPhotoRunner.firstName} ${viewingPhotoRunner.lastName}`}
+                    onError={() => setPhotoModalImgError(true)}
+                    className="max-h-[58vh] w-auto max-w-full object-contain rounded-xl"
+                  />
+                ) : (
+                  <div className="py-10 px-4 text-center space-y-3">
+                    <CheckCircle2 className="w-10 h-10 text-amber-400 mx-auto" />
+                    <p className="text-xs text-neutral-300 font-semibold max-w-xs mx-auto">
+                      ✓ Foto original en alta calidad guardada directamente en tu Google Drive (0 MB en la web).
+                    </p>
+                    {photoDriveLink && (
+                      <a
+                        href={photoDriveLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-black transition shadow-lg"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                        <span>Abrir Foto Original en Google Drive</span>
+                      </a>
+                    )}
+                  </div>
                 )}
               </div>
 
-              <button
-                type="button"
-                onClick={() => setViewingPhotoRunner(null)}
-                className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold cursor-pointer"
-              >
-                Cerrar
-              </button>
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-neutral-800">
+                <div className="flex flex-wrap items-center gap-2">
+                  {viewingPhotoRunner.personalPhotoUrl && (
+                    <a
+                      href={viewingPhotoRunner.personalPhotoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      download={`${buildRunnerPersonName(viewingPhotoRunner).replace(/\s+/g, '_')}.jpg`}
+                      className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Descargar con Nombre</span>
+                    </a>
+                  )}
+
+                  {photoDriveLink && (
+                    <a
+                      href={photoDriveLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3.5 py-2 rounded-xl bg-blue-950/80 hover:bg-blue-900 text-blue-300 border border-blue-500/40 text-xs font-bold transition flex items-center gap-1.5"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Ver Original en Drive</span>
+                    </a>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setViewingPhotoRunner(null)}
+                  className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold cursor-pointer"
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Explicit Confirmation Modal for Mutating / Cleanup Actions (MANDATORY per Workspace guidelines) */}
       {confirmActionModal && (

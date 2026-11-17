@@ -33,7 +33,7 @@ import {
   fetchRegistrationsFirestore,
   mergeRegistrationsLists,
 } from '../utils/checkinManager';
-import { syncRunnerMediaViaAppsScript } from '../services/googleDriveService';
+import { syncRunnerMediaViaAppsScript, readImageFileHighQuality } from '../services/googleDriveService';
 import { trackEvent } from '../utils/analytics';
 
 interface RegistrationFormProps {
@@ -69,55 +69,20 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const [isCompressingVoucher, setIsCompressingVoucher] = useState(false);
   const [showVoucherModal, setShowVoucherModal] = useState(false);
 
-  const processVoucherFile = (file: File) => {
+  const processVoucherFile = async (file: File) => {
     setVoucherFileName(file.name);
     const sizeKb = Math.round(file.size / 1024);
     setVoucherFileSize(sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`);
     setIsCompressingVoucher(true);
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const rawData = event.target?.result as string;
-      if (file.type.startsWith('image/')) {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-          const maxDim = 900;
-          if (width > maxDim || height > maxDim) {
-            if (width > height) {
-              height = Math.round((height * maxDim) / width);
-              width = maxDim;
-            } else {
-              width = Math.round((width * maxDim) / height);
-              height = maxDim;
-            }
-          }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, width, height);
-            const compressed = canvas.toDataURL('image/jpeg', 0.78);
-            setVoucherPreview(compressed);
-            setIsCompressingVoucher(false);
-            return;
-          }
-          setVoucherPreview(rawData);
-          setIsCompressingVoucher(false);
-        };
-        img.onerror = () => {
-          setVoucherPreview(rawData);
-          setIsCompressingVoucher(false);
-        };
-        img.src = rawData;
-      } else {
-        setVoucherPreview(rawData);
-        setIsCompressingVoucher(false);
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      const highQualityData = await readImageFileHighQuality(file);
+      setVoucherPreview(highQualityData);
+    } catch (e) {
+      setErrorMessage('No se pudo leer la imagen del comprobante. Intenta con otro archivo.');
+    } finally {
+      setIsCompressingVoucher(false);
+    }
   };
 
   const handleVoucherChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -140,50 +105,20 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const [isCompressingPhoto, setIsCompressingPhoto] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
 
-  const processPersonalPhotoFile = (file: File) => {
+  const processPersonalPhotoFile = async (file: File) => {
     setPersonalPhotoFileName(file.name);
     const sizeKb = Math.round(file.size / 1024);
     setPersonalPhotoSize(sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`);
     setIsCompressingPhoto(true);
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const rawData = event.target?.result as string;
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        const maxDim = 900;
-        if (width > maxDim || height > maxDim) {
-          if (width > height) {
-            height = Math.round((height * maxDim) / width);
-            width = maxDim;
-          } else {
-            width = Math.round((width * maxDim) / height);
-            height = maxDim;
-          }
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, width, height);
-          const compressed = canvas.toDataURL('image/jpeg', 0.8);
-          setPersonalPhotoPreview(compressed);
-          setIsCompressingPhoto(false);
-          return;
-        }
-        setPersonalPhotoPreview(rawData);
-        setIsCompressingPhoto(false);
-      };
-      img.onerror = () => {
-        setPersonalPhotoPreview(rawData);
-        setIsCompressingPhoto(false);
-      };
-      img.src = rawData;
-    };
-    reader.readAsDataURL(file);
+    try {
+      const highQualityData = await readImageFileHighQuality(file);
+      setPersonalPhotoPreview(highQualityData);
+    } catch (e) {
+      setErrorMessage('No se pudo leer tu foto personal. Intenta con otra imagen.');
+    } finally {
+      setIsCompressingPhoto(false);
+    }
   };
 
   const handlePersonalPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -300,9 +235,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       costumeName: 'Gorra Navideña Santa',
       paymentMethod: 'Yape',
       paymentReference: paymentReference.trim() || `YAPE-SANTA-${Date.now().toString().slice(-4)}`,
-      paymentProofImage: voucherPreview || undefined,
-      voucherUrl: voucherPreview || undefined,
-      personalPhotoUrl: personalPhotoPreview || undefined,
       paymentStatus: 'No Verificado',
       createdAt: now,
       disclaimerAccepted: true,
@@ -312,10 +244,31 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       medalDelivered: false,
     };
 
+    // 1. Subir constancia Yape y foto personal en calidad original DIRECTO a Google Drive (0 MB en Firebase/Web)
+    if (voucherPreview || personalPhotoPreview) {
+      try {
+        const driveFields = await syncRunnerMediaViaAppsScript({
+          ...newRunner,
+          voucherUrl: voucherPreview || undefined,
+          personalPhotoUrl: personalPhotoPreview || undefined,
+        });
+        if (driveFields) {
+          Object.assign(newRunner, driveFields);
+        }
+      } catch (driveErr: any) {
+        setErrorMessage(
+          driveErr?.message ||
+            'No se pudo subir tu imagen directo a Google Drive. Verifica tu conexión e intenta nuevamente.'
+        );
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
     let finalRecord: RunnerRegistration = newRunner;
 
     try {
-      // 1. Try server endpoint (active on AI Studio full-stack server)
+      // 2. Try server endpoint (active on AI Studio full-stack server; sin pesos de imágenes)
       const res = await fetch('/api/registrations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -340,27 +293,8 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         localStorage.setItem('ohana_active_competitor', JSON.stringify(finalRecord));
       } catch (e) {}
 
-      // 2. Always persist to Cloud Firestore so Admin & Mi Espacio sync across all cellphones and Hostinger
+      // 3. Guardar solo datos y enlaces de Drive en Cloud Firestore (0 MB de imágenes)
       await saveRegistrationFirestore(finalRecord);
-
-      // 3. Envío directo y automático a las 2 carpetas de Google Drive (sin popup ni Sign-In)
-      if (finalRecord.voucherUrl || finalRecord.paymentProofImage || finalRecord.personalPhotoUrl) {
-        syncRunnerMediaViaAppsScript(finalRecord)
-          .then(async (driveFields) => {
-            if (driveFields) {
-              const syncedRecord: RunnerRegistration = { ...finalRecord, ...driveFields };
-              await saveRegistrationFirestore(syncedRecord);
-              try {
-                await fetch('/api/runner/update', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ runnerId: finalRecord.id, ...driveFields }),
-                });
-              } catch (e) {}
-            }
-          })
-          .catch(() => {});
-      }
 
       trackEvent({
         type: 'runner_login',
@@ -673,7 +607,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                       </span>
                       {personalPhotoSize && (
                         <span className="text-[10px] text-neutral-400 block font-mono">
-                          Tamaño original: {personalPhotoSize} (optimizada automáticamente)
+                          Tamaño: {personalPhotoSize} (calidad original directa a Drive ✓)
                         </span>
                       )}
                     </div>
@@ -911,7 +845,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-6 h-6 animate-spin text-white" />
-                  <span>Procesando Inscripción...</span>
+                  <span>{voucherPreview || personalPhotoPreview ? 'Subiendo fotos a Drive e inscribiendo...' : 'Procesando Inscripción...'}</span>
                 </>
               ) : (
                 <>

@@ -462,8 +462,10 @@ export async function uploadFileToDriveFolder(params: {
 // ================= GOOGLE APPS SCRIPT DIRECT BRIDGE (NO OAUTH SIGN-IN NEEDED) =================
 
 const BRIDGE_STORAGE_KEY = 'ohana_drive_bridge_url';
-export const DEFAULT_APPS_SCRIPT_BRIDGE_URL =
+const LEGACY_BROKEN_BRIDGE_URL =
   'https://script.google.com/macros/s/AKfycbztdPRQJukG5_r_7Lk26cQfx1WkS_wlQ3kw6YJzQmQBmwVmLlk5rimio8K3blxvqTFIsA/exec';
+export const DEFAULT_APPS_SCRIPT_BRIDGE_URL =
+  'https://script.google.com/macros/s/AKfycbxEgCbMZzTqQlvID5oqz2NLB1AnNqqdBDcM2ABm2P4i3inY5scn7oFob9RmP4sF4Cmj5g/exec';
 
 let cachedBridgeUrl: string | null = DEFAULT_APPS_SCRIPT_BRIDGE_URL;
 
@@ -534,6 +536,7 @@ function doPost(e) {
 
 export function isValidAppsScriptUrl(url: string): boolean {
   const clean = (url || '').trim();
+  if (!clean || clean === LEGACY_BROKEN_BRIDGE_URL) return false;
   return /^https:\/\/script\.google\.com\/(macros\/s\/|a\/macros\/)/i.test(clean);
 }
 
@@ -748,4 +751,86 @@ export async function syncRunnerMediaViaAppsScript(
 
   return Object.keys(result).length > 0 ? result : null;
 }
+
+/**
+ * Reads an image or PDF preserving full original crisp clarity (up to 12 MB).
+ * Only gently scales ultra-large >12 MB files to 3200px @ 95% JPEG so photos never look blurry.
+ */
+export function readImageFileHighQuality(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const rawData = String(event.target?.result || '');
+      if (!rawData) {
+        reject(new Error('No se pudo leer el archivo seleccionado.'));
+        return;
+      }
+
+      // Keep original crisp file untouched for PDFs and normal images <= 12 MB
+      if (!file.type.startsWith('image/') || file.size <= 12 * 1024 * 1024) {
+        resolve(rawData);
+        return;
+      }
+
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 3200;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.95));
+        } else {
+          resolve(rawData);
+        }
+      };
+      img.onerror = () => resolve(rawData);
+      img.src = rawData;
+    };
+    reader.onerror = () => reject(new Error('Error leyendo el archivo.'));
+    reader.readAsDataURL(file);
+  });
+}
+
+export function getDriveFileLink(
+  fileId?: string,
+  driveUrl?: string,
+  fallbackSrc?: string
+): string | undefined {
+  if (driveUrl) return driveUrl;
+  if (fileId && !fileId.startsWith('bridge_')) {
+    return `https://drive.google.com/file/d/${fileId}/view`;
+  }
+  return fallbackSrc;
+}
+
+export function getDriveImagePreviewUrl(
+  fileId?: string,
+  directSrc?: string
+): string | undefined {
+  if (directSrc && (directSrc.startsWith('data:') || directSrc.startsWith('/uploads/') || directSrc.includes('googleusercontent.com'))) {
+    return directSrc;
+  }
+  if (fileId && !fileId.startsWith('bridge_')) {
+    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w1600`;
+  }
+  if (directSrc && !directSrc.includes('drive.google.com/file/d/') && !directSrc.includes('drive.google.com/drive/folders/')) {
+    return directSrc;
+  }
+  return undefined;
+}
+
 
