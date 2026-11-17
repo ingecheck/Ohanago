@@ -4,8 +4,9 @@ import firebaseConfig from '../firebase-applet-config.json';
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-export const db: Firestore = firebaseConfig.firestoreDatabaseId
-  ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
+const configAny = firebaseConfig as Record<string, any>;
+export const db: Firestore = configAny.firestoreDatabaseId
+  ? getFirestore(app, configAny.firestoreDatabaseId)
   : getFirestore(app);
 
 // Connectivity validation

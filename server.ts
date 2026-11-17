@@ -22,14 +22,123 @@ if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-// Persistent directory for uploaded payment vouchers
-const VOUCHERS_DIR = path.join(__dirname, 'public', 'uploads', 'vouchers');
-if (!fs.existsSync(VOUCHERS_DIR)) {
-  fs.mkdirSync(VOUCHERS_DIR, { recursive: true });
+// Persistent directory for uploaded payment vouchers & athlete personal photos
+const UPLOADS_ROOT = path.join(__dirname, 'public', 'uploads');
+const VOUCHERS_DIR = path.join(UPLOADS_ROOT, 'vouchers');
+const PHOTOS_DIR = path.join(UPLOADS_ROOT, 'photos');
+const MAX_SERVER_UPLOADS_BYTES = 200 * 1024 * 1024; // 200 MB cap safeguard
+
+[VOUCHERS_DIR, PHOTOS_DIR].forEach((dir) => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
+
+function sanitizeFilePart(value: string): string {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9\s-_]/g, '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .slice(0, 60);
 }
 
-// Helper to save base64 voucher images to disk
-function saveVoucherFile(base64Data: string, runnerId: string): string | null {
+function getDirStats(dirPath: string): { count: number; bytes: number } {
+  try {
+    if (!fs.existsSync(dirPath)) return { count: 0, bytes: 0 };
+    const files = fs.readdirSync(dirPath);
+    let bytes = 0;
+    let count = 0;
+    for (const file of files) {
+      const fullPath = path.join(dirPath, file);
+      const stat = fs.statSync(fullPath);
+      if (stat.isFile()) {
+        count += 1;
+        bytes += stat.size;
+      }
+    }
+    return { count, bytes };
+  } catch (err) {
+    return { count: 0, bytes: 0 };
+  }
+}
+
+function safeDeleteLocalUpload(publicUrl?: string): boolean {
+  if (!publicUrl || typeof publicUrl !== 'string') return false;
+  if (!publicUrl.startsWith('/uploads/')) return false;
+  try {
+    const rel = publicUrl.replace(/^\/+/, '');
+    const resolved = path.resolve(__dirname, 'public', rel);
+    if (!resolved.startsWith(UPLOADS_ROOT)) return false;
+    if (fs.existsSync(resolved)) {
+      fs.unlinkSync(resolved);
+      return true;
+    }
+  } catch (err) {
+    console.error('Error deleting local upload:', err);
+  }
+  return false;
+}
+
+// Auto-prune oldest local uploads ONLY if they are already safely backed up in Google Drive and disk exceeds 200 MB
+function enforceStorageGuard() {
+  try {
+    const vStats = getDirStats(VOUCHERS_DIR);
+    const pStats = getDirStats(PHOTOS_DIR);
+    let totalBytes = vStats.bytes + pStats.bytes;
+    if (totalBytes <= MAX_SERVER_UPLOADS_BYTES) return;
+
+    const registrations = readJSON<any[]>(REGISTRATIONS_FILE, []);
+    let changed = false;
+    // Oldest first
+    const reversed = [...registrations].reverse();
+    for (const r of reversed) {
+      if (totalBytes <= MAX_SERVER_UPLOADS_BYTES * 0.75) break;
+      if (r.driveVoucherFileId && r.voucherUrl?.startsWith('/uploads/')) {
+        const sizeBefore = (() => {
+          try {
+            return fs.statSync(path.join(__dirname, 'public', r.voucherUrl)).size;
+          } catch {
+            return 0;
+          }
+        })();
+        if (safeDeleteLocalUpload(r.voucherUrl)) {
+          totalBytes -= sizeBefore;
+          r.voucherUrl = r.driveVoucherUrl || `https://drive.google.com/thumbnail?id=${r.driveVoucherFileId}&sz=w1000`;
+          r.paymentProofImage = r.voucherUrl;
+          changed = true;
+        }
+      }
+      if (r.drivePhotoFileId && r.personalPhotoUrl?.startsWith('/uploads/')) {
+        const sizeBefore = (() => {
+          try {
+            return fs.statSync(path.join(__dirname, 'public', r.personalPhotoUrl)).size;
+          } catch {
+            return 0;
+          }
+        })();
+        if (safeDeleteLocalUpload(r.personalPhotoUrl)) {
+          totalBytes -= sizeBefore;
+          r.personalPhotoUrl = r.drivePhotoUrl || `https://drive.google.com/thumbnail?id=${r.drivePhotoFileId}&sz=w1000`;
+          changed = true;
+        }
+      }
+    }
+    if (changed) {
+      writeJSON(REGISTRATIONS_FILE, reversed.reverse());
+    }
+  } catch (err) {
+    console.error('Storage guard error:', err);
+  }
+}
+
+function saveMediaFile(
+  base64Data: string,
+  targetDir: string,
+  publicPrefix: string,
+  filePrefix: string
+): string | null {
   if (!base64Data || typeof base64Data !== 'string') return null;
   if (base64Data.startsWith('/uploads/') || base64Data.startsWith('http')) return base64Data;
   try {
@@ -42,22 +151,41 @@ function saveVoucherFile(base64Data: string, runnerId: string): string | null {
     else if (mime.includes('pdf')) ext = 'pdf';
     else if (mime.includes('jpeg')) ext = 'jpg';
 
-    const safeId = runnerId.replace(/[^a-zA-Z0-9-_]/g, '_');
-    const filename = `voucher_${safeId}_${Date.now()}.${ext}`;
-    const filePath = path.join(VOUCHERS_DIR, filename);
     const buffer = Buffer.from(matches[2], 'base64');
+    if (buffer.length > 8 * 1024 * 1024) {
+      throw new Error('Archivo supera el límite de 8MB');
+    }
+
+    enforceStorageGuard();
+
+    const safePrefix = sanitizeFilePart(filePrefix) || `archivo_${Date.now()}`;
+    const filename = `${safePrefix}_${Date.now()}.${ext}`;
+    const filePath = path.join(targetDir, filename);
     fs.writeFileSync(filePath, buffer);
-    return `/uploads/vouchers/${filename}`;
+    return `${publicPrefix}/${filename}`;
   } catch (err) {
-    console.error('Error saving voucher file to disk:', err);
+    console.error('Error saving media file to disk:', err);
     return null;
   }
+}
+
+// Helper to save base64 voucher images to disk
+function saveVoucherFile(base64Data: string, runnerId: string, runnerName?: string): string | null {
+  const safeName = runnerName ? `Constancia_Yape_${runnerName}_${runnerId}` : `voucher_${runnerId}`;
+  return saveMediaFile(base64Data, VOUCHERS_DIR, '/uploads/vouchers', safeName);
+}
+
+// Helper to save base64 athlete personal photos to disk named with the person's full name
+function savePersonalPhotoFile(base64Data: string, runnerId: string, runnerName?: string): string | null {
+  const safeName = runnerName ? `${runnerName}_${runnerId}` : `Atleta_${runnerId}`;
+  return saveMediaFile(base64Data, PHOTOS_DIR, '/uploads/photos', safeName);
 }
 
 const MEDAL_FILE = path.join(DATA_DIR, 'medal.json');
 const REGISTRATIONS_FILE = path.join(DATA_DIR, 'registrations.json');
 const ANALYTICS_FILE = path.join(DATA_DIR, 'analytics.json');
 const ROULETTE_FILE = path.join(DATA_DIR, 'roulette.json');
+const DRIVE_FOLDERS_FILE = path.join(DATA_DIR, 'drive_folders.json');
 
 export interface RouletteWinner {
   drawNumber: number;
@@ -321,13 +449,23 @@ app.post('/api/registrations', (req, res) => {
     ? (newRunner.id && newRunner.id.startsWith('SR-') ? newRunner.id : `SR-2026-${String(nextSantaNum).padStart(4, '0')}`)
     : (newRunner.id || `OHA-2026-${String(nextNum).padStart(4, '0')}`);
 
+  const fullRunnerName = `${newRunner.firstName || ''} ${newRunner.lastName || ''}`.trim();
+
   let voucherUrl = newRunner.voucherUrl;
   let paymentProofImage = newRunner.paymentProofImage;
   if (paymentProofImage && typeof paymentProofImage === 'string' && paymentProofImage.startsWith('data:')) {
-    const savedPath = saveVoucherFile(paymentProofImage, newId);
+    const savedPath = saveVoucherFile(paymentProofImage, newId, fullRunnerName);
     if (savedPath) {
       voucherUrl = savedPath;
       paymentProofImage = savedPath;
+    }
+  }
+
+  let personalPhotoUrl = newRunner.personalPhotoUrl;
+  if (personalPhotoUrl && typeof personalPhotoUrl === 'string' && personalPhotoUrl.startsWith('data:')) {
+    const savedPhotoPath = savePersonalPhotoFile(personalPhotoUrl, newId, fullRunnerName);
+    if (savedPhotoPath) {
+      personalPhotoUrl = savedPhotoPath;
     }
   }
 
@@ -341,6 +479,7 @@ app.post('/api/registrations', (req, res) => {
     paymentStatus: 'No Verificado', // Todo nuevo registro inicia No Verificado hasta validación manual en el panel
     paymentProofImage,
     voucherUrl,
+    personalPhotoUrl,
     amountPaid: newRunner.amountPaid || (newRunner.hasPreviousDiscount ? 59.5 : 70.0),
     turkeyRaffleTicket: newRunner.turkeyRaffleTicket || (isSanta ? `PAVO-${String(nextSantaNum).padStart(4, '0')}` : undefined),
     tShirtSize: newRunner.tShirtSize || 'M',
@@ -367,12 +506,17 @@ app.post('/api/upload-voucher', (req, res) => {
     return res.status(400).json({ error: 'Falta runnerId o imagen del voucher' });
   }
 
-  const savedPath = saveVoucherFile(voucherImage, runnerId);
   const registrations = readJSON<any[]>(REGISTRATIONS_FILE, []);
   const idx = registrations.findIndex((r) => r.id === runnerId || r.documentNumber === runnerId);
+  const runnerName = idx !== -1 ? `${registrations[idx].firstName} ${registrations[idx].lastName}`.trim() : '';
+  const savedPath = saveVoucherFile(voucherImage, runnerId, runnerName);
+
   if (idx !== -1) {
     registrations[idx].voucherUrl = savedPath || voucherImage;
     registrations[idx].paymentProofImage = savedPath || voucherImage;
+    // Clear previous Drive sync ID if voucher was replaced
+    delete registrations[idx].driveVoucherFileId;
+    delete registrations[idx].driveVoucherUrl;
     writeJSON(REGISTRATIONS_FILE, registrations);
     try {
       generateStaticExport(registrations);
@@ -380,6 +524,124 @@ app.post('/api/upload-voucher', (req, res) => {
     return res.json({ success: true, voucherUrl: savedPath || voucherImage, runner: registrations[idx] });
   }
   return res.status(404).json({ error: 'Participante no encontrado' });
+});
+
+// Endpoint to upload or update personal athlete photo (for runner frame / marco)
+app.post('/api/upload-photo', (req, res) => {
+  const { runnerId, photoImage } = req.body;
+  if (!runnerId || !photoImage) {
+    return res.status(400).json({ error: 'Falta runnerId o foto personal' });
+  }
+
+  const registrations = readJSON<any[]>(REGISTRATIONS_FILE, []);
+  const idx = registrations.findIndex((r) => r.id === runnerId || r.documentNumber === runnerId);
+  if (idx === -1) {
+    return res.status(404).json({ error: 'Participante no encontrado' });
+  }
+
+  const runnerName = `${registrations[idx].firstName} ${registrations[idx].lastName}`.trim();
+  const prevLocal = registrations[idx].personalPhotoUrl;
+  const savedPath = savePersonalPhotoFile(photoImage, registrations[idx].id, runnerName);
+  if (savedPath && prevLocal && prevLocal !== savedPath) {
+    safeDeleteLocalUpload(prevLocal);
+  }
+
+  registrations[idx].personalPhotoUrl = savedPath || photoImage;
+  // Clear previous Drive photo ID if photo was replaced
+  delete registrations[idx].drivePhotoFileId;
+  delete registrations[idx].drivePhotoUrl;
+  writeJSON(REGISTRATIONS_FILE, registrations);
+  try {
+    generateStaticExport(registrations);
+  } catch (e) {}
+  return res.json({ success: true, personalPhotoUrl: registrations[idx].personalPhotoUrl, runner: registrations[idx] });
+});
+
+// Storage statistics for server disk space monitoring
+app.get('/api/admin/storage-stats', (req, res) => {
+  const vouchers = getDirStats(VOUCHERS_DIR);
+  const photos = getDirStats(PHOTOS_DIR);
+  const totalBytes = vouchers.bytes + photos.bytes;
+  const registrations = readJSON<any[]>(REGISTRATIONS_FILE, []);
+  const backedUpCount = registrations.filter((r) => r.driveVoucherFileId || r.drivePhotoFileId).length;
+  const cleanableLocalFiles = registrations.reduce((acc, r) => {
+    let count = 0;
+    if (r.driveVoucherFileId && r.voucherUrl?.startsWith('/uploads/')) count += 1;
+    if (r.drivePhotoFileId && r.personalPhotoUrl?.startsWith('/uploads/')) count += 1;
+    return acc + count;
+  }, 0);
+
+  res.json({
+    vouchersCount: vouchers.count,
+    vouchersBytes: vouchers.bytes,
+    vouchersMB: Number((vouchers.bytes / (1024 * 1024)).toFixed(2)),
+    photosCount: photos.count,
+    photosBytes: photos.bytes,
+    photosMB: Number((photos.bytes / (1024 * 1024)).toFixed(2)),
+    totalFiles: vouchers.count + photos.count,
+    totalBytes,
+    totalMB: Number((totalBytes / (1024 * 1024)).toFixed(2)),
+    maxBudgetMB: Math.round(MAX_SERVER_UPLOADS_BYTES / (1024 * 1024)),
+    backedUpCount,
+    cleanableLocalFiles,
+  });
+});
+
+// Persist non-secret Google Drive folder URLs (never tokens) so organizer can always access & copy folder links
+app.get('/api/admin/drive-folders', (req, res) => {
+  const folders = readJSON<any>(DRIVE_FOLDERS_FILE, null);
+  res.json({ folders });
+});
+
+app.post('/api/admin/drive-folders', (req, res) => {
+  const { folders } = req.body;
+  if (!folders || !folders.vouchersFolderUrl || !folders.photosFolderUrl) {
+    return res.status(400).json({ error: 'Datos de carpetas incompletos' });
+  }
+  writeJSON(DRIVE_FOLDERS_FILE, folders);
+  res.json({ success: true, folders });
+});
+
+// Mark runners as synced to Google Drive & optionally clean local server files to prevent storage bloat
+app.post('/api/admin/drive-synced', (req, res) => {
+  const { updates, cleanupLocal } = req.body;
+  const registrations = readJSON<any[]>(REGISTRATIONS_FILE, []);
+  let updatedCount = 0;
+  let cleanedFiles = 0;
+
+  if (Array.isArray(updates)) {
+    for (const u of updates) {
+      const idx = registrations.findIndex((r) => r.id === u.runnerId);
+      if (idx !== -1) {
+        if (u.driveVoucherFileId) registrations[idx].driveVoucherFileId = u.driveVoucherFileId;
+        if (u.driveVoucherUrl) registrations[idx].driveVoucherUrl = u.driveVoucherUrl;
+        if (u.drivePhotoFileId) registrations[idx].drivePhotoFileId = u.drivePhotoFileId;
+        if (u.drivePhotoUrl) registrations[idx].drivePhotoUrl = u.drivePhotoUrl;
+        updatedCount += 1;
+      }
+    }
+  }
+
+  if (cleanupLocal) {
+    for (const r of registrations) {
+      if (r.driveVoucherFileId && r.voucherUrl?.startsWith('/uploads/')) {
+        if (safeDeleteLocalUpload(r.voucherUrl)) {
+          r.voucherUrl = r.driveVoucherUrl || `https://drive.google.com/file/d/${r.driveVoucherFileId}/view`;
+          r.paymentProofImage = r.voucherUrl;
+          cleanedFiles += 1;
+        }
+      }
+      if (r.drivePhotoFileId && r.personalPhotoUrl?.startsWith('/uploads/')) {
+        if (safeDeleteLocalUpload(r.personalPhotoUrl)) {
+          r.personalPhotoUrl = r.drivePhotoUrl || `https://drive.google.com/file/d/${r.drivePhotoFileId}/view`;
+          cleanedFiles += 1;
+        }
+      }
+    }
+  }
+
+  writeJSON(REGISTRATIONS_FILE, registrations);
+  res.json({ success: true, updatedCount, cleanedFiles, registrations });
 });
 
 app.put('/api/registrations', (req, res) => {
@@ -395,7 +657,22 @@ app.put('/api/registrations', (req, res) => {
 });
 
 app.post('/api/runner/update', (req, res) => {
-  const { runnerId, documentNumber, whatsapp, firstName, lastName, tShirtSize, paymentStatus, confirmedAtStart, startCheckinTime } = req.body;
+  const {
+    runnerId,
+    documentNumber,
+    whatsapp,
+    firstName,
+    lastName,
+    tShirtSize,
+    paymentStatus,
+    confirmedAtStart,
+    startCheckinTime,
+    personalPhotoUrl,
+    driveVoucherFileId,
+    driveVoucherUrl,
+    drivePhotoFileId,
+    drivePhotoUrl,
+  } = req.body;
   if (!runnerId) {
     return res.status(400).json({ error: 'Falta runnerId' });
   }
@@ -404,14 +681,19 @@ app.post('/api/runner/update', (req, res) => {
   if (idx !== -1) {
     registrations[idx] = {
       ...registrations[idx],
-      ...(documentNumber !== undefined ? { documentNumber } : {}),
-      ...(whatsapp !== undefined ? { whatsapp } : {}),
-      ...(firstName !== undefined ? { firstName } : {}),
-      ...(lastName !== undefined ? { lastName } : {}),
+      ...(documentNumber !== undefined ? { documentNumber: String(documentNumber).trim() } : {}),
+      ...(whatsapp !== undefined ? { whatsapp: String(whatsapp).trim() } : {}),
+      ...(firstName !== undefined ? { firstName: String(firstName).trim() } : {}),
+      ...(lastName !== undefined ? { lastName: String(lastName).trim() } : {}),
       ...(tShirtSize !== undefined ? { tShirtSize } : {}),
       ...(paymentStatus !== undefined ? { paymentStatus } : {}),
       ...(confirmedAtStart !== undefined ? { confirmedAtStart } : {}),
       ...(startCheckinTime !== undefined ? { startCheckinTime } : {}),
+      ...(personalPhotoUrl !== undefined ? { personalPhotoUrl } : {}),
+      ...(driveVoucherFileId !== undefined ? { driveVoucherFileId } : {}),
+      ...(driveVoucherUrl !== undefined ? { driveVoucherUrl } : {}),
+      ...(drivePhotoFileId !== undefined ? { drivePhotoFileId } : {}),
+      ...(drivePhotoUrl !== undefined ? { drivePhotoUrl } : {}),
     };
     writeJSON(REGISTRATIONS_FILE, registrations);
     try {
@@ -574,23 +856,7 @@ function findRunner(query: any, registrations: any[]): { runner: any; index: num
   return { runner: registrations[index], index };
 }
 
-// Endpoint to update individual runner details (e.g. DNI correction by admin)
-app.post('/api/runner/update', (req, res) => {
-  const { runnerId, documentNumber, whatsapp, firstName, lastName } = req.body;
-  if (!runnerId) return res.status(400).json({ error: 'Falta runnerId' });
-  const registrations = readJSON<any[]>(REGISTRATIONS_FILE, []);
-  const index = registrations.findIndex((r) => r.id === runnerId);
-  if (index === -1) return res.status(404).json({ error: 'No se encontró el participante' });
-
-  if (documentNumber !== undefined) registrations[index].documentNumber = String(documentNumber).trim();
-  if (whatsapp !== undefined) registrations[index].whatsapp = String(whatsapp).trim();
-  if (firstName !== undefined) registrations[index].firstName = String(firstName).trim();
-  if (lastName !== undefined) registrations[index].lastName = String(lastName).trim();
-
-  writeJSON(REGISTRATIONS_FILE, registrations);
-  console.log(`[Admin Update] Updated runner ${registrations[index].id} (DNI: ${registrations[index].documentNumber}, Cel: ${registrations[index].whatsapp})`);
-  res.json({ success: true, runner: registrations[index] });
-});
+// (Primary /api/runner/update route is defined above)
 
 // 3. Competitor Auth: Login strictly by DNI (or ID)
 app.post('/api/competitor/login', (req, res) => {

@@ -23,7 +23,8 @@ import {
   FileText,
   X,
   Lock,
-  Eye
+  Eye,
+  Camera
 } from 'lucide-react';
 import { RunnerRegistration, DocumentType, Gender, PaymentMethod } from '../types/race';
 import { getStoredRegistrations } from '../data/initialRegistrations';
@@ -126,6 +127,72 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     setVoucherFileSize('');
   };
 
+  // Personal photo upload states (For athlete official frame / marco)
+  const [personalPhotoPreview, setPersonalPhotoPreview] = useState<string | null>(null);
+  const [personalPhotoFileName, setPersonalPhotoFileName] = useState<string>('');
+  const [personalPhotoSize, setPersonalPhotoSize] = useState<string>('');
+  const [isCompressingPhoto, setIsCompressingPhoto] = useState(false);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+
+  const processPersonalPhotoFile = (file: File) => {
+    setPersonalPhotoFileName(file.name);
+    const sizeKb = Math.round(file.size / 1024);
+    setPersonalPhotoSize(sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`);
+    setIsCompressingPhoto(true);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const rawData = event.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 1200;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.85);
+          setPersonalPhotoPreview(compressed);
+          setIsCompressingPhoto(false);
+          return;
+        }
+        setPersonalPhotoPreview(rawData);
+        setIsCompressingPhoto(false);
+      };
+      img.onerror = () => {
+        setPersonalPhotoPreview(rawData);
+        setIsCompressingPhoto(false);
+      };
+      img.src = rawData;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePersonalPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processPersonalPhotoFile(file);
+    }
+  };
+
+  const handleRemovePersonalPhoto = () => {
+    setPersonalPhotoPreview(null);
+    setPersonalPhotoFileName('');
+    setPersonalPhotoSize('');
+  };
+
   // Discount detection
   const [hasPreviousDiscount, setHasPreviousDiscount] = useState(false);
   const [discountChecked, setDiscountChecked] = useState(false);
@@ -220,6 +287,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       paymentReference: paymentReference.trim() || `YAPE-SANTA-${Date.now().toString().slice(-4)}`,
       paymentProofImage: voucherPreview || undefined,
       voucherUrl: voucherPreview || undefined,
+      personalPhotoUrl: personalPhotoPreview || undefined,
       paymentStatus: 'No Verificado',
       createdAt: now,
       disclaimerAccepted: true,
@@ -484,6 +552,108 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                   <option value="XXL">XXL</option>
                 </select>
               </div>
+            </div>
+
+            {/* Personal Photo Upload for Athlete Official Frame (Marco) */}
+            <div className="pt-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-mono text-neutral-200 uppercase font-bold flex items-center gap-2">
+                  <Camera className="w-4 h-4 text-amber-400" />
+                  <span>Foto Personal del Atleta (Para tu Marco Oficial)</span>
+                </label>
+                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-500/40">
+                  Para tu Marco
+                </span>
+              </div>
+              <p className="text-xs text-neutral-400 leading-relaxed font-sans">
+                Sube una foto tuya nítida (de frente o corriendo) para diseñar tu <strong>marco oficial personalizado de Santa Run Tarapoto 2026</strong>. Se guardará automáticamente con tu nombre completo.
+              </p>
+
+              {!personalPhotoPreview ? (
+                <label className="relative border-2 border-dashed border-neutral-700 hover:border-amber-500/80 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 cursor-pointer bg-neutral-950/70 hover:bg-neutral-900 transition-all group shadow-inner">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-105 transition shrink-0">
+                      <Camera className="w-6 h-6 text-amber-400" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-white block group-hover:text-amber-300 transition">
+                        {isCompressingPhoto ? 'Optimizando foto...' : 'Subir tu foto personal para el marco del evento'}
+                      </span>
+                      <span className="text-[11px] text-neutral-400 block mt-0.5">
+                        Formatos: JPG, PNG o WEBP • Compresión automática sin perder nitidez
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="px-4 py-2 rounded-xl bg-neutral-800 text-neutral-200 text-xs font-bold group-hover:bg-amber-600 group-hover:text-white transition shadow-sm">
+                      {isCompressingPhoto ? 'Cargando...' : 'Elegir Foto'}
+                    </span>
+                  </div>
+
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePersonalPhotoChange}
+                    disabled={isCompressingPhoto}
+                    className="hidden"
+                  />
+                </label>
+              ) : (
+                <div className="p-3.5 rounded-2xl bg-neutral-900 border-2 border-amber-500/50 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <div
+                      onClick={() => setShowPhotoModal(true)}
+                      className="relative w-14 h-14 rounded-xl overflow-hidden border border-amber-500/50 shrink-0 cursor-pointer group"
+                      title="Clic para ampliar foto personal"
+                    >
+                      <img
+                        src={personalPhotoPreview}
+                        alt="Foto Personal Atleta"
+                        className="w-full h-full object-cover group-hover:scale-110 transition"
+                      />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                        <Eye className="w-4 h-4 text-white" />
+                      </div>
+                    </div>
+
+                    <div className="truncate">
+                      <div className="flex items-center gap-1.5 text-amber-300 text-xs font-bold">
+                        <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>Foto personal lista para tu marco</span>
+                      </div>
+                      <span className="text-xs text-white font-mono block truncate max-w-[240px]">
+                        {firstName || lastName ? `${firstName} ${lastName}`.trim() : (personalPhotoFileName || 'foto_atleta.jpg')}
+                      </span>
+                      {personalPhotoSize && (
+                        <span className="text-[10px] text-neutral-400 block font-mono">
+                          Tamaño original: {personalPhotoSize} (optimizada automáticamente)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setShowPhotoModal(true)}
+                      className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-neutral-300" />
+                      <span>Ver Foto</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleRemovePersonalPhoto}
+                      className="px-3 py-1.5 rounded-xl bg-red-950/80 hover:bg-red-900 text-red-300 text-xs font-bold border border-red-500/40 transition flex items-center gap-1 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5 text-red-400" />
+                      <span>Quitar</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -753,6 +923,46 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 type="button"
                 onClick={() => setShowVoucherModal(false)}
                 className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Fullscreen Preview of Personal Photo */}
+      {showPhotoModal && personalPhotoPreview && (
+        <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className="relative max-w-lg w-full bg-neutral-900 border-2 border-amber-500 rounded-3xl p-6 shadow-2xl space-y-4">
+            <button
+              onClick={() => setShowPhotoModal(false)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2">
+              <Camera className="w-5 h-5 text-amber-400" />
+              <h4 className="font-bebas text-2xl text-white uppercase tracking-wide">
+                Foto Personal (Para tu Marco)
+              </h4>
+            </div>
+
+            <div className="rounded-2xl overflow-hidden bg-black border border-neutral-800 max-h-[70vh] flex items-center justify-center">
+              <img
+                src={personalPhotoPreview}
+                alt="Vista previa de foto personal"
+                className="max-h-[68vh] w-auto object-contain"
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-xs text-neutral-400 pt-1">
+              <span>{firstName || lastName ? `${firstName} ${lastName}`.trim() : personalPhotoFileName}</span>
+              <button
+                type="button"
+                onClick={() => setShowPhotoModal(false)}
+                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold cursor-pointer"
               >
                 Cerrar
               </button>

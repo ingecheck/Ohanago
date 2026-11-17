@@ -40,14 +40,31 @@ import {
   FileSpreadsheet,
   Database,
   Gift,
-  Image as ImageIcon
+  Image as ImageIcon,
+  FolderOpen,
+  HardDrive,
+  CloudUpload,
+  Trash2,
+  ExternalLink,
+  Copy
 } from 'lucide-react';
+import { User as FirebaseUser } from 'firebase/auth';
 import { AdminAnalyticsTab } from './AdminAnalyticsTab';
 import { AdminRouletteModal } from './AdminRouletteModal';
 import { SantaTurkeyLotteryModal } from './SantaTurkeyLotteryModal';
 import { fetchAnalytics, AnalyticsSummary } from '../utils/analytics';
 import { getStoredRouletteState } from '../utils/rouletteManager';
 import { exportToNativeXLSX } from '../services/googleWorkspaceService';
+import {
+  initDriveAuth,
+  signInWithGoogleDrive,
+  getDriveAccessToken,
+  logoutGoogleDrive,
+  ensureOhanaDriveFolders,
+  uploadFileToDriveFolder,
+  buildRunnerPersonName,
+  OhanaDriveFolders,
+} from '../services/googleDriveService';
 
 interface AdminDashboardProps {
   registrations: RunnerRegistration[];
@@ -71,6 +88,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Modals
   const [scannedRunnerModal, setScannedRunnerModal] = useState<RunnerRegistration | null>(null);
   const [viewingVoucherRunner, setViewingVoucherRunner] = useState<RunnerRegistration | null>(null);
+  const [viewingPhotoRunner, setViewingPhotoRunner] = useState<RunnerRegistration | null>(null);
+
+  // Google Drive integration & Server Storage monitor states (Admin Panel ONLY)
+  const [needsDriveAuth, setNeedsDriveAuth] = useState(true);
+  const [driveUser, setDriveUser] = useState<FirebaseUser | null>(null);
+  const [driveFolders, setDriveFolders] = useState<OhanaDriveFolders | null>(null);
+  const [isLoggingInDrive, setIsLoggingInDrive] = useState(false);
+  const [isSyncingDrive, setIsSyncingDrive] = useState(false);
+  const [autoSyncDrive, setAutoSyncDrive] = useState(true);
+  const [driveSyncProgress, setDriveSyncProgress] = useState<string | null>(null);
+  const [storageStats, setStorageStats] = useState<{
+    vouchersCount: number;
+    vouchersMB: number;
+    photosCount: number;
+    photosMB: number;
+    totalFiles: number;
+    totalMB: number;
+    maxBudgetMB: number;
+    cleanableLocalFiles: number;
+  } | null>(null);
+  const [confirmActionModal, setConfirmActionModal] = useState<{
+    title: string;
+    description: string;
+    confirmLabel: string;
+    onConfirm: () => Promise<void>;
+  } | null>(null);
+  const [isExecutingConfirmAction, setIsExecutingConfirmAction] = useState(false);
 
   // Edit Runner DNI/Phone modal
   const [editingRunner, setEditingRunner] = useState<RunnerRegistration | null>(null);
@@ -320,6 +364,261 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       .then((url) => setStartQrDataUrl(url))
       .catch((err) => console.error('Error generating kit delivery QR:', err));
   }, []);
+
+  const fetchStorageStats = async () => {
+    try {
+      const res = await fetch('/api/admin/storage-stats');
+      if (res.ok) {
+        const data = await res.json();
+        setStorageStats(data);
+      }
+    } catch (e) {}
+  };
+
+  const fetchSavedDriveFolders = async () => {
+    try {
+      const res = await fetch('/api/admin/drive-folders');
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.folders) {
+          setDriveFolders(data.folders);
+        }
+      }
+    } catch (e) {}
+  };
+
+  const persistDriveFolders = async (folders: OhanaDriveFolders) => {
+    setDriveFolders(folders);
+    try {
+      await fetch('/api/admin/drive-folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folders }),
+      });
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    fetchStorageStats();
+    fetchSavedDriveFolders();
+    const unsubDriveAuth = initDriveAuth(
+      (user) => {
+        setDriveUser(user);
+        setNeedsDriveAuth(false);
+      },
+      () => {
+        setDriveUser(null);
+        setNeedsDriveAuth(true);
+      }
+    );
+    return () => unsubDriveAuth();
+  }, []);
+
+  const handleDriveSignIn = async () => {
+    setIsLoggingInDrive(true);
+    try {
+      const result = await signInWithGoogleDrive();
+      if (result) {
+        setDriveUser(result.user);
+        setNeedsDriveAuth(false);
+        const folders = await ensureOhanaDriveFolders(result.accessToken);
+        await persistDriveFolders(folders);
+        setLiveNotice(`✓ Google Drive conectado (${result.user.email}). Carpetas listas para Constancias Yape y Fotos de Atletas.`);
+        setTimeout(() => setLiveNotice(null), 5000);
+      }
+    } catch (err: any) {
+      setLiveNotice(`❌ No se pudo conectar Google Drive: ${err?.message || 'Error de autenticación'}`);
+      setTimeout(() => setLiveNotice(null), 5000);
+    } finally {
+      setIsLoggingInDrive(false);
+    }
+  };
+
+  const handleDriveLogout = async () => {
+    await logoutGoogleDrive();
+    setDriveUser(null);
+    setNeedsDriveAuth(true);
+    setLiveNotice('Sesión de Google Drive desconectada.');
+    setTimeout(() => setLiveNotice(null), 3500);
+  };
+
+  const syncPendingMediaToDrive = async (overwriteExisting = false) => {
+    if (isSyncingDrive) return;
+    const accessToken = await getDriveAccessToken();
+    if (!accessToken) {
+      setNeedsDriveAuth(true);
+      return;
+    }
+
+    const targets = registrations.filter((r) => {
+      const hasVoucher = !!(r.voucherUrl || r.paymentProofImage);
+      const hasPhoto = !!r.personalPhotoUrl;
+      const needsVoucher = hasVoucher && (overwriteExisting || !r.driveVoucherFileId);
+      const needsPhoto = hasPhoto && (overwriteExisting || !r.drivePhotoFileId);
+      return needsVoucher || needsPhoto;
+    });
+
+    if (targets.length === 0) {
+      setDriveSyncProgress(null);
+      return;
+    }
+
+    setIsSyncingDrive(true);
+    try {
+      const folders = await ensureOhanaDriveFolders(accessToken);
+      await persistDriveFolders(folders);
+
+      const updates: Array<{
+        runnerId: string;
+        driveVoucherFileId?: string;
+        driveVoucherUrl?: string;
+        drivePhotoFileId?: string;
+        drivePhotoUrl?: string;
+      }> = [];
+
+      let uploadedFiles = 0;
+      for (let i = 0; i < targets.length; i++) {
+        const r = targets[i];
+        const personName = buildRunnerPersonName(r);
+        setDriveSyncProgress(`Sincronizando ${i + 1}/${targets.length}: ${personName}...`);
+        const updateItem: any = { runnerId: r.id };
+        let touched = false;
+
+        const voucherSrc = r.voucherUrl || r.paymentProofImage;
+        if (voucherSrc && (overwriteExisting || !r.driveVoucherFileId)) {
+          try {
+            const uploadedVoucher = await uploadFileToDriveFolder({
+              accessToken,
+              folderId: folders.vouchersFolderId,
+              baseFileName: `Constancia_Yape_${personName} (${r.id})`,
+              source: voucherSrc,
+              existingFileId: overwriteExisting ? r.driveVoucherFileId : undefined,
+            });
+            updateItem.driveVoucherFileId = uploadedVoucher.id;
+            updateItem.driveVoucherUrl = uploadedVoucher.webViewLink;
+            uploadedFiles += 1;
+            touched = true;
+          } catch (err: any) {
+            if (err?.message === 'AUTH_EXPIRED') throw err;
+          }
+        }
+
+        if (r.personalPhotoUrl && (overwriteExisting || !r.drivePhotoFileId)) {
+          try {
+            const uploadedPhoto = await uploadFileToDriveFolder({
+              accessToken,
+              folderId: folders.photosFolderId,
+              baseFileName: `${personName} (${r.id})`,
+              source: r.personalPhotoUrl,
+              existingFileId: overwriteExisting ? r.drivePhotoFileId : undefined,
+            });
+            updateItem.drivePhotoFileId = uploadedPhoto.id;
+            updateItem.drivePhotoUrl = uploadedPhoto.webViewLink;
+            uploadedFiles += 1;
+            touched = true;
+          } catch (err: any) {
+            if (err?.message === 'AUTH_EXPIRED') throw err;
+          }
+        }
+
+        if (touched) {
+          updates.push(updateItem);
+        }
+      }
+
+      if (updates.length > 0) {
+        const syncRes = await fetch('/api/admin/drive-synced', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ updates, cleanupLocal: false }),
+        });
+
+        let nextList = registrations.map((r) => {
+          const u = updates.find((item) => item.runnerId === r.id);
+          return u ? { ...r, ...u } : r;
+        });
+
+        if (syncRes.ok) {
+          const data = await syncRes.json();
+          if (Array.isArray(data.registrations)) {
+            nextList = data.registrations;
+          }
+        }
+
+        onUpdateRegistrations(nextList);
+        saveRegistrations(nextList);
+        fetchStorageStats();
+        setLiveNotice(`✓ ${uploadedFiles} archivo(s) respaldados en Google Drive en sus carpetas oficiales.`);
+        setTimeout(() => setLiveNotice(null), 5000);
+      }
+    } catch (err: any) {
+      if (err?.message === 'AUTH_EXPIRED') {
+        setNeedsDriveAuth(true);
+        setLiveNotice('La sesión de Google Drive expiró. Vuelve a iniciar sesión para continuar sincronizando.');
+      } else {
+        setLiveNotice(`❌ Error sincronizando con Google Drive: ${err?.message || 'Error desconocido'}`);
+      }
+      setTimeout(() => setLiveNotice(null), 5000);
+    } finally {
+      setIsSyncingDrive(false);
+      setDriveSyncProgress(null);
+    }
+  };
+
+  // Automatic Drive sync whenever Drive is connected & new unsynced media appears
+  useEffect(() => {
+    if (needsDriveAuth || !autoSyncDrive || isSyncingDrive) return;
+    const hasPendingMedia = registrations.some((r) => {
+      const hasVoucher = !!(r.voucherUrl || r.paymentProofImage);
+      const hasPhoto = !!r.personalPhotoUrl;
+      return (hasVoucher && !r.driveVoucherFileId) || (hasPhoto && !r.drivePhotoFileId);
+    });
+    if (hasPendingMedia) {
+      const timer = setTimeout(() => {
+        syncPendingMediaToDrive(false);
+      }, 900);
+      return () => clearTimeout(timer);
+    }
+  }, [registrations, needsDriveAuth, autoSyncDrive]);
+
+  const requestOverwriteResync = () => {
+    const syncedCount = registrations.filter((r) => r.driveVoucherFileId || r.drivePhotoFileId).length;
+    setConfirmActionModal({
+      title: '¿Actualizar archivos existentes en Google Drive?',
+      description: `Esta acción volverá a subir y actualizar ${syncedCount} registro(s) ya existentes en tus carpetas de Google Drive ("Constancias Yape" y "Fotos Atletas") y subirá los archivos pendientes.`,
+      confirmLabel: 'Confirmar Actualización en Drive',
+      onConfirm: async () => {
+        await syncPendingMediaToDrive(true);
+      },
+    });
+  };
+
+  const requestCleanupLocalUploads = () => {
+    const cleanableCount = storageStats?.cleanableLocalFiles || 0;
+    if (cleanableCount === 0) return;
+    setConfirmActionModal({
+      title: '¿Liberar espacio del servidor para archivos ya respaldados en Drive?',
+      description: `Se eliminarán ${cleanableCount} copia(s) local(es) del disco del servidor que YA están respaldadas de forma segura en tu Google Drive, manteniendo los enlaces de Drive en la base de datos para evitar cobros o llenado de almacenamiento.`,
+      confirmLabel: 'Confirmar Limpieza de Servidor',
+      onConfirm: async () => {
+        const res = await fetch('/api/admin/drive-synced', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ updates: [], cleanupLocal: true }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.registrations)) {
+            onUpdateRegistrations(data.registrations);
+            saveRegistrations(data.registrations);
+          }
+          await fetchStorageStats();
+          setLiveNotice(`✓ Espacio liberado: se eliminaron ${data.cleanedFiles || cleanableCount} copia(s) local(es) ya guardadas en Google Drive.`);
+          setTimeout(() => setLiveNotice(null), 5000);
+        }
+      },
+    });
+  };
 
 
 
@@ -867,6 +1166,220 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             </div>
 
+            {/* Google Drive Auto-Organization & Server Storage Guard (Admin Panel Only) */}
+            <div className="bg-gradient-to-r from-neutral-900 via-neutral-950 to-neutral-900 border border-neutral-800 rounded-2xl p-4 sm:p-5 shadow-lg space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center shrink-0">
+                    <FolderOpen className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-bebas text-xl text-white uppercase tracking-wide leading-none">
+                        Google Drive Automático · Constancias Yape & Fotos para Marcos
+                      </h3>
+                      {!needsDriveAuth && (
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/40 text-[10px] font-bold">
+                          ✓ Conectado ({driveUser?.email || 'Drive Activo'})
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-neutral-400 mt-1">
+                      Organiza automáticamente en 2 carpetas separadas: <strong>Constancias Yape - Santa Run 2026</strong> y <strong>Fotos Atletas - Santa Run 2026</strong> (nombradas con el nombre completo de cada corredor).
+                    </p>
+                  </div>
+                </div>
+
+                {/* Official Sign in with Google Button or Connected Controls */}
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {needsDriveAuth ? (
+                    <button
+                      type="button"
+                      onClick={handleDriveSignIn}
+                      disabled={isLoggingInDrive}
+                      className="gsi-material-button"
+                      title="Conectar tu cuenta de Google Drive para organizar las 2 carpetas automáticamente"
+                    >
+                      <div className="gsi-material-button-state" />
+                      <div className="gsi-material-button-content-wrapper">
+                        <div className="gsi-material-button-icon">
+                          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" style={{ display: 'block' }}>
+                            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+                            <path fill="none" d="M0 0h48v48H0z" />
+                          </svg>
+                        </div>
+                        <span className="gsi-material-button-contents">
+                          {isLoggingInDrive ? 'Conectando...' : 'Sign in with Google'}
+                        </span>
+                      </div>
+                    </button>
+                  ) : (
+                    <>
+                      <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-900 border border-neutral-700 text-[11px] font-bold text-neutral-200 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={autoSyncDrive}
+                          onChange={(e) => setAutoSyncDrive(e.target.checked)}
+                          className="rounded text-emerald-500 bg-neutral-800 border-neutral-600"
+                        />
+                        <span>Auto-subir a Drive</span>
+                      </label>
+
+                      <button
+                        type="button"
+                        onClick={() => syncPendingMediaToDrive(false)}
+                        disabled={isSyncingDrive}
+                        className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow"
+                      >
+                        <CloudUpload className={`w-4 h-4 ${isSyncingDrive ? 'animate-bounce' : ''}`} />
+                        <span>{isSyncingDrive ? 'Sincronizando...' : 'Subir Pendientes'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={requestOverwriteResync}
+                        disabled={isSyncingDrive}
+                        className="px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-bold border border-neutral-700 transition cursor-pointer"
+                        title="Actualizar archivos existentes en Google Drive"
+                      >
+                        Actualizar Existentes
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleDriveLogout}
+                        className="px-2.5 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white text-xs font-bold border border-neutral-800 transition cursor-pointer"
+                        title="Desconectar cuenta de Google Drive"
+                      >
+                        Desconectar
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Drive folders quick links + Server Storage Usage */}
+              <div className="pt-2 border-t border-neutral-800/80 flex flex-wrap items-center justify-between gap-3 text-[11px]">
+                <div className="flex flex-wrap items-center gap-2">
+                  {driveFolders ? (
+                    <>
+                      <div className="inline-flex items-center rounded-lg bg-blue-950/60 border border-blue-500/40 overflow-hidden">
+                        <a
+                          href={driveFolders.rootFolderUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-blue-300 hover:bg-blue-900 font-bold transition"
+                        >
+                          <FolderOpen className="w-3.5 h-3.5" />
+                          <span>Carpeta Principal</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard?.writeText(driveFolders.rootFolderUrl);
+                            setLiveNotice('✓ Link de Carpeta Principal copiado.');
+                            setTimeout(() => setLiveNotice(null), 3000);
+                          }}
+                          className="px-2 py-1 border-l border-blue-500/30 text-blue-300 hover:bg-blue-900 cursor-pointer"
+                          title="Copiar enlace de Carpeta Principal"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      <div className="inline-flex items-center rounded-lg bg-emerald-950/70 border border-emerald-500/40 overflow-hidden">
+                        <a
+                          href={driveFolders.vouchersFolderUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-emerald-300 hover:bg-emerald-900 font-bold transition"
+                        >
+                          <FolderOpen className="w-3.5 h-3.5" />
+                          <span>Constancias Yape</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard?.writeText(driveFolders.vouchersFolderUrl);
+                            setLiveNotice('✓ Link de Constancias Yape copiado.');
+                            setTimeout(() => setLiveNotice(null), 3000);
+                          }}
+                          className="px-2 py-1 border-l border-emerald-500/30 text-emerald-300 hover:bg-emerald-900 cursor-pointer"
+                          title="Copiar enlace de Constancias Yape"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </div>
+
+                      <div className="inline-flex items-center rounded-lg bg-amber-950/70 border border-amber-500/40 overflow-hidden">
+                        <a
+                          href={driveFolders.photosFolderUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-amber-300 hover:bg-amber-900 font-bold transition"
+                        >
+                          <FolderOpen className="w-3.5 h-3.5" />
+                          <span>Fotos Atletas (Con Nombres)</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard?.writeText(driveFolders.photosFolderUrl);
+                            setLiveNotice('✓ Link de Fotos Atletas copiado.');
+                            setTimeout(() => setLiveNotice(null), 3000);
+                          }}
+                          className="px-2 py-1 border-l border-amber-500/30 text-amber-300 hover:bg-amber-900 cursor-pointer"
+                          title="Copiar enlace de Fotos Atletas"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <span className="text-neutral-400 font-mono">
+                      📁 Haz clic en «Sign in with Google» arriba para crear las carpetas en tu Drive y ver sus links directos aquí.
+                    </span>
+                  )}
+                  {driveSyncProgress && (
+                    <span className="text-blue-300 font-mono font-bold animate-pulse">
+                      • {driveSyncProgress}
+                    </span>
+                  )}
+                </div>
+
+                {/* Server Disk Safeguard Indicator */}
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-neutral-950 border border-neutral-800 text-neutral-300 font-mono">
+                    <HardDrive className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>
+                      Servidor: <strong className="text-white">{storageStats?.totalMB ?? 0} MB</strong> / {storageStats?.maxBudgetMB ?? 200} MB
+                    </span>
+                    <span className="text-neutral-500">
+                      ({storageStats?.vouchersCount ?? 0} vouchers · {storageStats?.photosCount ?? 0} fotos)
+                    </span>
+                  </div>
+
+                  {(storageStats?.cleanableLocalFiles || 0) > 0 && (
+                    <button
+                      type="button"
+                      onClick={requestCleanupLocalUploads}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-950/70 hover:bg-red-900 text-red-300 border border-red-500/40 font-bold transition cursor-pointer"
+                      title="Eliminar del servidor los archivos que ya están respaldados en Google Drive"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Liberar {storageStats?.cleanableLocalFiles} copia(s) ya en Drive</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Filter and Search Toolbar */}
             <div className="bg-neutral-900/90 border border-neutral-800 rounded-2xl p-4 shadow-lg space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
@@ -1184,7 +1697,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 title="Observar captura del voucher Yape"
                               >
                                 <ImageIcon className="w-3 h-3 text-emerald-400" />
-                                <span>🧾 Ver Voucher</span>
+                                <span>🧾 Ver Voucher{runner.driveVoucherFileId ? ' (Drive ✓)' : ''}</span>
                               </button>
                             ) : (
                               <a
@@ -1197,6 +1710,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 <span>Sin voucher</span>
                                 <span className="text-amber-400 font-bold">• WhatsApp</span>
                               </a>
+                            )}
+
+                            {runner.personalPhotoUrl && (
+                              <button
+                                onClick={() => setViewingPhotoRunner(runner)}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-950/70 text-amber-300 border border-amber-500/40 hover:bg-amber-900 transition cursor-pointer shadow-sm"
+                                title="Ver y descargar foto personal del corredor para su marco"
+                              >
+                                <Camera className="w-3 h-3 text-amber-400" />
+                                <span>📷 Foto Marco{runner.drivePhotoFileId ? ' (Drive ✓)' : ''}</span>
+                              </button>
                             )}
                           </div>
                         </td>
@@ -1857,6 +2381,115 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           runners={registrations}
           onClose={() => setShowTurkeyLottery(false)}
         />
+      )}
+
+      {/* Modal: View & Download Runner Personal Photo (For Official Frame) */}
+      {viewingPhotoRunner && viewingPhotoRunner.personalPhotoUrl && (
+        <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
+          <div className="relative max-w-lg w-full bg-neutral-900 border-2 border-amber-500/60 rounded-3xl p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+            <button
+              onClick={() => setViewingPhotoRunner(null)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 bg-amber-950/80 px-2.5 py-0.5 rounded-full border border-amber-500/40">
+                Foto Personal del Corredor (Para Marco)
+              </span>
+              <h4 className="font-bebas text-2xl text-white uppercase mt-1 leading-tight">
+                {viewingPhotoRunner.firstName} {viewingPhotoRunner.lastName}
+              </h4>
+              <p className="text-xs text-neutral-400">
+                DNI: <strong className="text-white font-mono">{viewingPhotoRunner.documentNumber}</strong> • ID: <strong className="text-red-400 font-mono">{viewingPhotoRunner.id}</strong>
+              </p>
+            </div>
+
+            <div className="rounded-2xl overflow-hidden bg-black border border-neutral-800 min-h-[220px] max-h-[60vh] flex items-center justify-center p-2">
+              <img
+                src={viewingPhotoRunner.personalPhotoUrl}
+                alt={`Foto de ${viewingPhotoRunner.firstName} ${viewingPhotoRunner.lastName}`}
+                className="max-h-[58vh] w-auto max-w-full object-contain rounded-xl"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-neutral-800">
+              <div className="flex items-center gap-2">
+                <a
+                  href={viewingPhotoRunner.personalPhotoUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  download={`${buildRunnerPersonName(viewingPhotoRunner).replace(/\s+/g, '_')}.jpg`}
+                  className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-black transition flex items-center gap-1.5 cursor-pointer shadow"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Descargar con Nombre</span>
+                </a>
+
+                {viewingPhotoRunner.drivePhotoUrl && (
+                  <a
+                    href={viewingPhotoRunner.drivePhotoUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3 py-2 rounded-xl bg-blue-950/80 hover:bg-blue-900 text-blue-300 border border-blue-500/40 text-xs font-bold transition flex items-center gap-1.5"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span>Ver en Drive</span>
+                  </a>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setViewingPhotoRunner(null)}
+                className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Explicit Confirmation Modal for Mutating / Cleanup Actions (MANDATORY per Workspace guidelines) */}
+      {confirmActionModal && (
+        <div className="fixed inset-0 z-80 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
+          <div className="relative max-w-md w-full bg-neutral-900 border-2 border-amber-500 rounded-3xl p-6 shadow-2xl space-y-4">
+            <h4 className="font-bebas text-2xl text-white uppercase tracking-wide leading-tight">
+              {confirmActionModal.title}
+            </h4>
+            <p className="text-xs text-neutral-300 leading-relaxed">
+              {confirmActionModal.description}
+            </p>
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-neutral-800">
+              <button
+                type="button"
+                disabled={isExecutingConfirmAction}
+                onClick={() => setConfirmActionModal(null)}
+                className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-bold transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={isExecutingConfirmAction}
+                onClick={async () => {
+                  setIsExecutingConfirmAction(true);
+                  try {
+                    await confirmActionModal.onConfirm();
+                  } finally {
+                    setIsExecutingConfirmAction(false);
+                    setConfirmActionModal(null);
+                  }
+                }}
+                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 disabled:opacity-60 text-white text-xs font-black transition cursor-pointer shadow-lg"
+              >
+                {isExecutingConfirmAction ? 'Procesando...' : confirmActionModal.confirmLabel}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

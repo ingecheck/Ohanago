@@ -64,6 +64,76 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
 
   const [showCompetitorVoucherModal, setShowCompetitorVoucherModal] = useState(false);
   const [isUploadingVoucher, setIsUploadingVoucher] = useState(false);
+  const [showCompetitorPhotoModal, setShowCompetitorPhotoModal] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+
+  const handleCompetitorUploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploadingPhoto(true);
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const rawData = event.target?.result as string;
+      let finalData = rawData;
+
+      try {
+        const img = new Image();
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = () => reject();
+          img.src = rawData;
+        });
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 1200;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          finalData = canvas.toDataURL('image/jpeg', 0.85);
+        }
+      } catch (e) {}
+
+      try {
+        const res = await fetch('/api/upload-photo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            runnerId: competitor.id,
+            photoImage: finalData,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.personalPhotoUrl) {
+            finalData = data.personalPhotoUrl;
+          }
+        }
+      } catch (err) {}
+
+      const updatedRunner: RunnerRegistration = {
+        ...competitor,
+        personalPhotoUrl: finalData,
+      };
+      onUpdateCompetitor(updatedRunner);
+      setIsUploadingPhoto(false);
+      setActionSuccessMessage('✓ ¡Tu foto personal para el marco oficial fue guardada con tu nombre!');
+      setTimeout(() => setActionSuccessMessage(null), 5500);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleCompetitorUploadVoucher = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -268,8 +338,8 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
               )}
             </div>
 
-            {/* Voucher status / upload */}
-            <div>
+            {/* Voucher & Personal Photo status / upload */}
+            <div className="flex flex-wrap items-center gap-2 justify-end">
               {competitor.voucherUrl || competitor.paymentProofImage ? (
                 <button
                   type="button"
@@ -289,6 +359,30 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
                     accept="image/*,application/pdf"
                     onChange={handleCompetitorUploadVoucher}
                     disabled={isUploadingVoucher}
+                    className="hidden"
+                  />
+                </label>
+              )}
+
+              {competitor.personalPhotoUrl ? (
+                <button
+                  type="button"
+                  onClick={() => setShowCompetitorPhotoModal(true)}
+                  className="px-2.5 py-1 rounded-xl bg-amber-950/90 text-amber-300 border border-amber-500/50 text-[11px] font-bold flex items-center gap-1.5 hover:bg-amber-900 transition cursor-pointer shadow-sm"
+                  title="Ver o actualizar tu foto para el marco oficial"
+                >
+                  <Camera className="w-3.5 h-3.5 text-amber-400" />
+                  <span>📷 Foto para Marco</span>
+                </button>
+              ) : (
+                <label className="px-2.5 py-1 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-amber-300 border border-amber-500/40 hover:border-amber-400 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer transition shadow-sm">
+                  <Camera className="w-3.5 h-3.5 text-amber-400" />
+                  <span>{isUploadingPhoto ? 'Subiendo...' : '+ Subir Foto (Marco)'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCompetitorUploadPhoto}
+                    disabled={isUploadingPhoto}
                     className="hidden"
                   />
                 </label>
@@ -705,6 +799,58 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
                 type="button"
                 onClick={() => setShowCompetitorVoucherModal(false)}
                 className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Competitor View / Update Personal Photo for Frame */}
+      {showCompetitorPhotoModal && competitor.personalPhotoUrl && (
+        <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md">
+          <div className="relative max-w-lg w-full bg-neutral-900 border-2 border-amber-500/60 rounded-3xl p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+            <button
+              onClick={() => setShowCompetitorPhotoModal(false)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 bg-amber-950/80 px-2.5 py-0.5 rounded-full border border-amber-500/40">
+                Tu Foto para Marco Oficial
+              </span>
+              <h4 className="font-bebas text-2xl text-white uppercase mt-1 leading-tight">
+                {competitor.firstName} {competitor.lastName}
+              </h4>
+            </div>
+
+            <div className="rounded-2xl overflow-hidden bg-black border border-neutral-800 min-h-[220px] max-h-[60vh] flex items-center justify-center p-2">
+              <img
+                src={competitor.personalPhotoUrl}
+                alt="Foto personal del corredor"
+                className="max-h-[58vh] w-auto max-w-full object-contain rounded-xl"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-neutral-800 text-xs">
+              <label className="px-3.5 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-amber-300 font-bold cursor-pointer flex items-center gap-1.5">
+                <Upload className="w-3.5 h-3.5" />
+                <span>{isUploadingPhoto ? 'Actualizando...' : 'Cambiar Foto'}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCompetitorUploadPhoto}
+                  disabled={isUploadingPhoto}
+                  className="hidden"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowCompetitorPhotoModal(false)}
+                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold cursor-pointer"
               >
                 Cerrar
               </button>

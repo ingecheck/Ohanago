@@ -37,8 +37,13 @@ export interface RunnerRegistration {
   costumeName?: string;
   paymentMethod: PaymentMethod;
   paymentReference: string;
-  paymentProofImage?: string; // base64 string
-  voucherUrl?: string; // URL pública del archivo en disco o nube
+  paymentProofImage?: string; // base64 string o ruta local
+  voucherUrl?: string; // URL pública del comprobante Yape en disco o Drive
+  personalPhotoUrl?: string; // Foto personal del atleta para su marco oficial
+  driveVoucherFileId?: string;
+  driveVoucherUrl?: string;
+  drivePhotoFileId?: string;
+  drivePhotoUrl?: string;
   paymentStatus: PaymentStatus;
   createdAt: string;
   disclaimerAccepted: boolean;

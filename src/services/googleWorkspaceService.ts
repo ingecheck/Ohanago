@@ -25,6 +25,8 @@ export function exportToNativeXLSX(registrations: RunnerRegistration[]): void {
       'Desc. 15% Ohana',
       'Ticket Sorteo Pavo',
       'Voucher / Constancia',
+      'Foto Personal (Marco)',
+      'Carpeta Drive Sync',
       'N° Operación Ref',
       'Estado Kit',
       'Check-in QR Partida',
@@ -46,6 +48,8 @@ export function exportToNativeXLSX(registrations: RunnerRegistration[]): void {
       r.hasPreviousDiscount ? 'SÍ (15%)' : 'Tarifa Normal',
       r.turkeyRaffleTicket || `PAVO-${String(r.registrationNumber || 1).padStart(4, '0')}`,
       r.voucherUrl || r.paymentProofImage ? 'SÍ (Adjuntado)' : 'PENDIENTE',
+      r.personalPhotoUrl ? 'SÍ (Adjuntada)' : 'PENDIENTE',
+      r.driveVoucherFileId || r.drivePhotoFileId ? 'Respaldado en Drive' : 'Local',
       r.paymentReference || 'Yape Directo',
       r.kitClaimed || r.confirmedAtStart ? 'ENTREGADO' : 'PENDIENTE',
       r.confirmedAtStart ? 'CONFIRMADO' : 'NO REGISTRADO',
@@ -61,8 +65,8 @@ export function exportToNativeXLSX(registrations: RunnerRegistration[]): void {
     { wch: 22 }, { wch: 15 }, { wch: 20 }, { wch: 20 },
     { wch: 14 }, { wch: 15 }, { wch: 25 }, { wch: 12 },
     { wch: 14 }, { wch: 16 }, { wch: 20 }, { wch: 20 },
-    { wch: 18 }, { wch: 14 }, { wch: 18 }, { wch: 16 },
-    { wch: 22 }, { wch: 14 }, { wch: 24 }
+    { wch: 20 }, { wch: 20 }, { wch: 18 }, { wch: 14 },
+    { wch: 18 }, { wch: 16 }, { wch: 22 }, { wch: 14 }, { wch: 24 }
   ];
   XLSX.utils.book_append_sheet(wb, wsSanta, 'Santa Run 2026');
 
