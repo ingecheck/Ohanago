@@ -63,22 +63,19 @@ import { fetchAnalytics, AnalyticsSummary } from '../utils/analytics';
 import { getStoredRouletteState } from '../utils/rouletteManager';
 import { exportToNativeXLSX } from '../services/googleWorkspaceService';
 import {
-  initDriveAuth,
-  signInWithGoogleDrive,
-  getDriveAccessToken,
-  logoutGoogleDrive,
-  ensureOhanaDriveFolders,
-  uploadFileToDriveFolder,
   buildRunnerPersonName,
   OhanaDriveFolders,
   DEFAULT_OHANA_DRIVE_FOLDERS,
   DEFAULT_YAPE_FOLDER_ID,
   DEFAULT_PHOTOS_FOLDER_ID,
+  DEFAULT_APPS_SCRIPT_BRIDGE_URL,
   getDriveBridgeUrl,
-  saveDriveBridgeUrl,
   syncRunnerMediaViaAppsScript,
-  GOOGLE_APPS_SCRIPT_TEMPLATE,
   isValidAppsScriptUrl,
+  initDriveAuth,
+  getDriveAccessToken,
+  ensureOhanaDriveFolders,
+  uploadFileToDriveFolder,
 } from '../services/googleDriveService';
 
 interface AdminDashboardProps {
@@ -114,11 +111,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [isSyncingDrive, setIsSyncingDrive] = useState(false);
   const [autoSyncDrive, setAutoSyncDrive] = useState(true);
   const [driveSyncProgress, setDriveSyncProgress] = useState<string | null>(null);
-  const [bridgeUrl, setBridgeUrl] = useState<string | null>(null);
-  const [bridgeInput, setBridgeInput] = useState('');
-  const [isSavingBridge, setIsSavingBridge] = useState(false);
-  const [showBridgeGuide, setShowBridgeGuide] = useState(false);
-  const [copiedScriptCode, setCopiedScriptCode] = useState(false);
+  const [bridgeUrl, setBridgeUrl] = useState<string>(DEFAULT_APPS_SCRIPT_BRIDGE_URL);
   const [storageStats, setStorageStats] = useState<{
     vouchersCount: number;
     vouchersMB: number;
@@ -476,7 +469,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     getDriveBridgeUrl().then((url) => {
       if (url) {
         setBridgeUrl(url);
-        setBridgeInput(url);
       }
     });
     const unsubDriveAuth = initDriveAuth(
@@ -492,60 +484,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     );
     return () => unsubDriveAuth();
   }, []);
-
-  const handleSaveBridgeUrl = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSavingBridge(true);
-    setDriveAuthError(null);
-    try {
-      const saved = await saveDriveBridgeUrl(bridgeInput);
-      setBridgeUrl(saved || null);
-      if (saved) {
-        setShowBridgeGuide(false);
-        setLiveNotice('✓ Enlace directo a Google Drive guardado y sincronizado para toda la web.');
-      } else {
-        setLiveNotice('Enlace directo desconectado.');
-      }
-      setTimeout(() => setLiveNotice(null), 5000);
-    } catch (err: any) {
-      setDriveAuthError(err?.message || 'El enlace no es válido.');
-    } finally {
-      setIsSavingBridge(false);
-    }
-  };
-
-  const handleDriveSignIn = async () => {
-    setIsLoggingInDrive(true);
-    setDriveAuthError(null);
-    try {
-      const result = await signInWithGoogleDrive();
-      if (result) {
-        setDriveUser(result.user);
-        setNeedsDriveAuth(false);
-        setDriveAuthError(null);
-        const folders = await ensureOhanaDriveFolders(result.accessToken);
-        await persistDriveFolders(folders);
-        setLiveNotice(`✓ Google Drive conectado (${result.user.email || 'Cuenta Google'}). Carpetas listas para Constancias Yape y Fotos de Atletas.`);
-        setTimeout(() => setLiveNotice(null), 5000);
-      }
-    } catch (err: any) {
-      const errMsg = err?.message || 'Error de autenticación con Google';
-      setDriveAuthError(errMsg);
-      setLiveNotice(`❌ No se pudo conectar Google Drive: ${errMsg}`);
-      setTimeout(() => setLiveNotice(null), 7000);
-    } finally {
-      setIsLoggingInDrive(false);
-    }
-  };
-
-  const handleDriveLogout = async () => {
-    await logoutGoogleDrive();
-    setDriveUser(null);
-    setNeedsDriveAuth(true);
-    setDriveAuthError(null);
-    setLiveNotice('Sesión de Google Drive desconectada.');
-    setTimeout(() => setLiveNotice(null), 3500);
-  };
 
   const syncPendingMediaToDrive = async (overwriteExisting = false) => {
     if (isSyncingDrive) return;
@@ -1366,16 +1304,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <h3 className="font-bebas text-xl text-white uppercase tracking-wide leading-none">
                         Google Drive Automático · Constancias Yape & Fotos para Marcos
                       </h3>
-                      {bridgeUrl && (
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/40 text-[10px] font-bold">
-                          ✓ Envío Directo Activo (Sin Sign-In)
-                        </span>
-                      )}
-                      {!bridgeUrl && !needsDriveAuth && (
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/40 text-[10px] font-bold">
-                          ✓ Conectado ({driveUser?.email || 'Drive Activo'})
-                        </span>
-                      )}
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/40 text-[10px] font-bold">
+                        ✓ Conectado Automáticamente ({driveUser?.email || 'Envío Directo Activo'})
+                      </span>
                     </div>
                     <p className="text-xs text-neutral-400 mt-1">
                       Guarda automáticamente cada archivo en tus 2 carpetas oficiales de Google Drive: <strong>Constancias Yape</strong> y <strong>Fotos Atletas</strong> (nombradas con el nombre completo de cada corredor).
@@ -1383,164 +1314,45 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 </div>
 
-                {/* Controls: Direct Bridge OR Sign in with Google */}
+                {/* Direct Auto-Sync Controls */}
                 <div className="flex flex-wrap items-center gap-2.5">
-                  {(bridgeUrl || !needsDriveAuth) ? (
-                    <>
-                      <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-900 border border-neutral-700 text-[11px] font-bold text-neutral-200 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={autoSyncDrive}
-                          onChange={(e) => setAutoSyncDrive(e.target.checked)}
-                          className="rounded text-emerald-500 bg-neutral-800 border-neutral-600"
-                        />
-                        <span>Auto-subir a Drive</span>
-                      </label>
+                  <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-900 border border-neutral-700 text-[11px] font-bold text-neutral-200 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={autoSyncDrive}
+                      onChange={(e) => setAutoSyncDrive(e.target.checked)}
+                      className="rounded text-emerald-500 bg-neutral-800 border-neutral-600"
+                    />
+                    <span>Auto-subir a Drive</span>
+                  </label>
 
-                      <button
-                        type="button"
-                        onClick={() => syncPendingMediaToDrive(false)}
-                        disabled={isSyncingDrive}
-                        className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow"
-                      >
-                        <CloudUpload className={`w-4 h-4 ${isSyncingDrive ? 'animate-bounce' : ''}`} />
-                        <span>{isSyncingDrive ? 'Sincronizando...' : 'Subir Pendientes'}</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={requestOverwriteResync}
-                        disabled={isSyncingDrive}
-                        className="px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-bold border border-neutral-700 transition cursor-pointer"
-                        title="Actualizar archivos existentes en Google Drive"
-                      >
-                        Actualizar Existentes
-                      </button>
-
-                      {!needsDriveAuth && (
-                        <button
-                          type="button"
-                          onClick={handleDriveLogout}
-                          className="px-2.5 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white text-xs font-bold border border-neutral-800 transition cursor-pointer"
-                          title="Desconectar cuenta de Google Drive"
-                        >
-                          Desconectar
-                        </button>
-                      )}
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleDriveSignIn}
-                      disabled={isLoggingInDrive}
-                      className="gsi-material-button"
-                      title="Conectar tu cuenta de Google Drive para organizar las 2 carpetas automáticamente"
-                    >
-                      <div className="gsi-material-button-state" />
-                      <div className="gsi-material-button-content-wrapper">
-                        <div className="gsi-material-button-icon">
-                          <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" style={{ display: 'block' }}>
-                            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-                            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
-                            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
-                            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
-                            <path fill="none" d="M0 0h48v48H0z" />
-                          </svg>
-                        </div>
-                        <span className="gsi-material-button-contents">
-                          {isLoggingInDrive ? 'Conectando...' : 'Sign in with Google'}
-                        </span>
-                      </div>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Direct Google Apps Script Bridge Setup (Works on www.ohanago.pro with zero login/domain errors) */}
-              <div className="p-3.5 rounded-xl bg-neutral-900/90 border border-neutral-800 space-y-2.5">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="text-xs">
-                    <span className="font-bold text-white">⚡ Envío Directo Automático (sin Sign-In ni errores de dominio): </span>
-                    <span className="text-neutral-400">
-                      Cada inscripción pasa directo a tus carpetas apenas el corredor se registra.
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard?.writeText(GOOGLE_APPS_SCRIPT_TEMPLATE);
-                        setCopiedScriptCode(true);
-                        setLiveNotice('✓ Código de Google Apps Script copiado al portapapeles.');
-                        setTimeout(() => {
-                          setCopiedScriptCode(false);
-                          setLiveNotice(null);
-                        }, 3500);
-                      }}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-blue-300 border border-blue-500/30 text-[11px] font-bold transition cursor-pointer"
-                    >
-                      <Copy className="w-3 h-3" />
-                      <span>{copiedScriptCode ? '✓ Copiado' : 'Copiar Código Apps Script'}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowBridgeGuide((v) => !v)}
-                      className="px-2.5 py-1 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-[11px] font-bold border border-neutral-700 transition cursor-pointer"
-                    >
-                      {showBridgeGuide ? 'Ocultar guía' : 'Ver guía (3 pasos)'}
-                    </button>
-                  </div>
-                </div>
-
-                <form onSubmit={handleSaveBridgeUrl} className="flex flex-col sm:flex-row gap-2">
-                  <input
-                    type="url"
-                    value={bridgeInput}
-                    onChange={(e) => setBridgeInput(e.target.value)}
-                    placeholder="Pega aquí tu enlace https://script.google.com/macros/s/.../exec"
-                    className="flex-1 bg-black border border-neutral-700 focus:border-emerald-500 rounded-lg px-3 py-1.5 text-xs text-white font-mono outline-none"
-                  />
                   <button
-                    type="submit"
-                    disabled={isSavingBridge}
-                    className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white text-xs font-bold transition cursor-pointer shrink-0"
+                    type="button"
+                    onClick={() => syncPendingMediaToDrive(false)}
+                    disabled={isSyncingDrive}
+                    className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow"
                   >
-                    {isSavingBridge ? 'Guardando...' : bridgeUrl ? 'Actualizar Enlace' : 'Guardar y Conectar'}
+                    <CloudUpload className={`w-4 h-4 ${isSyncingDrive ? 'animate-bounce' : ''}`} />
+                    <span>{isSyncingDrive ? 'Sincronizando...' : 'Subir Pendientes'}</span>
                   </button>
-                </form>
 
-                {showBridgeGuide && (
-                  <div className="p-3 rounded-lg bg-black/70 border border-neutral-800 text-[11px] text-neutral-300 space-y-1.5 leading-relaxed">
-                    <p>1. Entra a <a href="https://script.google.com" target="_blank" rel="noreferrer" className="text-blue-400 underline font-bold">script.google.com</a> con tu cuenta <strong>ingecheckplus@gmail.com</strong> y haz clic en <strong>Nuevo proyecto</strong>.</p>
-                    <p>2. Borra lo que aparece ahí, pega el código que copiaste con el botón de arriba y presiona el ícono de guardar (💾).</p>
-                    <p>3. Haz clic en <strong>Implementar → Nueva implementación</strong> → Tipo: <strong>Aplicación web</strong> → Ejecutar como: <strong>Yo</strong> → Quién tiene acceso: <strong>Cualquier persona</strong> → <strong>Implementar</strong> → acepta el permiso de Drive → copia la URL (<code className="text-emerald-400">.../exec</code>) y pégala arriba.</p>
-                  </div>
-                )}
+                  <button
+                    type="button"
+                    onClick={requestOverwriteResync}
+                    disabled={isSyncingDrive}
+                    className="px-3 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-bold border border-neutral-700 transition cursor-pointer"
+                    title="Actualizar archivos existentes en Google Drive"
+                  >
+                    Actualizar Existentes
+                  </button>
+                </div>
               </div>
 
               {driveAuthError && (
                 <div className="p-3.5 rounded-xl bg-red-950/70 border border-red-500/50 text-red-200 text-xs flex items-start justify-between gap-3">
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <p className="font-bold text-red-300">Aviso de conexión Google Drive:</p>
                     <p className="leading-relaxed">{driveAuthError}</p>
-                    {typeof window !== 'undefined' &&
-                      !window.location.hostname.endsWith('.run.app') &&
-                      window.location.hostname !== 'localhost' && (
-                        <div className="pt-1 flex flex-wrap items-center gap-2">
-                          <a
-                            href="https://ais-dev-ejpppp7s3h27x2bmmobzrv-307913806646.us-west2.run.app/?admin=1"
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-[11px] transition shadow"
-                          >
-                            <span>Abrir Panel en URL Oficial (Ya autorizado)</span>
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
-                          <span className="text-[11px] text-amber-300/90">
-                            Todos tus inscritos de {window.location.hostname} se sincronizan automáticamente ahí.
-                          </span>
-                        </div>
-                      )}
                   </div>
                   <button
                     type="button"

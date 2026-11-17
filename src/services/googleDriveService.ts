@@ -462,9 +462,10 @@ export async function uploadFileToDriveFolder(params: {
 // ================= GOOGLE APPS SCRIPT DIRECT BRIDGE (NO OAUTH SIGN-IN NEEDED) =================
 
 const BRIDGE_STORAGE_KEY = 'ohana_drive_bridge_url';
-export const DEFAULT_APPS_SCRIPT_BRIDGE_URL = '';
+export const DEFAULT_APPS_SCRIPT_BRIDGE_URL =
+  'https://script.google.com/macros/s/AKfycbztdPRQJukG5_r_7Lk26cQfx1WkS_wlQ3kw6YJzQmQBmwVmLlk5rimio8K3blxvqTFIsA/exec';
 
-let cachedBridgeUrl: string | null = null;
+let cachedBridgeUrl: string | null = DEFAULT_APPS_SCRIPT_BRIDGE_URL;
 
 export const GOOGLE_APPS_SCRIPT_TEMPLATE = `// Pega este código completo en https://script.google.com (Nuevo proyecto)
 // Carpetas oficiales de OHANA GO - Santa Run Tarapoto 2026
@@ -652,6 +653,11 @@ export async function uploadFileViaAppsScript(params: {
 
     if (res.ok) {
       const text = await res.text();
+      if (text.includes('Script function not found')) {
+        throw new Error(
+          'Tu Google Apps Script aún no tiene guardado/publicado el código (dice: Script function not found: doPost). En script.google.com guarda el código y publica una Nueva versión.'
+        );
+      }
       try {
         const parsed = JSON.parse(text);
         if (parsed?.ok === false) {
