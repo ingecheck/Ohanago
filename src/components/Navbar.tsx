@@ -46,10 +46,11 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Desktop Navigation Links */}
         <div className="hidden lg:flex items-center gap-6 text-xs font-bold uppercase tracking-wider text-neutral-300">
           <button
-            onClick={() => handleNavClick('inicio', 'Santa Run 2026')}
-            className="hover:text-red-400 transition cursor-pointer flex items-center gap-1.5"
+            onClick={() => handleNavClick('formulario-registro', 'Inscripción')}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black shadow-lg shadow-red-600/30 border border-red-400/40 transition transform hover:scale-105 cursor-pointer flex items-center gap-1.5"
           >
-            <span>🎅 Santa Run 2026</span>
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>Inscríbete</span>
           </button>
           <button
             onClick={() => handleNavClick('ediciones', 'Kit & Precios')}
@@ -57,12 +58,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <Gift className="w-3.5 h-3.5 text-amber-400" />
             <span>Kit & Precios</span>
-          </button>
-          <button
-            onClick={() => handleNavClick('formulario-registro', 'Inscripción')}
-            className="text-red-400 hover:text-red-300 transition cursor-pointer font-black"
-          >
-            Inscríbete (S/ 70)
           </button>
           <button
             onClick={() => handleNavClick('merch-oficial', 'Merch Oficial')}
@@ -80,6 +75,13 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Right Action Buttons */}
         <div className="hidden md:flex items-center gap-3">
+          <button
+            onClick={() => handleNavClick('formulario-registro', 'Inscripción')}
+            className="lg:hidden px-3.5 py-2 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-red-600/30 border border-red-400/40 transition cursor-pointer"
+          >
+            Inscríbete
+          </button>
+
           {/* Mi Espacio Competitor Access Button */}
           {onOpenCompetitorLogin && (
             <button
@@ -106,7 +108,14 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Mobile menu trigger */}
-        <div className="flex md:hidden items-center gap-2">
+        <div className="flex md:hidden items-center gap-1.5">
+          <button
+            onClick={() => handleNavClick('formulario-registro', 'Inscripción')}
+            className="px-2.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-black uppercase tracking-wide shadow shadow-red-600/30 cursor-pointer"
+          >
+            Inscríbete
+          </button>
+
           {onOpenCompetitorLogin && (
             <button
               onClick={handleMiEspacioClick}
@@ -139,11 +148,10 @@ export const Navbar: React.FC<NavbarProps> = ({
       {mobileMenuOpen && (
         <div className="md:hidden bg-black border-b border-red-950/60 px-4 py-5 space-y-3">
           <button
-            onClick={() => handleNavClick('inicio', 'Santa Run 2026')}
-            className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-neutral-200 border-b border-white/5 flex items-center justify-between"
+            onClick={() => handleNavClick('formulario-registro', 'Inscripción')}
+            className="w-full text-left py-2.5 px-3 rounded-xl bg-red-600/20 border border-red-500/50 text-sm font-black uppercase tracking-wider text-red-300"
           >
-            <span>🎅 Santa Run Tarapoto 2026</span>
-            <span className="text-[10px] bg-red-950 text-red-300 px-2 py-0.5 rounded border border-red-500/40 font-mono">19 DIC</span>
+            ⚡ Inscríbete Ahora (S/ 70 · 15% OFF Anteriores)
           </button>
 
           <button
@@ -151,13 +159,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-neutral-200 border-b border-white/5"
           >
             🎁 Kit Oficial & S/ 70.00
-          </button>
-
-          <button
-            onClick={() => handleNavClick('formulario-registro', 'Inscripción')}
-            className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-red-400 border-b border-white/5 font-black"
-          >
-            ⚡ Inscríbete Ahora (15% OFF Anteriores)
           </button>
 
           <button
