@@ -192,109 +192,116 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
     setIsSubmitting(true);
 
-    const now = new Date().toISOString();
-    const localStored = getStoredRegistrations();
-    let cloudStored: RunnerRegistration[] = [];
     try {
-      cloudStored = await Promise.race([
-        fetchRegistrationsFirestore(),
-        new Promise<RunnerRegistration[]>((resolve) => setTimeout(() => resolve([]), 1500)),
-      ]);
-    } catch (e) {}
-
-    const stored = mergeRegistrationsLists(localStored, cloudStored);
-    const santaList = stored.filter((r) => r.edition === 'santa-run-2026' || r.id?.startsWith('SR-'));
-    const nextSantaNum = santaList.length > 0
-      ? Math.max(...santaList.map((r) => r.registrationNumber || 0)) + 1
-      : 1;
-
-    const newRunner: RunnerRegistration = {
-      id: `SR-2026-${String(nextSantaNum).padStart(4, '0')}`,
-      edition: 'santa-run-2026',
-      registrationNumber: nextSantaNum,
-      bibNumber: nextSantaNum,
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      documentType,
-      documentNumber: documentNumber.trim(),
-      email: email.trim() || `${documentNumber.trim()}@ohanago.pro`,
-      whatsapp: whatsapp.trim(),
-      age: Number(age) || 25,
-      gender,
-      department: 'San Martín',
-      city: 'Tarapoto',
-      district: 'Tarapoto',
-      runningClub: 'Santa Run Club',
-      tShirtSize,
-      amountPaid: finalPrice,
-      hasPreviousDiscount,
-      turkeyRaffleTicket: `PAVO-${String(nextSantaNum).padStart(4, '0')}`,
-      emergencyContactName: emergencyContactName.trim() || 'Contacto de Emergencia',
-      emergencyContactPhone: emergencyContactPhone.trim() || whatsapp.trim(),
-      willWearCostume: true,
-      costumeName: 'Gorra Navideña Santa',
-      paymentMethod: 'Yape',
-      paymentReference: paymentReference.trim() || `YAPE-SANTA-${Date.now().toString().slice(-4)}`,
-      paymentStatus: 'No Verificado',
-      createdAt: now,
-      disclaimerAccepted: true,
-      modality: 'Presencial',
-      confirmedAtStart: false,
-      finishedAtMeta: false,
-      medalDelivered: false,
-    };
-
-    // 1. Subir constancia Yape y foto personal en calidad original DIRECTO a Google Drive (0 MB en Firebase/Web)
-    if (voucherPreview || personalPhotoPreview) {
+      const now = new Date().toISOString();
+      const localStored = getStoredRegistrations();
+      let cloudStored: RunnerRegistration[] = [];
       try {
-        const driveFields = await syncRunnerMediaViaAppsScript({
-          ...newRunner,
-          voucherUrl: voucherPreview || undefined,
-          personalPhotoUrl: personalPhotoPreview || undefined,
+        cloudStored = await Promise.race([
+          fetchRegistrationsFirestore(),
+          new Promise<RunnerRegistration[]>((resolve) => setTimeout(() => resolve([]), 1500)),
+        ]);
+      } catch (e) {}
+
+      const stored = mergeRegistrationsLists(localStored, cloudStored);
+      const santaList = stored.filter((r) => r.edition === 'santa-run-2026' || r.id?.startsWith('SR-'));
+      const nextSantaNum = santaList.length > 0
+        ? Math.max(...santaList.map((r) => r.registrationNumber || 0)) + 1
+        : 1;
+
+      const newRunner: RunnerRegistration = {
+        id: `SR-2026-${String(nextSantaNum).padStart(4, '0')}`,
+        edition: 'santa-run-2026',
+        registrationNumber: nextSantaNum,
+        bibNumber: nextSantaNum,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        documentType,
+        documentNumber: documentNumber.trim(),
+        email: email.trim() || `${documentNumber.trim()}@ohanago.pro`,
+        whatsapp: whatsapp.trim(),
+        age: Number(age) || 25,
+        gender,
+        department: 'San Martín',
+        city: 'Tarapoto',
+        district: 'Tarapoto',
+        runningClub: 'Santa Run Club',
+        tShirtSize,
+        amountPaid: finalPrice,
+        hasPreviousDiscount,
+        turkeyRaffleTicket: `PAVO-${String(nextSantaNum).padStart(4, '0')}`,
+        emergencyContactName: emergencyContactName.trim() || 'Contacto de Emergencia',
+        emergencyContactPhone: emergencyContactPhone.trim() || whatsapp.trim(),
+        willWearCostume: true,
+        costumeName: 'Gorra Navideña Santa',
+        paymentMethod: 'Yape',
+        paymentReference: paymentReference.trim() || `YAPE-SANTA-${Date.now().toString().slice(-4)}`,
+        paymentStatus: 'No Verificado',
+        createdAt: now,
+        disclaimerAccepted: true,
+        modality: 'Presencial',
+        confirmedAtStart: false,
+        finishedAtMeta: false,
+        medalDelivered: false,
+      };
+
+      // 1. Subir constancia Yape y foto personal en calidad original DIRECTO a Google Drive (0 MB en Firebase/Web)
+      if (voucherPreview || personalPhotoPreview) {
+        try {
+          const driveFields = await syncRunnerMediaViaAppsScript({
+            ...newRunner,
+            voucherUrl: voucherPreview || undefined,
+            personalPhotoUrl: personalPhotoPreview || undefined,
+          });
+          if (driveFields) {
+            Object.assign(newRunner, driveFields);
+          }
+        } catch (driveErr: any) {
+          setErrorMessage(
+            driveErr?.message ||
+              'No se pudo subir tu imagen directo a Google Drive. Verifica tu conexión e intenta nuevamente.'
+          );
+          return;
+        }
+      }
+
+      let finalRecord: RunnerRegistration = newRunner;
+
+      // 2. Try server endpoint with strict 2s timeout (active on AI Studio; fails fast on static Hostinger)
+      const apiController = new AbortController();
+      const apiTimeout = setTimeout(() => apiController.abort(), 2000);
+      try {
+        const res = await fetch('/api/registrations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newRunner),
+          signal: apiController.signal,
         });
-        if (driveFields) {
-          Object.assign(newRunner, driveFields);
+
+        const contentType = res.headers.get('content-type') || '';
+        if (res.ok && contentType.includes('application/json')) {
+          const savedRecord = await res.json();
+          if (savedRecord && savedRecord.id) {
+            finalRecord = savedRecord;
+          }
         }
-      } catch (driveErr: any) {
-        setErrorMessage(
-          driveErr?.message ||
-            'No se pudo subir tu imagen directo a Google Drive. Verifica tu conexión e intenta nuevamente.'
-        );
-        setIsSubmitting(false);
-        return;
+      } catch (netErr) {
+        // Static Hostinger hosting: continues to Firestore + localStorage sync
+      } finally {
+        clearTimeout(apiTimeout);
       }
-    }
 
-    let finalRecord: RunnerRegistration = newRunner;
-
-    try {
-      // 2. Try server endpoint (active on AI Studio full-stack server; sin pesos de imágenes)
-      const res = await fetch('/api/registrations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newRunner),
-      });
-
-      const contentType = res.headers.get('content-type') || '';
-      if (res.ok && contentType.includes('application/json')) {
-        const savedRecord = await res.json();
-        if (savedRecord && savedRecord.id) {
-          finalRecord = savedRecord;
-        }
-      }
-    } catch (netErr) {
-      // Static Hostinger hosting: continues to Firestore + localStorage sync
-    }
-
-    try {
       const updatedList = [finalRecord, ...stored.filter((r) => r.id !== finalRecord.id)];
       saveRegistrations(updatedList);
       try {
         localStorage.setItem('ohana_active_competitor', JSON.stringify(finalRecord));
       } catch (e) {}
 
-      // 3. Guardar solo datos y enlaces de Drive en Cloud Firestore (0 MB de imágenes)
-      await saveRegistrationFirestore(finalRecord);
+      // 3. Guardar en Cloud Firestore sin bloquear más de 3s en redes lentas de otras PCs
+      await Promise.race([
+        saveRegistrationFirestore(finalRecord),
+        new Promise<void>((resolve) => setTimeout(resolve, 3000)),
+      ]);
 
       trackEvent({
         type: 'runner_login',
@@ -323,7 +330,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         onRegistrationSuccess(finalRecord);
       }
     } catch (err) {
-      setErrorMessage('Hubo un error al procesar tu registro. Por favor intenta de nuevo.');
+      setErrorMessage('Hubo un error al procesar tu solicitud. Por favor intenta de nuevo.');
     } finally {
       setIsSubmitting(false);
     }

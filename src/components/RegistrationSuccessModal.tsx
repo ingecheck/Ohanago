@@ -1,22 +1,26 @@
 import React from 'react';
 import { RunnerRegistration } from '../types/race';
 import { DigitalBib } from './DigitalBib';
-import { CheckCircle, X, MapPin, Calendar, AlertCircle } from 'lucide-react';
+import { CheckCircle, Clock, X, UserCheck } from 'lucide-react';
 
 interface RegistrationSuccessModalProps {
   registration: RunnerRegistration | null;
   onClose: () => void;
+  onOpenCompetitorPortal?: () => void;
 }
 
 export const RegistrationSuccessModal: React.FC<RegistrationSuccessModalProps> = ({
   registration,
   onClose,
+  onOpenCompetitorPortal,
 }) => {
   if (!registration) return null;
 
+  const isVerified = registration.paymentStatus === 'Verificado';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
-      <div className="relative w-full max-w-2xl bg-neutral-900 border border-neutral-700 rounded-3xl p-6 sm:p-8 shadow-2xl my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+      <div className="relative w-full max-w-lg bg-neutral-900 border border-neutral-700 rounded-3xl p-6 sm:p-8 shadow-2xl my-8">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -25,72 +29,92 @@ export const RegistrationSuccessModal: React.FC<RegistrationSuccessModalProps> =
           <X className="w-5 h-5" />
         </button>
 
-        {/* Celebration Header */}
-        <div className="text-center mb-6">
-          <div className="inline-flex p-3 rounded-2xl bg-red-600/20 text-red-400 mb-2 border border-red-500/40">
-            <CheckCircle className="w-10 h-10" />
-          </div>
-          <h2 className="font-bebas text-4xl sm:text-5xl text-white tracking-wide uppercase">
-            {registration.paymentStatus === 'Verificado' ? '¡Inscripción Confirmada!' : '¡Pre-Inscripción Registrada!'}
-          </h2>
-          <p className="text-sm text-neutral-300 max-w-md mx-auto">
-            {registration.paymentStatus === 'Verificado' ? (
-              <>
+        {isVerified ? (
+          <>
+            <div className="text-center mb-6">
+              <div className="inline-flex p-3 rounded-2xl bg-emerald-600/20 text-emerald-400 mb-2 border border-emerald-500/40">
+                <CheckCircle className="w-10 h-10" />
+              </div>
+              <h2 className="font-bebas text-4xl sm:text-5xl text-white tracking-wide uppercase">
+                ¡Inscripción Verificada!
+              </h2>
+              <p className="text-sm text-neutral-300 max-w-md mx-auto">
                 ¡Felicitaciones <span className="text-amber-400 font-bold">{registration.firstName}</span>! Tu cupo oficial para la <strong>SANTA RUN TARAPOTO 2026</strong> está verificado.
-              </>
-            ) : (
-              <>
-                ¡Gracias <span className="text-amber-400 font-bold">{registration.firstName}</span>! Tu registro fue guardado con estado <strong className="text-amber-400">No Verificado</strong> hasta que nuestro equipo observe tu voucher Yape (963 408 328) o constancia enviada por WhatsApp (+51 902 227 356) y lo valide manualmente.
-              </>
-            )}
-          </p>
-        </div>
+              </p>
+            </div>
 
-        {/* Digital Bib Component */}
-        <div className="mb-6">
-          <DigitalBib registration={registration} showActions={true} />
-        </div>
+            <div className="mb-6">
+              <DigitalBib registration={registration} showActions={true} />
+            </div>
 
-        {/* Important Next Steps Card */}
-        <div className="bg-slate-950/80 rounded-2xl p-4 border border-red-500/30 space-y-2.5 text-xs text-neutral-300">
-          <h4 className="font-bebas text-base text-white uppercase tracking-wider flex items-center gap-1.5">
-            <AlertCircle className="w-4 h-4 text-amber-400" />
-            Información Clave para el Día de la Carrera
-          </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-neutral-300">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-red-400 shrink-0" />
-              <span><strong>Sábado 19 Diciembre 2026</strong> • 7:00 P.M. (Partida)</span>
+            <div className="mt-6 flex justify-center">
+              <button
+                onClick={onClose}
+                className="px-6 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-white font-bebas text-lg tracking-wider uppercase rounded-xl transition cursor-pointer"
+              >
+                Entendido, volver a la página
+              </button>
             </div>
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-rose-400 shrink-0" />
-              <span><strong>Partida:</strong> Aviación</span>
+          </>
+        ) : (
+          <div className="text-center space-y-5">
+            <div className="inline-flex p-3.5 rounded-2xl bg-amber-500/15 text-amber-400 border border-amber-500/40">
+              <Clock className="w-10 h-10" />
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-amber-400 font-bold font-mono">REGISTRO</span>
-              <span><strong>Código:</strong> {registration.id}</span>
+
+            <div className="space-y-2">
+              <h2 className="font-bebas text-4xl sm:text-5xl text-white tracking-wide uppercase leading-none">
+                ¡Ya se envió tu solicitud!
+              </h2>
+              <p className="text-sm text-neutral-200 max-w-md mx-auto leading-relaxed">
+                Gracias <strong className="text-amber-400">{registration.firstName} {registration.lastName}</strong>. Tu solicitud de inscripción ya fue enviada correctamente.
+              </p>
             </div>
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span><strong>Llegada:</strong> Concha Acústica</span>
+
+            <div className="bg-neutral-950 border border-amber-500/30 rounded-2xl p-4 text-left space-y-2.5 text-xs sm:text-sm text-neutral-300">
+              <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                <span className="text-neutral-400">Código de Solicitud:</span>
+                <span className="font-mono font-bold text-white">{registration.id}</span>
+              </div>
+              <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                <span className="text-neutral-400">DNI / Documento:</span>
+                <span className="font-mono font-bold text-white">{registration.documentNumber}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-neutral-400">Estado actual:</span>
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-500/40 text-[11px] font-bold">
+                  Pendiente de Verificación
+                </span>
+              </div>
+            </div>
+
+            <p className="text-xs sm:text-sm text-neutral-300 bg-neutral-950/80 border border-white/10 rounded-2xl p-4 leading-relaxed">
+              Si deseas ver cuando ya estés <strong className="text-emerald-400">Verificado</strong> y acceder a tu pase oficial, tendrás que revisar tu sección <strong className="text-amber-300">«Mi Espacio»</strong> ingresando con tu DNI. Esto se actualizará en cuanto el organizador verifique tu solicitud.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
+              {onOpenCompetitorPortal && (
+                <button
+                  type="button"
+                  onClick={onOpenCompetitorPortal}
+                  className="w-full sm:w-auto px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bebas text-lg tracking-wider uppercase rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-red-600/25"
+                >
+                  <UserCheck className="w-4 h-4" />
+                  <span>Ir a Mi Espacio</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full sm:w-auto px-6 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-white font-bebas text-lg tracking-wider uppercase rounded-xl transition cursor-pointer"
+              >
+                Entendido, cerrar
+              </button>
             </div>
           </div>
-          <p className="text-[11px] text-neutral-400 pt-2 border-t border-white/10">
-            * Guarda tu pase oficial para canjear tu kit completo (Polo Oficial, Gorro Santa, Mochila, Medalla Finisher e Hidratación) y participar en el sorteo del pavo navideño 🦃.
-          </p>
-        </div>
-
-        {/* Modal Close Action */}
-        <div className="mt-6 flex justify-center">
-          <button
-            onClick={onClose}
-            className="px-6 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-white font-bebas text-lg tracking-wider uppercase rounded-xl transition cursor-pointer"
-          >
-            Entendido, volver a la página
-          </button>
-        </div>
-
+        )}
       </div>
     </div>
   );
 };
+

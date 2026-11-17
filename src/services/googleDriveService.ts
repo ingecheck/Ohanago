@@ -647,12 +647,17 @@ export async function uploadFileViaAppsScript(params: {
     overwrite,
   });
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 25000);
+
   try {
     const res = await fetch(bridgeUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body,
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
 
     if (res.ok) {
       const text = await res.text();
@@ -679,16 +684,36 @@ export async function uploadFileViaAppsScript(params: {
       }
     }
   } catch (err: any) {
-    if (err?.message && !err.message.toLowerCase().includes('fetch') && !err.message.toLowerCase().includes('cors')) {
+    clearTimeout(timeoutId);
+    if (err?.name === 'AbortError') {
+      throw new Error('La subida a Google Drive tardó demasiado. Verifica tu conexión e intenta de nuevo.');
+    }
+    const msg = String(err?.message || '').toLowerCase();
+    const isCrossOriginOrNetworkBlock =
+      err?.name === 'TypeError' ||
+      msg.includes('fetch') ||
+      msg.includes('cors') ||
+      msg.includes('load failed') ||
+      msg.includes('network');
+
+    if (!isCrossOriginOrNetworkBlock) {
       throw err;
     }
-    // Fallback with no-cors when strict browser blocks reading Google Apps Script redirect
-    await fetch(bridgeUrl, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body,
-    });
+
+    // Fallback with no-cors when strict browser/PC blocks reading Google Apps Script redirect
+    const fallbackController = new AbortController();
+    const fallbackTimeout = setTimeout(() => fallbackController.abort(), 18000);
+    try {
+      await fetch(bridgeUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body,
+        signal: fallbackController.signal,
+      });
+    } finally {
+      clearTimeout(fallbackTimeout);
+    }
     return {
       id: `bridge_${Date.now()}`,
       webViewLink: `https://drive.google.com/drive/folders/${folderId}`,

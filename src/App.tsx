@@ -377,10 +377,14 @@ export const App: React.FC = () => {
       {/* Footer */}
       <Footer onOpenAdmin={handleAdminAccess} />
 
-      {/* Registration Success Modal with Digital Bib */}
+      {/* Registration Success Modal */}
       <RegistrationSuccessModal
         registration={recentlyRegistered}
         onClose={() => setRecentlyRegistered(null)}
+        onOpenCompetitorPortal={() => {
+          setRecentlyRegistered(null);
+          handleCompetitorAccess();
+        }}
       />
 
       {/* Competitor Login Modal (Mi Espacio ONLY) */}
