@@ -9,6 +9,7 @@ import {
   onSnapshot,
   getDocs,
   arrayUnion,
+  runTransaction,
   Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -54,6 +55,31 @@ export async function fetchDeletedRunnerIdsFirestore(): Promise<string[]> {
   return Array.from(getDeletedRunnerIdsLocal());
 }
 
+export function subscribeToDeletedRunnerIdsFirestore(
+  onDeletedIds: (deletedIds: string[]) => void
+): Unsubscribe {
+  try {
+    return onSnapshot(
+      doc(db, 'analytics', 'deleted_runners'),
+      (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (Array.isArray(data?.ids)) {
+            const cleanIds = data.ids.filter((id: any) => typeof id === 'string');
+            addDeletedRunnerIdsLocal(cleanIds);
+            onDeletedIds(cleanIds);
+          }
+        }
+      },
+      (err) => {
+        console.warn('Notice: Firestore deleted_runners listener:', err);
+      }
+    );
+  } catch (e) {
+    return () => {};
+  }
+}
+
 export async function deleteRegistrationEverywhere(runnerId: string): Promise<void> {
   if (!runnerId) return;
   addDeletedRunnerIdsLocal([runnerId]);
@@ -68,6 +94,10 @@ export async function deleteRegistrationEverywhere(runnerId: string): Promise<vo
   } catch (e) {
     console.warn('Firestore deleteDoc fallback:', e);
   }
+
+  try {
+    await deleteDoc(doc(db, 'competitor_logins', runnerId));
+  } catch (e) {}
 
   try {
     await setDoc(
@@ -101,12 +131,153 @@ export function cleanFirestoreData<T>(data: T): T {
   return data;
 }
 
+function sanitizeTextOnlyField(value: unknown): string {
+  const str = typeof value === 'string' ? value.trim() : '';
+  // Guard: never allow inline base64 images or PDFs into Cloud Firestore
+  if (/^data:(image|application)\//i.test(str)) return '';
+  return str;
+}
+
+/**
+ * Builds a clean, ordered, text-only registration document for Cloud Firestore.
+ * Photos and payment vouchers live EXCLUSIVELY in Google Drive (never in Firestore).
+ */
+export function buildOrderedFirestoreRunnerDoc(runner: RunnerRegistration): Record<string, any> {
+  const firstName = sanitizeTextOnlyField(runner.firstName);
+  const lastName = sanitizeTextOnlyField(runner.lastName);
+  const fullName = `${firstName} ${lastName}`.trim();
+  const rawEmail = sanitizeTextOnlyField(runner.email);
+  const cleanEmail = rawEmail && !rawEmail.endsWith('@ohanago.pro') ? rawEmail : '';
+  const emergencyName = sanitizeTextOnlyField(runner.emergencyContactName);
+  const emergencyPhone = sanitizeTextOnlyField(runner.emergencyContactPhone);
+
+  const ordered: Record<string, any> = {
+    // 1. Orden e Identificación
+    id: sanitizeTextOnlyField(runner.id),
+    registrationNumber: Number(runner.registrationNumber) || 1,
+    bibNumber: Number(runner.bibNumber ?? runner.registrationNumber) || 1,
+    edition: runner.edition || 'santa-run-2026',
+    createdAt: sanitizeTextOnlyField(runner.createdAt) || new Date().toISOString(),
+
+    // 2. Datos Escritos del Participante (en orden del formulario)
+    firstName,
+    lastName,
+    fullName,
+    documentType: runner.documentType || 'DNI',
+    documentNumber: sanitizeTextOnlyField(runner.documentNumber),
+    whatsapp: sanitizeTextOnlyField(runner.whatsapp),
+    age: Number(runner.age) || 0,
+    tShirtSize: sanitizeTextOnlyField(runner.tShirtSize) || 'M',
+    gender: runner.gender || 'Mixto',
+    ...(cleanEmail ? { email: cleanEmail } : {}),
+    city: sanitizeTextOnlyField(runner.city) || 'Tarapoto',
+    district: sanitizeTextOnlyField(runner.district) || 'Tarapoto',
+    department: sanitizeTextOnlyField(runner.department) || 'San Martín',
+    runningClub: sanitizeTextOnlyField(runner.runningClub) || 'Santa Run Club',
+    ...(emergencyName && emergencyName !== 'Contacto de Emergencia'
+      ? { emergencyContactName: emergencyName }
+      : {}),
+    ...(emergencyPhone && emergencyPhone !== sanitizeTextOnlyField(runner.whatsapp)
+      ? { emergencyContactPhone: emergencyPhone }
+      : {}),
+
+    // 3. Datos de Pago y Sorteo (solo texto)
+    paymentMethod: runner.paymentMethod || 'Yape',
+    paymentReference: sanitizeTextOnlyField(runner.paymentReference),
+    amountPaid: typeof runner.amountPaid === 'number' ? runner.amountPaid : 70,
+    hasPreviousDiscount: Boolean(runner.hasPreviousDiscount),
+    paymentStatus: runner.paymentStatus || 'No Verificado',
+    turkeyRaffleTicket: sanitizeTextOnlyField(runner.turkeyRaffleTicket),
+    disclaimerAccepted: Boolean(runner.disclaimerAccepted),
+
+    // 4. Enlaces de texto hacia Google Drive (0 imágenes en la base de datos)
+    ...(sanitizeTextOnlyField(runner.drivePhotoFileId)
+      ? { drivePhotoFileId: sanitizeTextOnlyField(runner.drivePhotoFileId) }
+      : {}),
+    ...(sanitizeTextOnlyField(runner.drivePhotoUrl)
+      ? { drivePhotoUrl: sanitizeTextOnlyField(runner.drivePhotoUrl) }
+      : {}),
+    ...(sanitizeTextOnlyField(runner.driveVoucherFileId)
+      ? { driveVoucherFileId: sanitizeTextOnlyField(runner.driveVoucherFileId) }
+      : {}),
+    ...(sanitizeTextOnlyField(runner.driveVoucherUrl)
+      ? { driveVoucherUrl: sanitizeTextOnlyField(runner.driveVoucherUrl) }
+      : {}),
+
+    // 5. Estado Operativo del Evento
+    modality: runner.modality || 'Presencial',
+    confirmedAtStart: Boolean(runner.confirmedAtStart),
+    ...(sanitizeTextOnlyField(runner.startCheckinTime)
+      ? { startCheckinTime: sanitizeTextOnlyField(runner.startCheckinTime) }
+      : {}),
+    finishedAtMeta: Boolean(runner.finishedAtMeta),
+    ...(sanitizeTextOnlyField(runner.finishCheckinTime)
+      ? { finishCheckinTime: sanitizeTextOnlyField(runner.finishCheckinTime) }
+      : {}),
+    medalDelivered: Boolean(runner.medalDelivered),
+    ...(runner.kitClaimed !== undefined ? { kitClaimed: Boolean(runner.kitClaimed) } : {}),
+  };
+
+  return cleanFirestoreData(ordered);
+}
+
 export async function saveRegistrationFirestore(runner: RunnerRegistration): Promise<void> {
   try {
-    const cleaned = cleanFirestoreData(runner);
-    await setDoc(doc(db, 'registrations', runner.id), cleaned, { merge: true });
+    const orderedDoc = buildOrderedFirestoreRunnerDoc(runner);
+    // Replace document cleanly so legacy image/base64 fields can never remain in Firestore
+    await setDoc(doc(db, 'registrations', runner.id), orderedDoc);
   } catch (err) {
     console.warn('Firestore saveRegistration fallback:', err);
+  }
+}
+
+export async function reserveNextSantaRunNumber(
+  knownRegistrations: RunnerRegistration[] = []
+): Promise<number> {
+  const localMax = knownRegistrations
+    .filter((r) => r.edition === 'santa-run-2026' || r.id?.startsWith('SR-'))
+    .reduce((max, r) => Math.max(max, Number(r.registrationNumber || r.bibNumber || 0)), 0);
+
+  let cloudMax = localMax;
+  try {
+    const snap = await Promise.race([
+      getDocs(collection(db, 'registrations')),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 4000)),
+    ]);
+    if (snap) {
+      snap.forEach((docSnap) => {
+        const data = docSnap.data() as Partial<RunnerRegistration>;
+        if (data?.edition === 'santa-run-2026' || String(data?.id || docSnap.id).startsWith('SR-')) {
+          const n = Number(data?.registrationNumber || data?.bibNumber || 0);
+          if (n > cloudMax) cloudMax = n;
+        }
+      });
+    }
+  } catch (e) {}
+
+  try {
+    const counterRef = doc(db, 'analytics', 'santa_run_counter');
+    const reserved = await runTransaction(db, async (tx) => {
+      const snap = await tx.get(counterRef);
+      const currentLast = snap.exists() ? Number(snap.data()?.lastNumber || 0) : 0;
+      const nextNumber = Math.max(currentLast, cloudMax) + 1;
+      tx.set(
+        counterRef,
+        {
+          lastNumber: nextNumber,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+      return nextNumber;
+    });
+    return reserved;
+  } catch (err) {
+    console.warn('Firestore atomic counter fallback:', err);
+    // Fallback if offline: still avoids colliding with small sequential numbers
+    const base = Math.max(cloudMax, localMax) + 1;
+    const uniqueSuffix = Number(String(Date.now()).slice(-3));
+    return Math.max(base, base + (uniqueSuffix % 90) + 10);
   }
 }
 

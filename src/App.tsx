@@ -18,6 +18,7 @@ import { isAdminAuthenticated } from './data/auth';
 import {
   processStartCheckinSafe,
   subscribeToRegistrationsCollection,
+  subscribeToDeletedRunnerIdsFirestore,
   mergeRegistrationsLists,
   saveRegistrationFirestore,
   fetchDeletedRunnerIdsFirestore,
@@ -111,7 +112,7 @@ export const App: React.FC = () => {
     };
 
     syncRegistrations();
-    const intervalId = setInterval(syncRegistrations, 2500);
+    const intervalId = setInterval(syncRegistrations, 15000);
     window.addEventListener('focus', syncRegistrations);
     window.addEventListener('storage', syncRegistrations);
     window.addEventListener('ohana-checkin', syncRegistrations);
@@ -125,22 +126,57 @@ export const App: React.FC = () => {
       };
     } catch (e) {}
 
+    // Cloud Firestore real-time listener para eliminaciones en vivo (cierra acceso al instante)
+    let unsubDeleted: (() => void) | null = null;
+    try {
+      unsubDeleted = subscribeToDeletedRunnerIdsFirestore((deletedIds) => {
+        if (!deletedIds.length) return;
+        const deletedSet = new Set(deletedIds);
+        setRegistrations((prev) => {
+          const filtered = prev.filter((r) => !deletedSet.has(r.id));
+          try {
+            localStorage.setItem('ohana_registrations', JSON.stringify(filtered));
+          } catch (e) {}
+          return filtered;
+        });
+
+        const currentComp = activeCompetitorRef.current;
+        if (currentComp && deletedSet.has(currentComp.id)) {
+          setActiveCompetitor(null);
+          setIsCompetitorPortalOpen(false);
+          try {
+            localStorage.removeItem('ohana_active_competitor');
+          } catch (e) {}
+        }
+      });
+    } catch (e) {}
+
     // Cloud Firestore real-time listener para nuevas inscripciones, pagos, fotos y entrega de kit
     let unsubCheckins: (() => void) | null = null;
     try {
       unsubCheckins = subscribeToRegistrationsCollection((cloudRunners) => {
+        const cloudSantaIds = new Set(
+          cloudRunners
+            .filter((r) => r.edition === 'santa-run-2026' || r.id?.startsWith('SR-'))
+            .map((r) => r.id)
+        );
         setRegistrations((prev) => {
           const base = prev.length > 0 ? prev : getStoredRegistrations();
-          const merged = mergeRegistrationsLists(base, cloudRunners);
+          // Para Santa Run 2026 la nube es la fuente de verdad: si se borró en Firestore, quitar de local
+          const cleanedBase = base.filter(
+            (r) => !(r.edition === 'santa-run-2026' || r.id?.startsWith('SR-')) || cloudSantaIds.has(r.id)
+          );
+          const merged = mergeRegistrationsLists(cleanedBase, cloudRunners);
           try {
             localStorage.setItem('ohana_registrations', JSON.stringify(merged));
           } catch (e) {}
           return merged;
         });
 
-        // Actualizar sesión si el corredor activo recibió verificación, foto o check-in
+        // Actualizar sesión o cerrar acceso si el corredor de Santa Run fue eliminado de la base de datos
         const currentComp = activeCompetitorRef.current;
         if (currentComp) {
+          const isSantaComp = currentComp.edition === 'santa-run-2026' || currentComp.id?.startsWith('SR-');
           const match = cloudRunners.find(
             (r) => r.id === currentComp.id || r.documentNumber === currentComp.documentNumber
           );
@@ -148,6 +184,12 @@ export const App: React.FC = () => {
             const updatedComp = { ...currentComp, ...match };
             setActiveCompetitor(updatedComp);
             localStorage.setItem('ohana_active_competitor', JSON.stringify(updatedComp));
+          } else if (isSantaComp && !cloudSantaIds.has(currentComp.id)) {
+            setActiveCompetitor(null);
+            setIsCompetitorPortalOpen(false);
+            try {
+              localStorage.removeItem('ohana_active_competitor');
+            } catch (e) {}
           }
         }
       });
@@ -233,6 +275,7 @@ export const App: React.FC = () => {
     return () => {
       clearInterval(intervalId);
       if (unsubCheckins) unsubCheckins();
+      if (unsubDeleted) unsubDeleted();
       window.removeEventListener('focus', syncRegistrations);
       window.removeEventListener('storage', syncRegistrations);
       window.removeEventListener('ohana-checkin', syncRegistrations);

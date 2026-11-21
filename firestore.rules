@@ -6,9 +6,10 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // Acreditación y entrega de kit en vivo
+    // Acreditación y datos escritos en vivo (prohibido guardar imágenes/base64 en BD; fotos van solo a Google Drive)
     match /registrations/{registrationId} {
-      allow read, write: if true;
+      allow read, delete: if true;
+      allow create, update: if !request.resource.data.keys().hasAny(['voucherUrl', 'paymentProofImage', 'personalPhotoUrl']);
     }
 
     // Colección de prueba de conectividad

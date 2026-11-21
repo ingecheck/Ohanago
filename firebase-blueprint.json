@@ -23,21 +23,45 @@
     },
     "RunnerRegistration": {
       "title": "RunnerRegistration",
-      "description": "Ficha oficial de competidor y estado de entrega de kit",
+      "description": "Ficha oficial ordenada de datos escritos del participante (las fotos y constancias viven exclusivamente en Google Drive)",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "registrationNumber": { "type": "number" },
         "bibNumber": { "type": "number" },
+        "edition": { "type": "string" },
+        "createdAt": { "type": "string" },
         "firstName": { "type": "string" },
         "lastName": { "type": "string" },
+        "fullName": { "type": "string" },
         "documentType": { "type": "string" },
         "documentNumber": { "type": "string" },
-        "email": { "type": "string" },
         "whatsapp": { "type": "string" },
+        "age": { "type": "number" },
+        "tShirtSize": { "type": "string" },
+        "gender": { "type": "string" },
+        "email": { "type": "string" },
+        "city": { "type": "string" },
+        "district": { "type": "string" },
+        "department": { "type": "string" },
+        "runningClub": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "paymentReference": { "type": "string" },
+        "amountPaid": { "type": "number" },
+        "hasPreviousDiscount": { "type": "boolean" },
+        "paymentStatus": { "type": "string" },
+        "turkeyRaffleTicket": { "type": "string" },
+        "disclaimerAccepted": { "type": "boolean" },
+        "drivePhotoFileId": { "type": "string" },
+        "drivePhotoUrl": { "type": "string" },
+        "driveVoucherFileId": { "type": "string" },
+        "driveVoucherUrl": { "type": "string" },
+        "modality": { "type": "string" },
         "confirmedAtStart": { "type": "boolean" },
         "startCheckinTime": { "type": "string" },
-        "paymentStatus": { "type": "string" }
+        "finishedAtMeta": { "type": "boolean" },
+        "finishCheckinTime": { "type": "string" },
+        "medalDelivered": { "type": "boolean" }
       },
       "required": ["id", "firstName", "lastName", "documentNumber"]
     }
@@ -49,7 +73,7 @@
     },
     "/registrations/{registrationId}": {
       "schema": "RunnerRegistration",
-      "description": "Nómina de corredores y acreditaciones en tiempo real"
+      "description": "Nómina ordenada de datos escritos de corredores y acreditaciones en tiempo real (sin fotos en BD)"
     }
   }
 }

@@ -5,9 +5,11 @@ import { adminLogout, updateAdminPassword } from '../data/auth';
 import {
   processStartCheckinSafe,
   subscribeToRegistrationsCollection,
+  subscribeToDeletedRunnerIdsFirestore,
   fetchRegistrationsFirestore,
   mergeRegistrationsLists,
   cleanFirestoreData,
+  saveRegistrationFirestore,
   deleteRegistrationEverywhere,
 } from '../utils/checkinManager';
 import { resetAnalyticsSafe } from '../utils/analytics';
@@ -59,11 +61,17 @@ import { User as FirebaseUser } from 'firebase/auth';
 import { AdminAnalyticsTab } from './AdminAnalyticsTab';
 import { AdminRouletteModal } from './AdminRouletteModal';
 import { SantaTurkeyLotteryModal } from './SantaTurkeyLotteryModal';
-import { fetchAnalytics, AnalyticsSummary } from '../utils/analytics';
+import {
+  fetchAnalytics,
+  subscribeToAnalyticsFirestore,
+  AnalyticsSummary,
+} from '../utils/analytics';
 import { getStoredRouletteState } from '../utils/rouletteManager';
 import { exportToNativeXLSX } from '../services/googleWorkspaceService';
 import {
   buildRunnerPersonName,
+  buildVoucherDriveFileName,
+  buildPhotoDriveFileName,
   OhanaDriveFolders,
   DEFAULT_OHANA_DRIVE_FOLDERS,
   DEFAULT_YAPE_FOLDER_ID,
@@ -134,23 +142,53 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   } | null>(null);
   const [isExecutingConfirmAction, setIsExecutingConfirmAction] = useState(false);
 
-  // Edit Runner DNI/Phone modal
+  // Edit Runner full profile modal (syncs live to Cloud Firestore)
   const [editingRunner, setEditingRunner] = useState<RunnerRegistration | null>(null);
+  const [editFirstNameValue, setEditFirstNameValue] = useState('');
+  const [editLastNameValue, setEditLastNameValue] = useState('');
   const [editDniValue, setEditDniValue] = useState('');
   const [editPhoneValue, setEditPhoneValue] = useState('');
+  const [editAgeValue, setEditAgeValue] = useState('');
+  const [editTShirtSizeValue, setEditTShirtSizeValue] = useState('M');
+  const [editPaymentRefValue, setEditPaymentRefValue] = useState('');
+  const [editPaymentStatusValue, setEditPaymentStatusValue] = useState<PaymentStatus>('No Verificado');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+  const openEditRunnerModal = (runner: RunnerRegistration) => {
+    setEditingRunner(runner);
+    setEditFirstNameValue(runner.firstName || '');
+    setEditLastNameValue(runner.lastName || '');
+    setEditDniValue(runner.documentNumber?.includes('Pendiente') ? '' : runner.documentNumber || '');
+    setEditPhoneValue(runner.whatsapp || '');
+    setEditAgeValue(runner.age ? String(runner.age) : '');
+    setEditTShirtSizeValue(runner.tShirtSize || 'M');
+    setEditPaymentRefValue(runner.paymentReference || '');
+    setEditPaymentStatusValue(runner.paymentStatus || 'No Verificado');
+  };
 
   const handleSaveRunnerEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingRunner) return;
     setIsSavingEdit(true);
 
+    const newFirstName = editFirstNameValue.trim() || editingRunner.firstName;
+    const newLastName = editLastNameValue.trim() || editingRunner.lastName;
     const newDni = editDniValue.trim();
     const newPhone = editPhoneValue.trim();
+    const newAge = Number(editAgeValue) || editingRunner.age || 25;
+    const newTShirtSize = editTShirtSizeValue || 'M';
+    const newPaymentRef = editPaymentRefValue.trim();
+
     const updatedRunner: RunnerRegistration = {
       ...editingRunner,
+      firstName: newFirstName,
+      lastName: newLastName,
       documentNumber: newDni,
       whatsapp: newPhone,
+      age: newAge,
+      tShirtSize: newTShirtSize,
+      paymentReference: newPaymentRef,
+      paymentStatus: editPaymentStatusValue,
     };
 
     const updatedList = registrations.map((r) =>
@@ -161,11 +199,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     onUpdateRegistrations(updatedList);
     saveRegistrations(updatedList);
 
-    // 2. Sincronización en la nube (Firestore) para que funcione 100% en Hostinger
-    try {
-      const cleaned = cleanFirestoreData(updatedRunner);
-      setDoc(doc(db, 'registrations', editingRunner.id), cleaned, { merge: true }).catch(() => {});
-    } catch (e) {}
+    // 2. Sincronización en la nube (Firestore) — solo datos escritos en orden, 0 imágenes en BD
+    await saveRegistrationFirestore(updatedRunner).catch(() => {});
 
     // 3. Notificación opcional al servidor si está disponible
     try {
@@ -174,15 +209,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           runnerId: editingRunner.id,
+          firstName: newFirstName,
+          lastName: newLastName,
           documentNumber: newDni,
           whatsapp: newPhone,
+          age: newAge,
+          tShirtSize: newTShirtSize,
+          paymentReference: newPaymentRef,
+          paymentStatus: editPaymentStatusValue,
         }),
       }).catch(() => {});
     } catch (e) {}
 
     setEditingRunner(null);
     setIsSavingEdit(false);
-    setLiveNotice(`✓ DNI de ${editingRunner.firstName} ${editingRunner.lastName} actualizado a: ${newDni}`);
+    setLiveNotice(`✓ Datos de ${newFirstName} ${newLastName} actualizados en vivo en la base de datos.`);
     setTimeout(() => setLiveNotice(null), 4500);
   };
 
@@ -565,7 +606,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               const uploadedVoucher = await uploadFileToDriveFolder({
                 accessToken: accessToken!,
                 folderId: folders.vouchersFolderId,
-                baseFileName: `Constancia_Yape_${personName} (${r.id})`,
+                baseFileName: buildVoucherDriveFileName(r),
                 source: voucherSrc,
                 existingFileId: overwriteExisting ? r.driveVoucherFileId : undefined,
               });
@@ -584,7 +625,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               const uploadedPhoto = await uploadFileToDriveFolder({
                 accessToken: accessToken!,
                 folderId: folders.photosFolderId,
-                baseFileName: `${personName} (${r.id})`,
+                baseFileName: buildPhotoDriveFileName(r),
                 source: r.personalPhotoUrl,
                 existingFileId: overwriteExisting ? r.drivePhotoFileId : undefined,
               });
@@ -754,17 +795,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     try {
       const cloudList = await fetchRegistrationsFirestore();
+      const cloudSantaIds = new Set(
+        cloudList
+          .filter((r) => r.edition === 'santa-run-2026' || r.id?.startsWith('SR-'))
+          .map((r) => r.id)
+      );
+      mergedList = mergedList.filter(
+        (r) => !(r.edition === 'santa-run-2026' || r.id?.startsWith('SR-')) || cloudSantaIds.has(r.id)
+      );
       if (Array.isArray(cloudList) && cloudList.length > 0) {
         mergedList = mergeRegistrationsLists(mergedList, cloudList);
       }
     } catch (e) {}
 
-    if (mergedList.length > 0) {
-      onUpdateRegistrations(mergedList);
-      try {
-        localStorage.setItem('ohana_registrations', JSON.stringify(mergedList));
-      } catch (e) {}
-    }
+    onUpdateRegistrations(mergedList);
+    try {
+      localStorage.setItem('ohana_registrations', JSON.stringify(mergedList));
+    } catch (e) {}
 
     setTimeout(() => setIsRefreshing(false), 400);
   };
@@ -772,10 +819,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   useEffect(() => {
     fetchLiveRegistrations();
     loadAnalytics();
+    // Respaldo periódico cada 30s (las altas, pagos y eliminaciones llegan AL INSTANTE por onSnapshot en vivo)
     const intervalId = setInterval(() => {
       fetchLiveRegistrations();
       loadAnalytics();
-    }, 1500);
+    }, 30000);
 
     const handleCheckinEvent = (e: any) => {
       fetchLiveRegistrations();
@@ -816,11 +864,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       };
     } catch (e) {}
 
-    // Real-time Cloud Firestore collection listener (adds new inscriptions + syncs payments, photos & check-ins)
+    // Real-time Cloud Firestore deletion listener
+    let unsubDeleted: (() => void) | null = null;
+    try {
+      unsubDeleted = subscribeToDeletedRunnerIdsFirestore((deletedIds) => {
+        if (!deletedIds.length) return;
+        const deletedSet = new Set(deletedIds);
+        const filtered = getStoredRegistrations().filter((r) => !deletedSet.has(r.id));
+        onUpdateRegistrations(filtered);
+        try {
+          localStorage.setItem('ohana_registrations', JSON.stringify(filtered));
+        } catch (e) {}
+      });
+    } catch (e) {}
+
+    // Real-time Cloud Firestore collection listener (adds new inscriptions + syncs payments, photos, deletions & check-ins)
     let unsubFirestore: (() => void) | null = null;
     try {
       unsubFirestore = subscribeToRegistrationsCollection((cloudRunners) => {
-        const currentList = getStoredRegistrations();
+        const cloudSantaIds = new Set(
+          cloudRunners
+            .filter((r) => r.edition === 'santa-run-2026' || r.id?.startsWith('SR-'))
+            .map((r) => r.id)
+        );
+        const currentList = getStoredRegistrations().filter(
+          (r) => !(r.edition === 'santa-run-2026' || r.id?.startsWith('SR-')) || cloudSantaIds.has(r.id)
+        );
         const updated = mergeRegistrationsLists(currentList, cloudRunners);
         onUpdateRegistrations(updated);
         try {
@@ -829,11 +898,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       });
     } catch (e) {}
 
+    // Real-time Cloud Firestore analytics listener (visitas, Mi Espacio, secciones y actividad en vivo)
+    let unsubAnalytics: (() => void) | null = null;
+    try {
+      unsubAnalytics = subscribeToAnalyticsFirestore((liveSummary) => {
+        setAnalyticsData(liveSummary);
+      });
+    } catch (e) {}
+
     window.addEventListener('ohana-checkin', handleCheckinEvent);
     window.addEventListener('storage', fetchLiveRegistrations);
     return () => {
       clearInterval(intervalId);
       if (unsubFirestore) unsubFirestore();
+      if (unsubDeleted) unsubDeleted();
+      if (unsubAnalytics) unsubAnalytics();
       if (eventSource) eventSource.close();
       if (checkinChannel) checkinChannel.close();
       window.removeEventListener('ohana-checkin', handleCheckinEvent);
@@ -858,10 +937,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     const targetRunner = updated.find((r) => r.id === runnerId);
     if (targetRunner) {
-      try {
-        const cleaned = cleanFirestoreData(targetRunner);
-        setDoc(doc(db, 'registrations', runnerId), cleaned, { merge: true }).catch(() => {});
-      } catch (e) {}
+      saveRegistrationFirestore(targetRunner).catch(() => {});
       try {
         fetch('/api/runner/update', {
           method: 'POST',
@@ -897,10 +973,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setViewingVoucherRunner(updatedRunner);
     }
 
-    try {
-      const cleaned = cleanFirestoreData(updatedRunner);
-      setDoc(doc(db, 'registrations', runner.id), cleaned, { merge: true }).catch(() => {});
-    } catch (e) {}
+    saveRegistrationFirestore(updatedRunner).catch(() => {});
 
     try {
       await fetch('/api/runner/update', {
@@ -1684,13 +1757,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               </span>
                             )}
                             <button
-                              onClick={() => {
-                                setEditingRunner(runner);
-                                setEditDniValue(runner.documentNumber.includes('Pendiente') ? '' : runner.documentNumber);
-                                setEditPhoneValue(runner.whatsapp);
-                              }}
+                              type="button"
+                              onClick={() => openEditRunnerModal(runner)}
                               className="text-neutral-400 hover:text-white p-1 rounded hover:bg-neutral-800 transition cursor-pointer"
-                              title="Editar o asignar DNI a este corredor"
+                              title="Editar datos completos de este corredor"
                             >
                               <Pencil className="w-3 h-3 text-neutral-400 hover:text-red-400" />
                             </button>
@@ -1851,7 +1921,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <div className="text-[10px] text-neutral-400 font-mono mt-0.5">
                             {runner.createdAt ? new Date(runner.createdAt).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}
                           </div>
-                          <div className="mt-1.5 flex justify-end">
+                          <div className="mt-1.5 flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => openEditRunnerModal(runner)}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white border border-neutral-700 transition cursor-pointer"
+                              title={`Editar datos de ${runner.firstName} ${runner.lastName}`}
+                            >
+                              <Pencil className="w-3 h-3 text-amber-400" />
+                              <span>Editar</span>
+                            </button>
                             <button
                               type="button"
                               onClick={() => handleRequestDeleteRunner(runner)}
@@ -2162,72 +2241,160 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           onClose={() => setShowStaffScanner(false)}
         />
       )}
-      {/* Modal: Edit Runner DNI / Phone */}
+      {/* Modal: Edit Runner Full Profile (Syncs live to Cloud Firestore) */}
       {editingRunner && (
         <div className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-          <div className="relative max-w-sm w-full bg-neutral-900 border-2 border-red-500 rounded-3xl p-6 shadow-2xl">
+          <div className="relative max-w-lg w-full bg-neutral-900 border-2 border-red-500 rounded-3xl p-6 shadow-2xl max-h-[92vh] overflow-y-auto">
             <button
+              type="button"
               onClick={() => setEditingRunner(null)}
               className="absolute top-4 right-4 p-2 rounded-full bg-neutral-800 text-neutral-400 hover:text-white cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <h4 className="font-bebas text-2xl text-white uppercase mb-1">
-              Editar DNI del Atleta
+            <h4 className="font-bebas text-2xl text-white uppercase mb-0.5">
+              Editar Datos del Participante
             </h4>
-            <p className="text-xs text-neutral-400 mb-4">
-              {editingRunner.firstName} {editingRunner.lastName} ({editingRunner.id})
+            <p className="text-xs text-neutral-400 mb-4 font-mono">
+              {editingRunner.id} • Los cambios se guardan en vivo en la base de datos.
             </p>
 
-            <form onSubmit={handleSaveRunnerEdit} className="space-y-4">
-              <div>
-                <label className="block text-[10px] uppercase font-bold text-neutral-400 mb-1">
-                  Número de DNI (8 dígitos)
-                </label>
-                <input
-                  type="text"
-                  required
-                  maxLength={8}
-                  pattern="\d{8}"
-                  value={editDniValue}
-                  onChange={(e) => setEditDniValue(e.target.value.replace(/\D/g, ''))}
-                  placeholder="Ej: 73017454"
-                  className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3.5 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-red-500"
-                />
-                <span className="text-[10px] text-neutral-500 mt-1 block">
-                  Con este número el corredor ingresará a «Mi Espacio 🎒»
-                </span>
+            <form onSubmit={handleSaveRunnerEdit} className="space-y-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-neutral-400 mb-1">
+                    Nombres *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editFirstNameValue}
+                    onChange={(e) => setEditFirstNameValue(e.target.value)}
+                    className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-red-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-neutral-400 mb-1">
+                    Apellidos *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editLastNameValue}
+                    onChange={(e) => setEditLastNameValue(e.target.value)}
+                    className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3.5 py-2.5 text-white text-sm focus:outline-none focus:border-red-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-neutral-400 mb-1">
+                    Documento (DNI / CE / Pasaporte) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    minLength={6}
+                    maxLength={12}
+                    value={editDniValue}
+                    onChange={(e) => setEditDniValue(e.target.value.trim())}
+                    placeholder="Ej: 73017454"
+                    className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3.5 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-red-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-neutral-400 mb-1">
+                    WhatsApp *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editPhoneValue}
+                    onChange={(e) => setEditPhoneValue(e.target.value)}
+                    placeholder="Ej: 993778180"
+                    className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3.5 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-red-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-neutral-400 mb-1">
+                    Edad
+                  </label>
+                  <input
+                    type="number"
+                    min={10}
+                    max={95}
+                    value={editAgeValue}
+                    onChange={(e) => setEditAgeValue(e.target.value)}
+                    className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3.5 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-red-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-neutral-400 mb-1">
+                    Talla de Polo
+                  </label>
+                  <select
+                    value={editTShirtSizeValue}
+                    onChange={(e) => setEditTShirtSizeValue(e.target.value)}
+                    className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2.5 text-white font-bold text-sm focus:outline-none focus:border-red-500"
+                  >
+                    <option value="S">S</option>
+                    <option value="M">M</option>
+                    <option value="L">L</option>
+                    <option value="XL">XL</option>
+                    <option value="XXL">XXL</option>
+                  </select>
+                </div>
+
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-[10px] uppercase font-bold text-neutral-400 mb-1">
+                    Estado Pago
+                  </label>
+                  <select
+                    value={editPaymentStatusValue}
+                    onChange={(e) => setEditPaymentStatusValue(e.target.value as PaymentStatus)}
+                    className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2.5 text-white font-bold text-sm focus:outline-none focus:border-red-500"
+                  >
+                    <option value="No Verificado">No Verificado</option>
+                    <option value="Verificado">Verificado</option>
+                  </select>
+                </div>
               </div>
 
               <div>
                 <label className="block text-[10px] uppercase font-bold text-neutral-400 mb-1">
-                  Número de WhatsApp
+                  Referencia / N° Operación Yape
                 </label>
                 <input
                   type="text"
-                  required
-                  value={editPhoneValue}
-                  onChange={(e) => setEditPhoneValue(e.target.value)}
-                  placeholder="Ej: 993778180"
+                  value={editPaymentRefValue}
+                  onChange={(e) => setEditPaymentRefValue(e.target.value)}
+                  placeholder="Ej: YAPE-198274"
                   className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3.5 py-2.5 text-white font-mono text-sm focus:outline-none focus:border-red-500"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-3 border-t border-neutral-800">
                 <button
                   type="button"
                   onClick={() => setEditingRunner(null)}
-                  className="px-4 py-2 rounded-xl bg-neutral-800 text-neutral-300 text-xs font-bold cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-bold cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  disabled={isSavingEdit || editDniValue.length !== 8}
+                  disabled={isSavingEdit || !editFirstNameValue.trim() || !editLastNameValue.trim() || editDniValue.trim().length < 6}
                   className="px-5 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bebas text-lg uppercase tracking-wider cursor-pointer shadow-md disabled:opacity-50"
                 >
-                  {isSavingEdit ? 'Guardando...' : 'Guardar DNI'}
+                  {isSavingEdit ? 'Guardando...' : 'Guardar Cambios'}
                 </button>
               </div>
             </form>

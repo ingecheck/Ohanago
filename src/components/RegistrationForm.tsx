@@ -32,11 +32,11 @@ import {
   saveRegistrationFirestore,
   fetchRegistrationsFirestore,
   mergeRegistrationsLists,
+  reserveNextSantaRunNumber,
 } from '../utils/checkinManager';
 import {
   syncRunnerMediaViaAppsScript,
   readImageFileHighQuality,
-  createCompactEmergencyBackup,
 } from '../services/googleDriveService';
 import { trackEvent } from '../utils/analytics';
 
@@ -202,57 +202,46 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       const now = new Date().toISOString();
       const localStored = getStoredRegistrations();
       let cloudStored: RunnerRegistration[] = [];
-      let cloudLoaded = false;
       try {
         cloudStored = await Promise.race([
-          fetchRegistrationsFirestore().then((list) => {
-            cloudLoaded = true;
-            return list;
-          }),
-          new Promise<RunnerRegistration[]>((resolve) => setTimeout(() => resolve([]), 3000)),
+          fetchRegistrationsFirestore(),
+          new Promise<RunnerRegistration[]>((resolve) => setTimeout(() => resolve([]), 3500)),
         ]);
       } catch (e) {}
 
       const stored = mergeRegistrationsLists(localStored, cloudStored);
-      const santaList = stored.filter((r) => r.edition === 'santa-run-2026' || r.id?.startsWith('SR-'));
-      const nextSantaNum = santaList.length > 0
-        ? Math.max(...santaList.map((r) => r.registrationNumber || 0)) + 1
-        : 1;
-
-      const cleanDocDigits = documentNumber.trim().replace(/\D/g, '');
-      const uniqueId = cloudLoaded
-        ? `SR-2026-${String(nextSantaNum).padStart(4, '0')}`
-        : `SR-2026-${cleanDocDigits.slice(-4) || Date.now().toString().slice(-4)}-${Date.now().toString(36).slice(-3).toUpperCase()}`;
+      // Reserva atómica en Firestore: garantiza que dos celulares ni registros borrados NUNCA repitan número
+      const nextSantaNum = await reserveNextSantaRunNumber(stored);
+      const uniqueId = `SR-2026-${String(nextSantaNum).padStart(4, '0')}`;
 
       const newRunner: RunnerRegistration = {
         id: uniqueId,
         edition: 'santa-run-2026',
         registrationNumber: nextSantaNum,
         bibNumber: nextSantaNum,
+        createdAt: now,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         documentType,
         documentNumber: documentNumber.trim(),
-        email: email.trim() || `${documentNumber.trim()}@ohanago.pro`,
         whatsapp: whatsapp.trim(),
         age: Number(age) || 25,
+        tShirtSize,
         gender,
+        email: email.trim(),
         department: 'San Martín',
         city: 'Tarapoto',
         district: 'Tarapoto',
         runningClub: 'Santa Run Club',
-        tShirtSize,
-        amountPaid: finalPrice,
-        hasPreviousDiscount,
-        turkeyRaffleTicket: `PAVO-${String(nextSantaNum).padStart(4, '0')}`,
-        emergencyContactName: emergencyContactName.trim() || 'Contacto de Emergencia',
-        emergencyContactPhone: emergencyContactPhone.trim() || whatsapp.trim(),
-        willWearCostume: true,
-        costumeName: 'Gorra Navideña Santa',
+        emergencyContactName: emergencyContactName.trim(),
+        emergencyContactPhone: emergencyContactPhone.trim(),
+        willWearCostume: false,
         paymentMethod: 'Yape',
         paymentReference: paymentReference.trim() || `YAPE-SANTA-${Date.now().toString().slice(-4)}`,
+        amountPaid: finalPrice,
+        hasPreviousDiscount,
         paymentStatus: 'No Verificado',
-        createdAt: now,
+        turkeyRaffleTicket: `PAVO-${String(nextSantaNum).padStart(4, '0')}`,
         disclaimerAccepted: true,
         modality: 'Presencial',
         confirmedAtStart: false,
@@ -260,12 +249,9 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         medalDelivered: false,
       };
 
-      // 1. Subir constancia Yape y foto personal en paralelo DIRECTO a Google Drive (máx 16s para nunca trabar el celular)
+      // 1. Las fotos y constancias van EXCLUSIVAMENTE a Google Drive (NUNCA a la base de datos)
       if (voucherPreview || personalPhotoPreview) {
-        setSubmitStage('Subiendo fotos a Google Drive...');
-        let voucherNeedsFallback = !!voucherPreview;
-        let photoNeedsFallback = !!personalPhotoPreview;
-
+        setSubmitStage('Subiendo fotos directo a Google Drive...');
         try {
           const driveFields = await Promise.race([
             syncRunnerMediaViaAppsScript({
@@ -274,7 +260,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
               personalPhotoUrl: personalPhotoPreview || undefined,
             }),
             new Promise<null>((_, reject) =>
-              setTimeout(() => reject(new Error('DRIVE_TIMEOUT')), 16000)
+              setTimeout(() => reject(new Error('DRIVE_TIMEOUT')), 18000)
             ),
           ]);
 
@@ -282,35 +268,19 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
             if (driveFields.driveVoucherFileId) {
               newRunner.driveVoucherFileId = driveFields.driveVoucherFileId;
               newRunner.driveVoucherUrl = driveFields.driveVoucherUrl;
-              voucherNeedsFallback = false;
             }
             if (driveFields.drivePhotoFileId) {
               newRunner.drivePhotoFileId = driveFields.drivePhotoFileId;
               newRunner.drivePhotoUrl = driveFields.drivePhotoUrl;
-              photoNeedsFallback = false;
             }
           }
         } catch (driveErr) {
-          // Si Instagram WebView o señal 4G débil bloqueó la subida directa, NO bloqueamos la inscripción:
-          // guardamos copia temporal ligera para que el Panel Admin la suba automáticamente a Drive y la limpie.
-        }
-
-        if (voucherNeedsFallback && voucherPreview) {
-          const backupVoucher = await createCompactEmergencyBackup(voucherPreview);
-          if (backupVoucher) {
-            newRunner.voucherUrl = backupVoucher;
-            newRunner.paymentProofImage = backupVoucher;
-          }
-        }
-        if (photoNeedsFallback && personalPhotoPreview) {
-          const backupPhoto = await createCompactEmergencyBackup(personalPhotoPreview);
-          if (backupPhoto) {
-            newRunner.personalPhotoUrl = backupPhoto;
-          }
+          // Si falló la red hacia Drive, jamás guardamos fotos en la base de datos:
+          // solo guardamos los datos escritos del corredor y luego puede subir su foto directo a Drive desde Mi Espacio.
         }
       }
 
-      setSubmitStage('Guardando solicitud oficial...');
+      setSubmitStage('Guardando tus datos oficiales...');
       let finalRecord: RunnerRegistration = newRunner;
 
       // 2. Try server endpoint with strict 2s timeout (active on AI Studio; fails fast on static Hostinger)
@@ -343,10 +313,10 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         localStorage.setItem('ohana_active_competitor', JSON.stringify(finalRecord));
       } catch (e) {}
 
-      // 3. Guardar en Cloud Firestore sin bloquear más de 4s en redes lentas de otras PCs/celulares
+      // 3. Guardar SOLO los datos escritos en orden en Cloud Firestore (0 fotos en la BD)
       await Promise.race([
         saveRegistrationFirestore(finalRecord),
-        new Promise<void>((resolve) => setTimeout(resolve, 4000)),
+        new Promise<void>((resolve) => setTimeout(resolve, 8000)),
       ]);
 
       trackEvent({

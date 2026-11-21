@@ -451,45 +451,55 @@ app.post('/api/registrations', (req, res) => {
 
   const fullRunnerName = `${newRunner.firstName || ''} ${newRunner.lastName || ''}`.trim();
 
-  let voucherUrl = newRunner.voucherUrl;
-  let paymentProofImage = newRunner.paymentProofImage;
-  if (paymentProofImage && typeof paymentProofImage === 'string' && paymentProofImage.startsWith('data:')) {
-    const savedPath = saveVoucherFile(paymentProofImage, newId, fullRunnerName);
-    if (savedPath) {
-      voucherUrl = savedPath;
-      paymentProofImage = savedPath;
-    }
-  }
-
-  let personalPhotoUrl = newRunner.personalPhotoUrl;
-  if (personalPhotoUrl && typeof personalPhotoUrl === 'string' && personalPhotoUrl.startsWith('data:')) {
-    const savedPhotoPath = savePersonalPhotoFile(personalPhotoUrl, newId, fullRunnerName);
-    if (savedPhotoPath) {
-      personalPhotoUrl = savedPhotoPath;
-    }
-  }
+  // Las fotos y constancias van exclusivamente a Google Drive — en el registro solo se guardan datos escritos y enlaces de Drive
+  const resolvedRegNum =
+    typeof newRunner.registrationNumber === 'number' && newRunner.registrationNumber > 0
+      ? newRunner.registrationNumber
+      : isSanta
+        ? nextSantaNum
+        : nextNum;
+  const resolvedBibNum =
+    typeof newRunner.bibNumber === 'number' && newRunner.bibNumber > 0
+      ? newRunner.bibNumber
+      : resolvedRegNum;
 
   const record = {
-    ...newRunner,
     id: newId,
+    registrationNumber: resolvedRegNum,
+    bibNumber: resolvedBibNum,
     edition,
-    registrationNumber: isSanta ? nextSantaNum : nextNum,
-    bibNumber: isSanta ? nextSantaNum : nextNum,
-    paymentMethod: 'Yape', // Pago oficial exclusivo vía Yape (Gisela Santa Cruz)
-    paymentStatus: 'No Verificado', // Todo nuevo registro inicia No Verificado hasta validación manual en el panel
-    paymentProofImage,
-    voucherUrl,
-    personalPhotoUrl,
-    amountPaid: newRunner.amountPaid || (newRunner.hasPreviousDiscount ? 59.5 : 70.0),
-    turkeyRaffleTicket: newRunner.turkeyRaffleTicket || (isSanta ? `PAVO-${String(nextSantaNum).padStart(4, '0')}` : undefined),
+    createdAt: newRunner.createdAt || new Date().toISOString(),
+    firstName: (newRunner.firstName || '').trim(),
+    lastName: (newRunner.lastName || '').trim(),
+    fullName: fullRunnerName,
+    documentType: newRunner.documentType || 'DNI',
+    documentNumber: (newRunner.documentNumber || '').trim(),
+    whatsapp: (newRunner.whatsapp || '').trim(),
+    age: Number(newRunner.age) || 25,
     tShirtSize: newRunner.tShirtSize || 'M',
-    runningClub: newRunner.runningClub || 'Santa Run Club',
-    modality: newRunner.modality || 'Presencial',
+    gender: newRunner.gender || 'Mixto',
+    email: (newRunner.email || '').trim(),
     department: newRunner.department || 'San Martín',
     city: newRunner.city || 'Tarapoto',
     district: newRunner.district || 'Tarapoto',
+    runningClub: newRunner.runningClub || 'Santa Run Club',
+    emergencyContactName: (newRunner.emergencyContactName || '').trim(),
+    emergencyContactPhone: (newRunner.emergencyContactPhone || '').trim(),
+    paymentMethod: 'Yape',
+    paymentReference: (newRunner.paymentReference || '').trim(),
+    amountPaid: newRunner.amountPaid || (newRunner.hasPreviousDiscount ? 59.5 : 70.0),
+    hasPreviousDiscount: Boolean(newRunner.hasPreviousDiscount),
+    paymentStatus: 'No Verificado',
+    turkeyRaffleTicket: newRunner.turkeyRaffleTicket || (isSanta ? `PAVO-${String(nextSantaNum).padStart(4, '0')}` : undefined),
+    disclaimerAccepted: Boolean(newRunner.disclaimerAccepted),
+    ...(newRunner.drivePhotoFileId ? { drivePhotoFileId: newRunner.drivePhotoFileId } : {}),
+    ...(newRunner.drivePhotoUrl ? { drivePhotoUrl: newRunner.drivePhotoUrl } : {}),
+    ...(newRunner.driveVoucherFileId ? { driveVoucherFileId: newRunner.driveVoucherFileId } : {}),
+    ...(newRunner.driveVoucherUrl ? { driveVoucherUrl: newRunner.driveVoucherUrl } : {}),
+    modality: newRunner.modality || 'Presencial',
     confirmedAtStart: false,
-    createdAt: newRunner.createdAt || new Date().toISOString(),
+    finishedAtMeta: false,
+    medalDelivered: false,
   };
   const updated = [record, ...current];
   writeJSON(REGISTRATIONS_FILE, updated);
@@ -663,7 +673,9 @@ app.post('/api/runner/update', (req, res) => {
     whatsapp,
     firstName,
     lastName,
+    age,
     tShirtSize,
+    paymentReference,
     paymentStatus,
     confirmedAtStart,
     startCheckinTime,
@@ -685,7 +697,9 @@ app.post('/api/runner/update', (req, res) => {
       ...(whatsapp !== undefined ? { whatsapp: String(whatsapp).trim() } : {}),
       ...(firstName !== undefined ? { firstName: String(firstName).trim() } : {}),
       ...(lastName !== undefined ? { lastName: String(lastName).trim() } : {}),
+      ...(age !== undefined ? { age: Number(age) || registrations[idx].age } : {}),
       ...(tShirtSize !== undefined ? { tShirtSize } : {}),
+      ...(paymentReference !== undefined ? { paymentReference: String(paymentReference).trim() } : {}),
       ...(paymentStatus !== undefined ? { paymentStatus } : {}),
       ...(confirmedAtStart !== undefined ? { confirmedAtStart } : {}),
       ...(startCheckinTime !== undefined ? { startCheckinTime } : {}),

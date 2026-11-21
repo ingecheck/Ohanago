@@ -342,6 +342,24 @@ export function buildRunnerPersonName(runner: RunnerRegistration): string {
   return full || runner.id;
 }
 
+export function formatRunnerNumberTag(runner: RunnerRegistration): string {
+  const num = Number(runner.registrationNumber || runner.bibNumber || 0);
+  if (num > 0) return `#${String(num).padStart(4, '0')}`;
+  return runner.id || 'SR';
+}
+
+export function buildVoucherDriveFileName(runner: RunnerRegistration): string {
+  const personName = buildRunnerPersonName(runner);
+  const numTag = formatRunnerNumberTag(runner);
+  return `${personName} - Yape - ${numTag}`;
+}
+
+export function buildPhotoDriveFileName(runner: RunnerRegistration): string {
+  const personName = buildRunnerPersonName(runner);
+  const numTag = formatRunnerNumberTag(runner);
+  return `${personName} - Foto - ${numTag}`;
+}
+
 export async function uploadFileToDriveFolder(params: {
   accessToken: string;
   folderId: string;
@@ -741,7 +759,8 @@ export async function syncRunnerMediaViaAppsScript(
   if (!bridgeUrl) return null;
 
   const overwrite = !!options?.overwrite;
-  const personName = buildRunnerPersonName(runner);
+  const voucherBaseName = buildVoucherDriveFileName(runner);
+  const photoBaseName = buildPhotoDriveFileName(runner);
   const result: {
     driveVoucherFileId?: string;
     driveVoucherUrl?: string;
@@ -764,7 +783,7 @@ export async function syncRunnerMediaViaAppsScript(
           bridgeUrl,
           folderId: DEFAULT_YAPE_FOLDER_ID,
           kind: 'voucher',
-          baseFileName: `Constancia_Yape_${personName} (${runner.id})`,
+          baseFileName: voucherBaseName,
           source: voucherSrc!,
           overwrite,
         })
@@ -776,7 +795,7 @@ export async function syncRunnerMediaViaAppsScript(
           bridgeUrl,
           folderId: DEFAULT_PHOTOS_FOLDER_ID,
           kind: 'photo',
-          baseFileName: `${personName} (${runner.id})`,
+          baseFileName: photoBaseName,
           source: runner.personalPhotoUrl!,
           overwrite,
         })

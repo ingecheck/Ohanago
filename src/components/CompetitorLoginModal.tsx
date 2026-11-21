@@ -52,11 +52,27 @@ export const CompetitorLoginModal: React.FC<CompetitorLoginModalProps> = ({
       // Continue to local + Firestore fallback
     }
 
-    // 2. Client-side fallback (localStorage + Cloud Firestore for multi-device Hostinger support)
+    // 2. Client-side fallback (Cloud Firestore is source of truth for Santa Run 2026)
     try {
       const localList: RunnerRegistration[] = getStoredRegistrations();
-      const cloudList = await fetchRegistrationsFirestore();
-      const allList = mergeRegistrationsLists(localList, cloudList);
+      let cloudList: RunnerRegistration[] = [];
+      let cloudReachable = false;
+      try {
+        cloudList = await fetchRegistrationsFirestore();
+        cloudReachable = true;
+      } catch (e) {}
+
+      const cloudSantaIds = new Set(
+        cloudList
+          .filter((r) => r.edition === 'santa-run-2026' || r.id?.startsWith('SR-'))
+          .map((r) => r.id)
+      );
+      const filteredLocal = cloudReachable
+        ? localList.filter(
+            (r) => !(r.edition === 'santa-run-2026' || r.id?.startsWith('SR-')) || cloudSantaIds.has(r.id)
+          )
+        : localList;
+      const allList = mergeRegistrationsLists(filteredLocal, cloudList);
 
       const matches = allList.filter((r) => {
         const rDni = String(r.documentNumber || '').trim().toLowerCase().replace(/[\s\.\-#]/g, '');
