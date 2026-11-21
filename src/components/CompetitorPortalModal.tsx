@@ -33,6 +33,7 @@ import { DigitalBib } from './DigitalBib';
 import {
   syncRunnerMediaViaAppsScript,
   readImageFileHighQuality,
+  createCompactEmergencyBackup,
   getDriveImagePreviewUrl,
   getDriveFileLink,
 } from '../services/googleDriveService';
@@ -96,32 +97,51 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
 
     try {
       const highQualityData = await readImageFileHighQuality(file);
-      const driveFields = await syncRunnerMediaViaAppsScript(
-        {
-          ...competitor,
-          personalPhotoUrl: highQualityData,
-          voucherUrl: undefined,
-          paymentProofImage: undefined,
-        },
-        { overwrite: true }
-      );
+      let updatedRunner: RunnerRegistration | null = null;
 
-      if (!driveFields?.drivePhotoFileId) {
-        throw new Error('No se recibió confirmación de Google Drive.');
+      try {
+        const driveFields = await Promise.race([
+          syncRunnerMediaViaAppsScript(
+            {
+              ...competitor,
+              personalPhotoUrl: highQualityData,
+              voucherUrl: undefined,
+              paymentProofImage: undefined,
+            },
+            { overwrite: true }
+          ),
+          new Promise<null>((_, reject) => setTimeout(() => reject(new Error('DRIVE_TIMEOUT')), 16000)),
+        ]);
+
+        if (driveFields?.drivePhotoFileId) {
+          updatedRunner = {
+            ...competitor,
+            personalPhotoUrl: undefined,
+            drivePhotoFileId: driveFields.drivePhotoFileId,
+            drivePhotoUrl: driveFields.drivePhotoUrl,
+          };
+        }
+      } catch (e) {}
+
+      if (!updatedRunner) {
+        const backupPhoto = await createCompactEmergencyBackup(highQualityData);
+        if (!backupPhoto) {
+          throw new Error('No se pudo procesar tu foto. Intenta nuevamente.');
+        }
+        updatedRunner = {
+          ...competitor,
+          personalPhotoUrl: backupPhoto,
+          drivePhotoFileId: undefined,
+          drivePhotoUrl: undefined,
+        };
       }
 
-      const updatedRunner: RunnerRegistration = {
-        ...competitor,
-        personalPhotoUrl: undefined,
-        drivePhotoFileId: driveFields.drivePhotoFileId,
-        drivePhotoUrl: driveFields.drivePhotoUrl,
-      };
       onUpdateCompetitor(updatedRunner);
       setPhotoPreviewError(false);
-      setActionSuccessMessage('✓ ¡Tu foto personal en alta calidad fue guardada directo en Google Drive con tu nombre!');
+      setActionSuccessMessage('✓ ¡Tu foto personal en alta calidad fue guardada con tu nombre!');
       setTimeout(() => setActionSuccessMessage(null), 5500);
     } catch (err: any) {
-      setActionErrorMessage(err?.message || 'No se pudo subir tu foto a Google Drive. Intenta nuevamente.');
+      setActionErrorMessage(err?.message || 'No se pudo subir tu foto. Intenta nuevamente.');
       setTimeout(() => setActionErrorMessage(null), 6000);
     } finally {
       setIsUploadingPhoto(false);
@@ -136,34 +156,53 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
 
     try {
       const highQualityData = await readImageFileHighQuality(file);
-      const driveFields = await syncRunnerMediaViaAppsScript(
-        {
+      let updatedRunner: RunnerRegistration | null = null;
+
+      try {
+        const driveFields = await Promise.race([
+          syncRunnerMediaViaAppsScript(
+            {
+              ...competitor,
+              voucherUrl: highQualityData,
+              paymentProofImage: undefined,
+              personalPhotoUrl: undefined,
+            },
+            { overwrite: true }
+          ),
+          new Promise<null>((_, reject) => setTimeout(() => reject(new Error('DRIVE_TIMEOUT')), 16000)),
+        ]);
+
+        if (driveFields?.driveVoucherFileId) {
+          updatedRunner = {
+            ...competitor,
+            voucherUrl: undefined,
+            paymentProofImage: undefined,
+            driveVoucherFileId: driveFields.driveVoucherFileId,
+            driveVoucherUrl: driveFields.driveVoucherUrl,
+          };
+        }
+      } catch (e) {}
+
+      if (!updatedRunner) {
+        const backupVoucher = await createCompactEmergencyBackup(highQualityData);
+        if (!backupVoucher) {
+          throw new Error('No se pudo procesar el comprobante. Intenta nuevamente.');
+        }
+        updatedRunner = {
           ...competitor,
-          voucherUrl: highQualityData,
-          paymentProofImage: undefined,
-          personalPhotoUrl: undefined,
-        },
-        { overwrite: true }
-      );
-
-      if (!driveFields?.driveVoucherFileId) {
-        throw new Error('No se recibió confirmación de Google Drive.');
+          voucherUrl: backupVoucher,
+          paymentProofImage: backupVoucher,
+          driveVoucherFileId: undefined,
+          driveVoucherUrl: undefined,
+        };
       }
-
-      const updatedRunner: RunnerRegistration = {
-        ...competitor,
-        voucherUrl: undefined,
-        paymentProofImage: undefined,
-        driveVoucherFileId: driveFields.driveVoucherFileId,
-        driveVoucherUrl: driveFields.driveVoucherUrl,
-      };
 
       onUpdateCompetitor(updatedRunner);
       setVoucherPreviewError(false);
-      setActionSuccessMessage('✓ ¡Comprobante Yape enviado en alta calidad directo a Google Drive! Nuestro equipo validará tu pago.');
+      setActionSuccessMessage('✓ ¡Comprobante Yape enviado! Nuestro equipo revisará y validará tu pago.');
       setTimeout(() => setActionSuccessMessage(null), 5500);
     } catch (err: any) {
-      setActionErrorMessage(err?.message || 'No se pudo subir el comprobante a Google Drive. Intenta nuevamente.');
+      setActionErrorMessage(err?.message || 'No se pudo subir el comprobante. Intenta nuevamente.');
       setTimeout(() => setActionErrorMessage(null), 6000);
     } finally {
       setIsUploadingVoucher(false);

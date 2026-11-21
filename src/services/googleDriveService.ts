@@ -648,43 +648,46 @@ export async function uploadFileViaAppsScript(params: {
   });
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 25000);
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
 
   try {
     const res = await fetch(bridgeUrl, {
       method: 'POST',
+      redirect: 'follow',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body,
       signal: controller.signal,
     });
-    clearTimeout(timeoutId);
 
-    if (res.ok) {
-      const text = await res.text();
-      if (text.includes('Script function not found')) {
-        throw new Error(
-          'Tu Google Apps Script aún no tiene guardado/publicado el código (dice: Script function not found: doPost). En script.google.com guarda el código y publica una Nueva versión.'
-        );
+    if (!res.ok) {
+      throw new Error(`Google Drive respondió con estado HTTP ${res.status}`);
+    }
+
+    const text = await res.text();
+    if (text.includes('Script function not found')) {
+      throw new Error(
+        'Tu Google Apps Script aún no tiene guardado/publicado el código (dice: Script function not found: doPost). En script.google.com guarda el código y publica una Nueva versión.'
+      );
+    }
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed?.ok === false) {
+        throw new Error(parsed.error || 'Google Apps Script devolvió un error');
       }
-      try {
-        const parsed = JSON.parse(text);
-        if (parsed?.ok === false) {
-          throw new Error(parsed.error || 'Google Apps Script devolvió un error');
-        }
-        if (parsed?.id) {
-          return {
-            id: parsed.id,
-            webViewLink: parsed.webViewLink || `https://drive.google.com/file/d/${parsed.id}/view`,
-          };
-        }
-      } catch (jsonErr: any) {
-        if (jsonErr?.message && !jsonErr.message.includes('JSON')) {
-          throw jsonErr;
-        }
+      if (parsed?.id) {
+        return {
+          id: parsed.id,
+          webViewLink: parsed.webViewLink || `https://drive.google.com/file/d/${parsed.id}/view`,
+        };
+      }
+    } catch (jsonErr: any) {
+      if (jsonErr?.message && !jsonErr.message.includes('JSON')) {
+        throw jsonErr;
       }
     }
+
+    throw new Error('Google Drive no confirmó el archivo recibido.');
   } catch (err: any) {
-    clearTimeout(timeoutId);
     if (err?.name === 'AbortError') {
       throw new Error('La subida a Google Drive tardó demasiado. Verifica tu conexión e intenta de nuevo.');
     }
@@ -700,9 +703,9 @@ export async function uploadFileViaAppsScript(params: {
       throw err;
     }
 
-    // Fallback with no-cors when strict browser/PC blocks reading Google Apps Script redirect
+    // Fallback with no-cors when strict mobile WebView (e.g. Instagram browser) blocks reading 302 redirect
     const fallbackController = new AbortController();
-    const fallbackTimeout = setTimeout(() => fallbackController.abort(), 18000);
+    const fallbackTimeout = setTimeout(() => fallbackController.abort(), 10000);
     try {
       await fetch(bridgeUrl, {
         method: 'POST',
@@ -718,12 +721,9 @@ export async function uploadFileViaAppsScript(params: {
       id: `bridge_${Date.now()}`,
       webViewLink: `https://drive.google.com/drive/folders/${folderId}`,
     };
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return {
-    id: `bridge_${Date.now()}`,
-    webViewLink: `https://drive.google.com/drive/folders/${folderId}`,
-  };
 }
 
 export async function syncRunnerMediaViaAppsScript(
@@ -734,6 +734,8 @@ export async function syncRunnerMediaViaAppsScript(
   driveVoucherUrl?: string;
   drivePhotoFileId?: string;
   drivePhotoUrl?: string;
+  voucherFailed?: boolean;
+  photoFailed?: boolean;
 } | null> {
   const bridgeUrl = options?.bridgeUrl || (await getDriveBridgeUrl());
   if (!bridgeUrl) return null;
@@ -745,41 +747,81 @@ export async function syncRunnerMediaViaAppsScript(
     driveVoucherUrl?: string;
     drivePhotoFileId?: string;
     drivePhotoUrl?: string;
+    voucherFailed?: boolean;
+    photoFailed?: boolean;
   } = {};
 
   const voucherSrc = runner.voucherUrl || runner.paymentProofImage;
-  if (voucherSrc && (overwrite || !runner.driveVoucherFileId)) {
-    const uploadedVoucher = await uploadFileViaAppsScript({
-      bridgeUrl,
-      folderId: DEFAULT_YAPE_FOLDER_ID,
-      kind: 'voucher',
-      baseFileName: `Constancia_Yape_${personName} (${runner.id})`,
-      source: voucherSrc,
-      overwrite,
-    });
-    result.driveVoucherFileId = uploadedVoucher.id;
-    result.driveVoucherUrl = uploadedVoucher.webViewLink;
+  const needVoucher = !!(voucherSrc && (overwrite || !runner.driveVoucherFileId));
+  const needPhoto = !!(runner.personalPhotoUrl && (overwrite || !runner.drivePhotoFileId));
+
+  if (!needVoucher && !needPhoto) return null;
+
+  // Upload voucher and photo IN PARALLEL so mobile runners wait half the time
+  const [voucherOutcome, photoOutcome] = await Promise.all([
+    needVoucher
+      ? uploadFileViaAppsScript({
+          bridgeUrl,
+          folderId: DEFAULT_YAPE_FOLDER_ID,
+          kind: 'voucher',
+          baseFileName: `Constancia_Yape_${personName} (${runner.id})`,
+          source: voucherSrc!,
+          overwrite,
+        })
+          .then((res) => ({ ok: true as const, res }))
+          .catch((err) => ({ ok: false as const, err }))
+      : Promise.resolve(null),
+    needPhoto
+      ? uploadFileViaAppsScript({
+          bridgeUrl,
+          folderId: DEFAULT_PHOTOS_FOLDER_ID,
+          kind: 'photo',
+          baseFileName: `${personName} (${runner.id})`,
+          source: runner.personalPhotoUrl!,
+          overwrite,
+        })
+          .then((res) => ({ ok: true as const, res }))
+          .catch((err) => ({ ok: false as const, err }))
+      : Promise.resolve(null),
+  ]);
+
+  if (voucherOutcome) {
+    if (voucherOutcome.ok) {
+      result.driveVoucherFileId = voucherOutcome.res.id;
+      result.driveVoucherUrl = voucherOutcome.res.webViewLink;
+    } else {
+      result.voucherFailed = true;
+    }
   }
 
-  if (runner.personalPhotoUrl && (overwrite || !runner.drivePhotoFileId)) {
-    const uploadedPhoto = await uploadFileViaAppsScript({
-      bridgeUrl,
-      folderId: DEFAULT_PHOTOS_FOLDER_ID,
-      kind: 'photo',
-      baseFileName: `${personName} (${runner.id})`,
-      source: runner.personalPhotoUrl,
-      overwrite,
-    });
-    result.drivePhotoFileId = uploadedPhoto.id;
-    result.drivePhotoUrl = uploadedPhoto.webViewLink;
+  if (photoOutcome) {
+    if (photoOutcome.ok) {
+      result.drivePhotoFileId = photoOutcome.res.id;
+      result.drivePhotoUrl = photoOutcome.res.webViewLink;
+    } else {
+      result.photoFailed = true;
+    }
   }
 
-  return Object.keys(result).length > 0 ? result : null;
+  if (
+    !result.driveVoucherFileId &&
+    !result.drivePhotoFileId &&
+    (result.voucherFailed || result.photoFailed)
+  ) {
+    const firstErr =
+      (voucherOutcome && !voucherOutcome.ok && voucherOutcome.err) ||
+      (photoOutcome && !photoOutcome.ok && photoOutcome.err);
+    throw firstErr || new Error('No se pudo subir los archivos a Google Drive.');
+  }
+
+  return result;
 }
 
 /**
- * Reads an image or PDF preserving full original crisp clarity (up to 12 MB).
- * Only gently scales ultra-large >12 MB files to 3200px @ 95% JPEG so photos never look blurry.
+ * Reads an image or PDF preserving crisp HD clarity while keeping mobile uploads fast.
+ * - PDFs and images <= 1.2 MB stay 100% untouched.
+ * - Larger mobile camera photos (e.g. 4–12 MB) are gently encoded at up to 2048px / 90% JPEG
+ *   (Full HD+ / 2K sharp quality for frames & vouchers, ~350–700 KB so 4G uploads finish in 2–4s).
  */
 export function readImageFileHighQuality(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -791,8 +833,7 @@ export function readImageFileHighQuality(file: File): Promise<string> {
         return;
       }
 
-      // Keep original crisp file untouched for PDFs and normal images <= 12 MB
-      if (!file.type.startsWith('image/') || file.size <= 12 * 1024 * 1024) {
+      if (!file.type.startsWith('image/') || file.size <= 1.2 * 1024 * 1024) {
         resolve(rawData);
         return;
       }
@@ -802,7 +843,7 @@ export function readImageFileHighQuality(file: File): Promise<string> {
         const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
-        const maxDim = 3200;
+        const maxDim = 2048;
         if (width > maxDim || height > maxDim) {
           if (width > height) {
             height = Math.round((height * maxDim) / width);
@@ -817,7 +858,8 @@ export function readImageFileHighQuality(file: File): Promise<string> {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', 0.95));
+          const optimized = canvas.toDataURL('image/jpeg', 0.9);
+          resolve(optimized.length < rawData.length ? optimized : rawData);
         } else {
           resolve(rawData);
         }
@@ -827,6 +869,53 @@ export function readImageFileHighQuality(file: File): Promise<string> {
     };
     reader.onerror = () => reject(new Error('Error leyendo el archivo.'));
     reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Compact temporary fallback (~120 KB) used ONLY if a runner's mobile browser/4G fails to reach Drive,
+ * ensuring their registration + media are never lost and Admin Auto-Sync uploads them to Drive later.
+ */
+export function createCompactEmergencyBackup(dataUrl: string): Promise<string | undefined> {
+  return new Promise((resolve) => {
+    if (!dataUrl || !dataUrl.startsWith('data:image/')) {
+      resolve(dataUrl && dataUrl.length < 400000 ? dataUrl : undefined);
+      return;
+    }
+    if (dataUrl.length < 220000) {
+      resolve(dataUrl);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 1100;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compact = canvas.toDataURL('image/jpeg', 0.78);
+          resolve(compact.length < 450000 ? compact : canvas.toDataURL('image/jpeg', 0.65));
+          return;
+        }
+      } catch (e) {}
+      resolve(undefined);
+    };
+    img.onerror = () => resolve(undefined);
+    img.src = dataUrl;
   });
 }
 

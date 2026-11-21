@@ -33,7 +33,11 @@ import {
   fetchRegistrationsFirestore,
   mergeRegistrationsLists,
 } from '../utils/checkinManager';
-import { syncRunnerMediaViaAppsScript, readImageFileHighQuality } from '../services/googleDriveService';
+import {
+  syncRunnerMediaViaAppsScript,
+  readImageFileHighQuality,
+  createCompactEmergencyBackup,
+} from '../services/googleDriveService';
 import { trackEvent } from '../utils/analytics';
 
 interface RegistrationFormProps {
@@ -140,6 +144,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
   // Submission states
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStage, setSubmitStage] = useState<string>('Procesando Inscripción...');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Base price: S/ 70.00
@@ -191,15 +196,20 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
     }
 
     setIsSubmitting(true);
+    setSubmitStage('Preparando inscripción...');
 
     try {
       const now = new Date().toISOString();
       const localStored = getStoredRegistrations();
       let cloudStored: RunnerRegistration[] = [];
+      let cloudLoaded = false;
       try {
         cloudStored = await Promise.race([
-          fetchRegistrationsFirestore(),
-          new Promise<RunnerRegistration[]>((resolve) => setTimeout(() => resolve([]), 1500)),
+          fetchRegistrationsFirestore().then((list) => {
+            cloudLoaded = true;
+            return list;
+          }),
+          new Promise<RunnerRegistration[]>((resolve) => setTimeout(() => resolve([]), 3000)),
         ]);
       } catch (e) {}
 
@@ -209,8 +219,13 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         ? Math.max(...santaList.map((r) => r.registrationNumber || 0)) + 1
         : 1;
 
+      const cleanDocDigits = documentNumber.trim().replace(/\D/g, '');
+      const uniqueId = cloudLoaded
+        ? `SR-2026-${String(nextSantaNum).padStart(4, '0')}`
+        : `SR-2026-${cleanDocDigits.slice(-4) || Date.now().toString().slice(-4)}-${Date.now().toString(36).slice(-3).toUpperCase()}`;
+
       const newRunner: RunnerRegistration = {
-        id: `SR-2026-${String(nextSantaNum).padStart(4, '0')}`,
+        id: uniqueId,
         edition: 'santa-run-2026',
         registrationNumber: nextSantaNum,
         bibNumber: nextSantaNum,
@@ -245,26 +260,57 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         medalDelivered: false,
       };
 
-      // 1. Subir constancia Yape y foto personal en calidad original DIRECTO a Google Drive (0 MB en Firebase/Web)
+      // 1. Subir constancia Yape y foto personal en paralelo DIRECTO a Google Drive (máx 16s para nunca trabar el celular)
       if (voucherPreview || personalPhotoPreview) {
+        setSubmitStage('Subiendo fotos a Google Drive...');
+        let voucherNeedsFallback = !!voucherPreview;
+        let photoNeedsFallback = !!personalPhotoPreview;
+
         try {
-          const driveFields = await syncRunnerMediaViaAppsScript({
-            ...newRunner,
-            voucherUrl: voucherPreview || undefined,
-            personalPhotoUrl: personalPhotoPreview || undefined,
-          });
+          const driveFields = await Promise.race([
+            syncRunnerMediaViaAppsScript({
+              ...newRunner,
+              voucherUrl: voucherPreview || undefined,
+              personalPhotoUrl: personalPhotoPreview || undefined,
+            }),
+            new Promise<null>((_, reject) =>
+              setTimeout(() => reject(new Error('DRIVE_TIMEOUT')), 16000)
+            ),
+          ]);
+
           if (driveFields) {
-            Object.assign(newRunner, driveFields);
+            if (driveFields.driveVoucherFileId) {
+              newRunner.driveVoucherFileId = driveFields.driveVoucherFileId;
+              newRunner.driveVoucherUrl = driveFields.driveVoucherUrl;
+              voucherNeedsFallback = false;
+            }
+            if (driveFields.drivePhotoFileId) {
+              newRunner.drivePhotoFileId = driveFields.drivePhotoFileId;
+              newRunner.drivePhotoUrl = driveFields.drivePhotoUrl;
+              photoNeedsFallback = false;
+            }
           }
-        } catch (driveErr: any) {
-          setErrorMessage(
-            driveErr?.message ||
-              'No se pudo subir tu imagen directo a Google Drive. Verifica tu conexión e intenta nuevamente.'
-          );
-          return;
+        } catch (driveErr) {
+          // Si Instagram WebView o señal 4G débil bloqueó la subida directa, NO bloqueamos la inscripción:
+          // guardamos copia temporal ligera para que el Panel Admin la suba automáticamente a Drive y la limpie.
+        }
+
+        if (voucherNeedsFallback && voucherPreview) {
+          const backupVoucher = await createCompactEmergencyBackup(voucherPreview);
+          if (backupVoucher) {
+            newRunner.voucherUrl = backupVoucher;
+            newRunner.paymentProofImage = backupVoucher;
+          }
+        }
+        if (photoNeedsFallback && personalPhotoPreview) {
+          const backupPhoto = await createCompactEmergencyBackup(personalPhotoPreview);
+          if (backupPhoto) {
+            newRunner.personalPhotoUrl = backupPhoto;
+          }
         }
       }
 
+      setSubmitStage('Guardando solicitud oficial...');
       let finalRecord: RunnerRegistration = newRunner;
 
       // 2. Try server endpoint with strict 2s timeout (active on AI Studio; fails fast on static Hostinger)
@@ -297,10 +343,10 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
         localStorage.setItem('ohana_active_competitor', JSON.stringify(finalRecord));
       } catch (e) {}
 
-      // 3. Guardar en Cloud Firestore sin bloquear más de 3s en redes lentas de otras PCs
+      // 3. Guardar en Cloud Firestore sin bloquear más de 4s en redes lentas de otras PCs/celulares
       await Promise.race([
         saveRegistrationFirestore(finalRecord),
-        new Promise<void>((resolve) => setTimeout(resolve, 3000)),
+        new Promise<void>((resolve) => setTimeout(resolve, 4000)),
       ]);
 
       trackEvent({
@@ -843,16 +889,23 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
           </div>
 
           {/* Submit Button */}
-          <div className="pt-4">
+          <div className="pt-4 space-y-3">
+            {errorMessage && (
+              <div className="p-3.5 rounded-2xl bg-red-950/90 border border-red-500 text-red-200 text-xs sm:text-sm flex items-center gap-2.5">
+                <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || isCompressingVoucher || isCompressingPhoto}
               className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-red-600 hover:from-red-500 hover:to-rose-500 disabled:opacity-50 text-white font-bebas text-2xl uppercase tracking-wider transition-all duration-300 transform hover:scale-[1.01] active:scale-95 shadow-xl shadow-red-600/35 font-black cursor-pointer flex items-center justify-center gap-3 border border-red-400/40"
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-6 h-6 animate-spin text-white" />
-                  <span>{voucherPreview || personalPhotoPreview ? 'Subiendo fotos a Drive e inscribiendo...' : 'Procesando Inscripción...'}</span>
+                  <span>{submitStage}</span>
                 </>
               ) : (
                 <>
