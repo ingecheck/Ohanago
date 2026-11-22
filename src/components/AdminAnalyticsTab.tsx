@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { RunnerRegistration } from '../types/race';
 import { AnalyticsSummary } from '../utils/analytics';
+import { isRiojaRunner, isTarapotoRunner } from '../utils/checkinManager';
 import {
   Users,
   Search,
@@ -22,6 +23,8 @@ import {
   Camera,
   FileCheck2,
   Percent,
+  MapPin,
+  Tag,
 } from 'lucide-react';
 
 interface AdminAnalyticsTabProps {
@@ -30,6 +33,7 @@ interface AdminAnalyticsTabProps {
   isLoading: boolean;
   onRefresh: () => void;
   onResetAnalytics?: () => void;
+  initialEdition?: 'santa-run-2026' | 'santa-run-rioja-2026';
 }
 
 const SHIRT_SIZES = ['S', 'M', 'L', 'XL', 'XXL'] as const;
@@ -40,19 +44,36 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
   isLoading,
   onRefresh,
   onResetAnalytics,
+  initialEdition = 'santa-run-2026',
 }) => {
+  const [selectedEdition, setSelectedEdition] = useState<'santa-run-2026' | 'santa-run-rioja-2026'>(initialEdition);
   const [filterType, setFilterType] = useState<'all' | 'consulted' | 'pending'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSubView, setActiveSubView] = useState<'runners' | 'sections' | 'feed'>('runners');
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
 
-  // Strictly focus metrics on Santa Run Tarapoto 2026 so historical Halloween records never skew live numbers
+  useEffect(() => {
+    setSelectedEdition(initialEdition);
+  }, [initialEdition]);
+
+  const isRiojaSelected = selectedEdition === 'santa-run-rioja-2026';
+
+  const tarapotoCount = useMemo(
+    () => registrations.filter(isTarapotoRunner).length,
+    [registrations]
+  );
+  const riojaCount = useMemo(
+    () => registrations.filter(isRiojaRunner).length,
+    [registrations]
+  );
+
+  // Strictly isolate metrics per active Santa Run sede (Tarapoto vs Rioja)
   const santaRunners = useMemo(
     () =>
       registrations
-        .filter((r) => r.edition === 'santa-run-2026' || r.id?.startsWith('SR-'))
+        .filter((r) => (isRiojaSelected ? isRiojaRunner(r) : isTarapotoRunner(r)))
         .sort((a, b) => (b.registrationNumber || 0) - (a.registrationNumber || 0)),
-    [registrations]
+    [registrations, isRiojaSelected]
   );
 
   const totalRunners = santaRunners.length;
@@ -62,18 +83,19 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
   const pendingPaymentCount = pendingPaymentRunners.length;
   const verificationRate = totalRunners > 0 ? Math.round((verifiedCount / totalRunners) * 100) : 0;
 
-  // Revenue breakdown (S/ 70.00 regular, S/ 59.50 with 15% Ohana Go alumni discount)
-  const getRunnerPrice = (r: RunnerRegistration) =>
-    typeof r.amountPaid === 'number' && r.amountPaid > 0
-      ? r.amountPaid
-      : r.hasPreviousDiscount
-        ? 59.5
-        : 70.0;
+  // Accurate per-sede revenue breakdown
+  const getRunnerPrice = (r: RunnerRegistration) => {
+    if (typeof r.amountPaid === 'number' && r.amountPaid > 0) return r.amountPaid;
+    if (isRiojaRunner(r)) {
+      return r.raceCategory === 'Kids 2K' ? 25.0 : 35.0;
+    }
+    return r.hasPreviousDiscount ? 59.5 : 70.0;
+  };
 
   const revenueVerified = verifiedRunners.reduce((sum, r) => sum + getRunnerPrice(r), 0);
   const revenuePending = pendingPaymentRunners.reduce((sum, r) => sum + getRunnerPrice(r), 0);
   const revenueTotal = revenueVerified + revenuePending;
-  const discountRunnersCount = santaRunners.filter((r) => r.hasPreviousDiscount).length;
+  const discountRunnersCount = santaRunners.filter((r) => r.hasPreviousDiscount && !isRiojaRunner(r)).length;
 
   // Kit & Google Drive media completion metrics
   const kitsDeliveredCount = santaRunners.filter((r) => r.confirmedAtStart).length;
@@ -85,7 +107,7 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
     (r) => !!(r.driveVoucherFileId || r.driveVoucherUrl || r.voucherUrl || r.paymentProofImage)
   ).length;
 
-  // T-Shirt size distribution (total + verified count per size for production orders)
+  // T-Shirt size distribution (Tarapoto)
   const shirtBreakdown = useMemo(() => {
     return SHIRT_SIZES.map((size) => {
       const matching = santaRunners.filter((r) => (r.tShirtSize || 'M').toUpperCase() === size);
@@ -96,6 +118,29 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
         total: matching.length,
         verified: verifiedInSize,
         pct,
+      };
+    });
+  }, [santaRunners, totalRunners]);
+
+  // Category distribution (Rioja: Kids 2K S/ 25 vs Libre 5K S/ 35)
+  const riojaCategoryBreakdown = useMemo(() => {
+    const categories = [
+      { key: 'Kids 2K' as const, label: 'Categoría KIDS 2K', price: 25.0, accent: 'from-amber-500 to-yellow-400' },
+      { key: 'Libre 5K' as const, label: 'Categoría LIBRE 5K', price: 35.0, accent: 'from-red-600 via-rose-500 to-amber-400' },
+    ];
+    return categories.map((cat) => {
+      const matching = santaRunners.filter((r) =>
+        cat.key === 'Kids 2K' ? r.raceCategory === 'Kids 2K' : r.raceCategory !== 'Kids 2K'
+      );
+      const verifiedInCat = matching.filter((r) => r.paymentStatus === 'Verificado').length;
+      const pct = totalRunners > 0 ? Math.round((matching.length / totalRunners) * 100) : 0;
+      const catRevenue = matching.reduce((sum, r) => sum + getRunnerPrice(r), 0);
+      return {
+        ...cat,
+        total: matching.length,
+        verified: verifiedInCat,
+        pct,
+        revenue: catRevenue,
       };
     });
   }, [santaRunners, totalRunners]);
@@ -247,21 +292,48 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header strip with Live Badge & Actions */}
+      {/* Header strip with Live Badge, Sede Switcher & Actions */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-neutral-900/90 border border-neutral-800 rounded-2xl px-4 py-3">
         <div>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <h2 className="font-bebas text-2xl text-white tracking-wide uppercase leading-none">
-              Métricas en Vivo · Santa Run Tarapoto 2026
+              Métricas en Vivo · {isRiojaSelected ? 'Santa Run Rioja 2026' : 'Santa Run Tarapoto 2026'}
             </h2>
           </div>
           <p className="text-xs text-neutral-400 mt-0.5">
-            Cifras reales sincronizadas en tiempo real desde Cloud Firestore y Google Drive (0 registros antiguos mezclados).
+            Cifras reales sincronizadas en tiempo real desde Cloud Firestore y Google Drive por sede.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Sede Switcher */}
+          <div className="flex items-center bg-neutral-950 p-1 rounded-xl border border-neutral-800 text-xs">
+            <button
+              type="button"
+              onClick={() => setSelectedEdition('santa-run-2026')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                !isRiojaSelected
+                  ? 'bg-red-600 text-white shadow'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Tarapoto ({tarapotoCount})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedEdition('santa-run-rioja-2026')}
+              className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                isRiojaSelected
+                  ? 'bg-amber-500 text-neutral-950 shadow'
+                  : 'text-neutral-400 hover:text-amber-300'
+              }`}
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Rioja ({riojaCount})</span>
+            </button>
+          </div>
           <button
             type="button"
             onClick={onRefresh}
@@ -413,60 +485,127 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
 
       {/* ROW 2: Operational Breakdown (Shirt Sizes + Daily Trend & Funnel) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Left: Pedido de Polos por Talla */}
+        {/* Left: Pedido de Polos (Tarapoto) OR Distribución por Categoría (Rioja) */}
         <div className="bg-neutral-900 border border-neutral-800 rounded-3xl p-5 sm:p-6 shadow-xl space-y-4">
-          <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
-            <div>
-              <h3 className="font-bebas text-2xl text-white uppercase tracking-wide flex items-center gap-2">
-                <Shirt className="w-5 h-5 text-red-400" />
-                Distribución de Tallas de Polo
-              </h3>
-              <p className="text-xs text-neutral-400">
-                Conteo exacto para producción de polos oficiales Santa Run 2026.
-              </p>
-            </div>
-            <span className="text-xs font-mono font-bold text-neutral-300 bg-neutral-950 border border-neutral-800 px-3 py-1 rounded-xl tabular-nums">
-              Total: {totalRunners}
-            </span>
-          </div>
-
-          <div className="space-y-3">
-            {shirtBreakdown.map((item) => (
-              <div key={item.size} className="space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="w-9 text-center py-0.5 rounded-lg bg-neutral-950 border border-neutral-800 font-mono font-black text-white">
-                      {item.size}
-                    </span>
-                    <span className="text-neutral-300 font-semibold tabular-nums">
-                      {item.total} {item.total === 1 ? 'polo' : 'polos'}
-                    </span>
-                    {item.total > 0 && (
-                      <span className="text-[11px] text-emerald-400 font-mono tabular-nums">
-                        ({item.verified} verif.)
-                      </span>
-                    )}
-                  </div>
-                  <span className="font-mono text-neutral-400 font-bold tabular-nums">
-                    {item.pct}%
-                  </span>
+          {isRiojaSelected ? (
+            <>
+              <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+                <div>
+                  <h3 className="font-bebas text-2xl text-white uppercase tracking-wide flex items-center gap-2">
+                    <Tag className="w-5 h-5 text-amber-400" />
+                    Distribución por Categoría · Rioja 2026
+                  </h3>
+                  <p className="text-xs text-neutral-400">
+                    Conteo real por categoría (Kids 2K S/ 25.00 y Libre 5K S/ 35.00) · Alianza Sacha Runners.
+                  </p>
                 </div>
-                <div className="w-full h-2.5 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800/80">
-                  <div
-                    className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-400 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.max(item.pct, item.total > 0 ? 4 : 0)}%` }}
-                  />
-                </div>
+                <span className="text-xs font-mono font-bold text-amber-300 bg-neutral-950 border border-amber-500/30 px-3 py-1 rounded-xl tabular-nums">
+                  Total: {totalRunners}
+                </span>
               </div>
-            ))}
-          </div>
 
-          <div className="pt-2 border-t border-neutral-800 flex flex-wrap items-center justify-between gap-2 text-[11px] text-neutral-400">
-            <span>Proyección total con pendientes:</span>
-            <span className="font-mono font-bold text-white tabular-nums">
-              {formatMoney(revenueTotal)}
-            </span>
-          </div>
+              <div className="space-y-4 py-2">
+                {riojaCategoryBreakdown.map((cat) => (
+                  <div
+                    key={cat.key}
+                    className="p-4 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-2.5"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 rounded-lg bg-amber-950/80 border border-amber-500/40 font-mono font-black text-amber-300">
+                          {cat.key}
+                        </span>
+                        <span className="text-white font-bold">{cat.label}</span>
+                        <span className="text-[11px] font-mono text-neutral-400">
+                          S/ {cat.price.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 font-mono">
+                        <span className="text-white font-black tabular-nums">{cat.total} inscritos</span>
+                        <span className="text-emerald-400 text-[11px] tabular-nums">({cat.verified} verif.)</span>
+                      </div>
+                    </div>
+
+                    <div className="w-full h-2.5 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800">
+                      <div
+                        className={`h-full bg-gradient-to-r ${cat.accent} rounded-full transition-all duration-500`}
+                        style={{ width: `${Math.max(cat.pct, cat.total > 0 ? 5 : 0)}%` }}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] text-neutral-400 font-mono">
+                      <span>{cat.pct}% del total Rioja</span>
+                      <span className="text-amber-300 font-bold tabular-nums">
+                        Subtotal: {formatMoney(cat.revenue)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-2 border-t border-neutral-800 flex flex-wrap items-center justify-between gap-2 text-[11px] text-neutral-400">
+                <span>Proyección total Rioja (verificados + pendientes):</span>
+                <span className="font-mono font-bold text-white tabular-nums">
+                  {formatMoney(revenueTotal)}
+                </span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+                <div>
+                  <h3 className="font-bebas text-2xl text-white uppercase tracking-wide flex items-center gap-2">
+                    <Shirt className="w-5 h-5 text-red-400" />
+                    Distribución de Tallas de Polo
+                  </h3>
+                  <p className="text-xs text-neutral-400">
+                    Conteo exacto para producción de polos oficiales Santa Run Tarapoto 2026.
+                  </p>
+                </div>
+                <span className="text-xs font-mono font-bold text-neutral-300 bg-neutral-950 border border-neutral-800 px-3 py-1 rounded-xl tabular-nums">
+                  Total: {totalRunners}
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {shirtBreakdown.map((item) => (
+                  <div key={item.size} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="w-9 text-center py-0.5 rounded-lg bg-neutral-950 border border-neutral-800 font-mono font-black text-white">
+                          {item.size}
+                        </span>
+                        <span className="text-neutral-300 font-semibold tabular-nums">
+                          {item.total} {item.total === 1 ? 'polo' : 'polos'}
+                        </span>
+                        {item.total > 0 && (
+                          <span className="text-[11px] text-emerald-400 font-mono tabular-nums">
+                            ({item.verified} verif.)
+                          </span>
+                        )}
+                      </div>
+                      <span className="font-mono text-neutral-400 font-bold tabular-nums">
+                        {item.pct}%
+                      </span>
+                    </div>
+                    <div className="w-full h-2.5 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800/80">
+                      <div
+                        className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-400 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.max(item.pct, item.total > 0 ? 4 : 0)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-2 border-t border-neutral-800 flex flex-wrap items-center justify-between gap-2 text-[11px] text-neutral-400">
+                <span>Proyección total con pendientes:</span>
+                <span className="font-mono font-bold text-white tabular-nums">
+                  {formatMoney(revenueTotal)}
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Right: Tendencia Diaria & Salud Operativa */}
@@ -665,7 +804,7 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
                 <tr>
                   <th className="py-3 px-3">N°</th>
                   <th className="py-3 px-3">Atleta</th>
-                  <th className="py-3 px-3">DNI / Talla</th>
+                  <th className="py-3 px-3">{isRiojaSelected ? 'DNI / Categoría' : 'DNI / Talla'}</th>
                   <th className="py-3 px-3">Pago</th>
                   <th className="py-3 px-3">Mi Espacio</th>
                   <th className="py-3 px-3">Última Consulta</th>
@@ -677,19 +816,28 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
                   <tr>
                     <td colSpan={7} className="py-10 text-center text-neutral-500 text-sm">
                       {totalRunners === 0
-                        ? 'Aún no hay inscritos en Santa Run Tarapoto 2026. Cuando se inscriban aparecerán aquí en vivo.'
+                        ? `Aún no hay inscritos en ${isRiojaSelected ? 'Santa Run Rioja 2026' : 'Santa Run Tarapoto 2026'}. Cuando se inscriban aparecerán aquí en vivo.`
                         : 'No se encontraron atletas con los filtros seleccionados.'}
                     </td>
                   </tr>
                 ) : (
                   filteredRunners.map((runner, index) => {
-                    const waMessage = runner.hasConsulted
-                      ? encodeURIComponent(
-                          `¡Hola ${runner.firstName}! Te saluda el equipo de Santa Run Tarapoto 2026. Confirmamos tu acceso a Mi Espacio. Recuerda que la concentración y entrega de kit es el sábado 19 de diciembre a las 6:00 PM en Aviación (largada 7:00 PM). ¡Te esperamos!`
-                        )
-                      : encodeURIComponent(
-                          `¡Hola ${runner.firstName}! Te saluda el equipo de Santa Run Tarapoto 2026. Ya puedes ingresar a "Mi Espacio" en www.ohanago.pro con tu DNI (${runner.documentNumber}) para ver tu estado de verificación y tu código QR oficial.`
-                        );
+                    const runnerIsRioja = isRiojaRunner(runner);
+                    const waMessage = runnerIsRioja
+                      ? runner.hasConsulted
+                        ? encodeURIComponent(
+                            `¡Hola ${runner.firstName}! Te saluda el equipo de Santa Run Rioja 2026 (OHANA GO & Sacha Runners). Confirmamos tu acceso a Mi Espacio. Te esperamos el domingo 20 de diciembre a las 7:30 a. m. (Llegada: Don Diogo). ¡Corre y regala sonrisas!`
+                          )
+                        : encodeURIComponent(
+                            `¡Hola ${runner.firstName}! Te saluda el equipo de Santa Run Rioja 2026 (OHANA GO & Sacha Runners). Ya puedes ingresar a "Mi Espacio" en www.ohanago.pro/santarunrioja con tu DNI (${runner.documentNumber}) para ver tu estado de verificación y tu código QR oficial.`
+                          )
+                      : runner.hasConsulted
+                        ? encodeURIComponent(
+                            `¡Hola ${runner.firstName}! Te saluda el equipo de Santa Run Tarapoto 2026. Confirmamos tu acceso a Mi Espacio. Recuerda que la concentración y entrega de kit es el sábado 19 de diciembre a las 6:00 PM en Aviación (largada 7:00 PM). ¡Te esperamos!`
+                          )
+                        : encodeURIComponent(
+                            `¡Hola ${runner.firstName}! Te saluda el equipo de Santa Run Tarapoto 2026. Ya puedes ingresar a "Mi Espacio" en www.ohanago.pro/santaruntarapoto con tu DNI (${runner.documentNumber}) para ver tu estado de verificación y tu código QR oficial.`
+                          );
 
                     return (
                       <tr key={runner.id} className="hover:bg-neutral-800/40 transition">
@@ -701,13 +849,26 @@ export const AdminAnalyticsTab: React.FC<AdminAnalyticsTabProps> = ({
                             {runner.firstName} {runner.lastName}
                           </div>
                           <div className="text-[10px] text-neutral-400 font-mono mt-0.5">
-                            <span className="text-red-400 font-bold">{runner.id}</span>
+                            <span className={`${runnerIsRioja ? 'text-amber-400' : 'text-red-400'} font-bold`}>
+                              {runner.id}
+                            </span>
                           </div>
                         </td>
                         <td className="py-3 px-3 font-mono">
                           <div className="font-bold text-neutral-200">{runner.documentNumber}</div>
                           <div className="text-[10px] text-neutral-400">
-                            Polo: <strong className="text-white">{runner.tShirtSize || 'M'}</strong>
+                            {runnerIsRioja ? (
+                              <>
+                                Cat:{' '}
+                                <strong className="text-amber-300">
+                                  {runner.raceCategory === 'Kids 2K' ? 'Kids 2K' : 'Libre 5K'}
+                                </strong>
+                              </>
+                            ) : (
+                              <>
+                                Polo: <strong className="text-white">{runner.tShirtSize || 'M'}</strong>
+                              </>
+                            )}
                           </div>
                         </td>
                         <td className="py-3 px-3">

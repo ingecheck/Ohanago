@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { Sparkles, User, AlertCircle, X, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
 import { RunnerRegistration } from '../types/race';
 import { getStoredRegistrations } from '../data/initialRegistrations';
-import { fetchRegistrationsFirestore, mergeRegistrationsLists } from '../utils/checkinManager';
+import {
+  fetchRegistrationsFirestore,
+  mergeRegistrationsLists,
+  isCloudSantaRunner,
+} from '../utils/checkinManager';
 import { trackEvent } from '../utils/analytics';
 
 interface CompetitorLoginModalProps {
@@ -64,12 +68,12 @@ export const CompetitorLoginModal: React.FC<CompetitorLoginModalProps> = ({
 
       const cloudSantaIds = new Set(
         cloudList
-          .filter((r) => r.edition === 'santa-run-2026' || r.id?.startsWith('SR-'))
+          .filter((r) => isCloudSantaRunner(r))
           .map((r) => r.id)
       );
       const filteredLocal = cloudReachable
         ? localList.filter(
-            (r) => !(r.edition === 'santa-run-2026' || r.id?.startsWith('SR-')) || cloudSantaIds.has(r.id)
+            (r) => !isCloudSantaRunner(r) || cloudSantaIds.has(r.id)
           )
         : localList;
       const allList = mergeRegistrationsLists(filteredLocal, cloudList);
@@ -87,8 +91,8 @@ export const CompetitorLoginModal: React.FC<CompetitorLoginModalProps> = ({
         );
       });
 
-      // Si tiene inscripciones en ambos eventos, prioriza Santa Run 2026 o la más reciente
-      const match = matches.find((r) => r.edition === 'santa-run-2026' || r.id.startsWith('SR-')) || matches[0];
+      // Si tiene inscripciones en varios eventos, prioriza Santa Run 2026 (Tarapoto o Rioja) más reciente
+      const match = matches.find((r) => isCloudSantaRunner(r)) || matches[0];
 
       if (match) {
         trackEvent({
@@ -130,7 +134,7 @@ export const CompetitorLoginModal: React.FC<CompetitorLoginModalProps> = ({
             Mi Espacio <span className="text-red-500">OHANA GO</span>
           </h3>
           <p className="text-xs text-neutral-300 mt-2">
-            Ingresa tu número de DNI para acceder a tu código QR y escanearlo con el personal en Aviación para tu acreditación y kit.
+            Ingresa tu número de DNI para consultar tu verificación, tu código QR oficial y tu kit en Tarapoto o Rioja.
           </p>
         </div>
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { RunnerRegistration } from '../types/race';
 import { DigitalBib } from './DigitalBib';
+import { isRiojaRunner } from '../utils/checkinManager';
 import { CheckCircle, Clock, X, UserCheck } from 'lucide-react';
 
 interface RegistrationSuccessModalProps {
@@ -17,6 +18,8 @@ export const RegistrationSuccessModal: React.FC<RegistrationSuccessModalProps> =
   if (!registration) return null;
 
   const isVerified = registration.paymentStatus === 'Verificado';
+  const isRioja = isRiojaRunner(registration);
+  const eventTitle = isRioja ? 'SANTA RUN RIOJA 2026' : 'SANTA RUN TARAPOTO 2026';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
@@ -39,7 +42,7 @@ export const RegistrationSuccessModal: React.FC<RegistrationSuccessModalProps> =
                 ¡Inscripción Verificada!
               </h2>
               <p className="text-sm text-neutral-300 max-w-md mx-auto">
-                ¡Felicitaciones <span className="text-amber-400 font-bold">{registration.firstName}</span>! Tu cupo oficial para la <strong>SANTA RUN TARAPOTO 2026</strong> está verificado.
+                ¡Felicitaciones <span className="text-amber-400 font-bold">{registration.firstName}</span>! Tu cupo oficial para la <strong>{eventTitle}</strong> está verificado.
               </p>
             </div>
 
@@ -67,7 +70,7 @@ export const RegistrationSuccessModal: React.FC<RegistrationSuccessModalProps> =
                 ¡Ya se envió tu solicitud!
               </h2>
               <p className="text-sm text-neutral-200 max-w-md mx-auto leading-relaxed">
-                Gracias <strong className="text-amber-400">{registration.firstName} {registration.lastName}</strong>. Tu solicitud de inscripción ya fue enviada correctamente.
+                Gracias <strong className="text-amber-400">{registration.firstName} {registration.lastName}</strong>. Tu solicitud para <strong>{eventTitle}</strong> ya fue enviada correctamente.
               </p>
             </div>
 
@@ -76,6 +79,14 @@ export const RegistrationSuccessModal: React.FC<RegistrationSuccessModalProps> =
                 <span className="text-neutral-400">Código de Solicitud:</span>
                 <span className="font-mono font-bold text-white">{registration.id}</span>
               </div>
+              {isRioja && (
+                <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                  <span className="text-neutral-400">Categoría Rioja:</span>
+                  <span className="font-bold text-amber-300">
+                    {registration.raceCategory || 'Libre 5K'} · S/ {Number(registration.amountPaid || 35).toFixed(2)}
+                  </span>
+                </div>
+              )}
               <div className="flex items-center justify-between border-b border-white/10 pb-2">
                 <span className="text-neutral-400">DNI / Documento:</span>
                 <span className="font-mono font-bold text-white">{registration.documentNumber}</span>

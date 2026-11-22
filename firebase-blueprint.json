@@ -30,6 +30,7 @@
         "registrationNumber": { "type": "number" },
         "bibNumber": { "type": "number" },
         "edition": { "type": "string" },
+        "raceCategory": { "type": "string" },
         "createdAt": { "type": "string" },
         "firstName": { "type": "string" },
         "lastName": { "type": "string" },

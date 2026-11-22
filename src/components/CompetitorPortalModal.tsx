@@ -28,7 +28,11 @@ import {
 } from 'lucide-react';
 import { RunnerRegistration } from '../types/race';
 import { QRScannerModal } from './QRScannerModal';
-import { processStartCheckinSafe } from '../utils/checkinManager';
+import {
+  processStartCheckinSafe,
+  isRiojaRunner,
+  isTarapotoRunner,
+} from '../utils/checkinManager';
 import { DigitalBib } from './DigitalBib';
 import {
   syncRunnerMediaViaAppsScript,
@@ -55,7 +59,8 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
   const [actionErrorMessage, setActionErrorMessage] = useState<string | null>(null);
 
   const isVirtual = competitor.modality === 'Virtual';
-  const isSantaRun = competitor.edition === 'santa-run-2026' || competitor.id.startsWith('SR-');
+  const isRioja = isRiojaRunner(competitor);
+  const isSantaRun = isTarapotoRunner(competitor);
 
   // Live time tracking for the 7:15 PM milestone
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
@@ -270,11 +275,17 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
                 Atleta Inscrito
               </span>
               <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border ${
-                isVirtual 
-                  ? 'bg-neutral-900 text-neutral-300 border-neutral-700' 
-                  : 'bg-red-950 text-red-400 border-red-500/40'
+                isRioja
+                  ? 'bg-amber-950 text-amber-300 border-amber-500/40'
+                  : isVirtual
+                    ? 'bg-neutral-900 text-neutral-300 border-neutral-700'
+                    : 'bg-red-950 text-red-400 border-red-500/40'
               }`}>
-                {isVirtual ? 'Modalidad Virtual' : 'Presencial Tarapoto'}
+                {isRioja
+                  ? `Santa Run Rioja · ${competitor.raceCategory || 'Libre 5K'}`
+                  : isVirtual
+                    ? 'Modalidad Virtual'
+                    : 'Presencial Tarapoto'}
               </span>
             </div>
             <h2 className="font-bebas text-3xl sm:text-4xl text-white tracking-wide uppercase leading-tight pt-1">
@@ -528,13 +539,15 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
         <div className="py-2 flex flex-col items-center">
           <div className="text-center mb-4">
             <span className="text-[10px] font-mono uppercase tracking-widest font-bold block mb-1 text-red-400">
-              🎅 SANTA RUN TARAPOTO 2026
+              {isRioja ? '🎅 SANTA RUN RIOJA 2026 · ALIANZA SACHA RUNNERS' : '🎅 SANTA RUN TARAPOTO 2026'}
             </span>
             <h3 className="font-bebas text-3xl sm:text-4xl text-white uppercase tracking-wide">
-              Dorsal Navideño & Ticket Sorteo Pavo
+              {isRioja ? 'Pase Oficial Santa Run Rioja 2026' : 'Dorsal Navideño & Ticket Sorteo Pavo'}
             </h3>
             <p className="text-xs text-neutral-300 max-w-md mx-auto mt-0.5">
-              Escanea este código QR con el personal en Aviación para confirmar tu asistencia y recibir tu Kit Navideño Oficial.
+              {isRioja
+                ? 'Presenta este código QR el domingo 20 de diciembre (7:30 a. m.) para tu acreditación y entrega de kit en Rioja.'
+                : 'Escanea este código QR con el personal en Aviación para confirmar tu asistencia y recibir tu Kit Navideño Oficial.'}
             </p>
           </div>
           <DigitalBib registration={competitor} showActions={true} />
@@ -578,7 +591,33 @@ export const CompetitorPortalModal: React.FC<CompetitorPortalModalProps> = ({
               <span className="text-[10px] text-neutral-400">Contacto de registro</span>
             </div>
 
-            {isSantaRun ? (
+            {isRioja ? (
+              <>
+                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-950/50 to-neutral-950 border border-amber-500/40">
+                  <span className="text-amber-400 block uppercase font-bold text-[10px]">
+                    Categoría Oficial Rioja
+                  </span>
+                  <span className="text-white font-black text-base block mt-0.5">
+                    {competitor.raceCategory || 'Libre 5K'} · S/ {Number(competitor.amountPaid || 35).toFixed(2)}
+                  </span>
+                  <span className="text-[10px] text-neutral-400">OHANA GO × Sacha Runners</span>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800/80">
+                  <span className="text-neutral-500 block uppercase font-bold text-[10px]">Kit Oficial Rioja</span>
+                  <span className="text-white font-bold text-xs block mt-0.5">
+                    Medalla · Gorra · Hidratación · Panetón · Chocolate · Pulsera
+                  </span>
+                  <span className="text-[10px] text-amber-300">+ Show Infantil en Don Diogo</span>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800/80">
+                  <span className="text-neutral-500 block uppercase font-bold text-[10px]">Fecha & Llegada</span>
+                  <span className="text-white font-bold text-xs block mt-0.5">Llegada: Don Diogo (Rioja)</span>
+                  <span className="text-[10px] text-red-400 font-mono">Domingo 20 Dic • 7:30 a. m.</span>
+                </div>
+              </>
+            ) : isSantaRun ? (
               <>
                 <div className="p-3.5 rounded-2xl bg-gradient-to-r from-red-950/60 to-neutral-950 border border-red-500/40">
                   <span className="text-red-400 block uppercase font-bold text-[10px] flex items-center gap-1">

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
+import { OhanaHubLanding } from './components/OhanaHubLanding';
+import { RiojaEventPage } from './components/RiojaEventPage';
 import { EventHero } from './components/EventHero';
 import { UpcomingRaceTeaser } from './components/UpcomingRaceTeaser';
 import { PastEditionsArchive } from './components/PastEditionsArchive';
@@ -22,17 +24,71 @@ import {
   mergeRegistrationsLists,
   saveRegistrationFirestore,
   fetchDeletedRunnerIdsFirestore,
+  isCloudSantaRunner,
 } from './utils/checkinManager';
-import { CheckCircle2, AlertCircle, X, Sparkles, MapPin, QrCode } from 'lucide-react';
+import { CheckCircle2, AlertCircle, X } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { trackPageView, trackMiEspacioClick, trackRunnerLogin } from './utils/analytics';
 
+type OhanaRoute = 'hub' | 'tarapoto' | 'rioja';
+
+function resolveRouteFromPathname(pathname: string): OhanaRoute {
+  const clean = (pathname || '/').toLowerCase().replace(/\/+$/, '') || '/';
+  if (clean === '/santaruntarapoto' || clean.startsWith('/santaruntarapoto/')) {
+    return 'tarapoto';
+  }
+  if (clean === '/santarunrioja' || clean.startsWith('/santarunrioja/')) {
+    return 'rioja';
+  }
+  return 'hub';
+}
+
+function getPathForRoute(route: OhanaRoute): string {
+  if (route === 'tarapoto') return '/santaruntarapoto';
+  if (route === 'rioja') return '/santarunrioja';
+  return '/';
+}
+
 export const App: React.FC = () => {
+  const [currentRoute, setCurrentRoute] = useState<OhanaRoute>(() =>
+    resolveRouteFromPathname(typeof window !== 'undefined' ? window.location.pathname : '/')
+  );
   const [registrations, setRegistrations] = useState<RunnerRegistration[]>([]);
   const [recentlyRegistered, setRecentlyRegistered] = useState<RunnerRegistration | null>(null);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
   const [isCompetitorLoginOpen, setIsCompetitorLoginOpen] = useState(false);
+
+  const navigateToRoute = (nextRoute: OhanaRoute) => {
+    const targetPath = getPathForRoute(nextRoute);
+    if (typeof window !== 'undefined' && window.location.pathname !== targetPath) {
+      try {
+        window.history.pushState({ route: nextRoute }, '', targetPath);
+      } catch {}
+    }
+    setCurrentRoute(nextRoute);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentRoute(resolveRouteFromPathname(window.location.pathname));
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
+    if (currentRoute === 'rioja') {
+      document.title = 'OHANA GO × Sacha Runners • Santa Run Rioja 2026';
+    } else if (currentRoute === 'tarapoto') {
+      document.title = 'OHANA GO • Santa Run Tarapoto 2026 · 6K Nocturna';
+    } else {
+      document.title = 'OHANA GO • Santa Run 2026 · Tarapoto & Rioja';
+    }
+  }, [currentRoute]);
 
   // Direct Start Line QR Check-in states (when runner scans start QR with camera)
   const [directCheckinOpen, setDirectCheckinOpen] = useState(false);
@@ -157,14 +213,14 @@ export const App: React.FC = () => {
       unsubCheckins = subscribeToRegistrationsCollection((cloudRunners) => {
         const cloudSantaIds = new Set(
           cloudRunners
-            .filter((r) => r.edition === 'santa-run-2026' || r.id?.startsWith('SR-'))
+            .filter((r) => isCloudSantaRunner(r))
             .map((r) => r.id)
         );
         setRegistrations((prev) => {
           const base = prev.length > 0 ? prev : getStoredRegistrations();
-          // Para Santa Run 2026 la nube es la fuente de verdad: si se borró en Firestore, quitar de local
+          // Para Santa Run Tarapoto y Rioja la nube es la fuente de verdad: si se borró en Firestore, quitar de local
           const cleanedBase = base.filter(
-            (r) => !(r.edition === 'santa-run-2026' || r.id?.startsWith('SR-')) || cloudSantaIds.has(r.id)
+            (r) => !isCloudSantaRunner(r) || cloudSantaIds.has(r.id)
           );
           const merged = mergeRegistrationsLists(cleanedBase, cloudRunners);
           try {
@@ -173,10 +229,10 @@ export const App: React.FC = () => {
           return merged;
         });
 
-        // Actualizar sesión o cerrar acceso si el corredor de Santa Run fue eliminado de la base de datos
+        // Actualizar sesión o cerrar acceso si el corredor fue eliminado de la base de datos
         const currentComp = activeCompetitorRef.current;
         if (currentComp) {
-          const isSantaComp = currentComp.edition === 'santa-run-2026' || currentComp.id?.startsWith('SR-');
+          const isSantaComp = isCloudSantaRunner(currentComp);
           const match = cloudRunners.find(
             (r) => r.id === currentComp.id || r.documentNumber === currentComp.documentNumber
           );
@@ -373,52 +429,80 @@ export const App: React.FC = () => {
       {/* 60 FPS Snowfall Particle System (Fixed, non-blocking, z-20) */}
       <SnowfallCanvas />
 
-      {/* Top Brand Notification Banner */}
-      <div className="bg-black border-b border-red-950/60 py-2.5 px-4 text-center text-xs font-mono tracking-wider uppercase text-neutral-300 relative z-40 flex items-center justify-center gap-2">
-        <span className="w-2 h-2 rounded-full bg-red-500 animate-ping shrink-0" />
-        <span className="text-white font-bold">🎅 OHANA GO PRESENTA: SANTA RUN TARAPOTO 2026 6K</span>
-        <span className="hidden sm:inline text-neutral-600">|</span>
-        <span className="hidden sm:inline text-amber-400 font-bold">SÁBADO 19 DE DICIEMBRE · CORRE Y REGALA SONRISAS</span>
-      </div>
+      {currentRoute === 'hub' ? (
+        <OhanaHubLanding
+          onSelectTarapoto={() => navigateToRoute('tarapoto')}
+          onSelectRioja={() => navigateToRoute('rioja')}
+          onOpenCompetitorLogin={handleCompetitorAccess}
+          onOpenAdmin={handleAdminAccess}
+          loggedInCompetitorName={
+            activeCompetitor ? `${activeCompetitor.firstName} ${activeCompetitor.lastName}` : null
+          }
+        />
+      ) : currentRoute === 'rioja' ? (
+        <RiojaEventPage
+          onBackToHub={() => navigateToRoute('hub')}
+          onSwitchToTarapoto={() => navigateToRoute('tarapoto')}
+          onRegistrationSuccess={handleRegistrationSuccess}
+          onOpenCompetitorLogin={handleCompetitorAccess}
+          onOpenAdmin={handleAdminAccess}
+          loggedInCompetitorName={
+            activeCompetitor ? `${activeCompetitor.firstName} ${activeCompetitor.lastName}` : null
+          }
+        />
+      ) : (
+        <>
+          {/* Top Brand Notification Banner */}
+          <div className="bg-black border-b border-red-950/60 py-2.5 px-4 text-center text-xs font-mono tracking-wider uppercase text-neutral-300 relative z-40 flex items-center justify-center gap-2">
+            <span className="text-white font-bold">🎅 OHANA GO PRESENTA: SANTA RUN TARAPOTO 2026 6K</span>
+            <span className="hidden sm:inline text-neutral-600">|</span>
+            <span className="hidden sm:inline text-amber-400 font-bold">
+              SÁBADO 19 DE DICIEMBRE · CORRE Y REGALA SONRISAS
+            </span>
+          </div>
 
-      {/* Main Navbar */}
-      <Navbar
-        onOpenAdmin={handleAdminAccess}
-        onOpenCompetitorLogin={handleCompetitorAccess}
-        onGoToSection={scrollToSection}
-        loggedInCompetitorName={activeCompetitor ? `${activeCompetitor.firstName} ${activeCompetitor.lastName}` : null}
-      />
+          {/* Main Navbar */}
+          <Navbar
+            onOpenAdmin={handleAdminAccess}
+            onOpenCompetitorLogin={handleCompetitorAccess}
+            onGoToSection={scrollToSection}
+            onGoHome={() => navigateToRoute('hub')}
+            onSwitchToRioja={() => navigateToRoute('rioja')}
+            loggedInCompetitorName={
+              activeCompetitor ? `${activeCompetitor.firstName} ${activeCompetitor.lastName}` : null
+            }
+          />
 
-      {/* Hero Section */}
-      <EventHero
-        registeredCount={registrations.length}
-        onRegisterClick={() => scrollToSection('formulario-registro')}
-        onExploreUpcoming={() => scrollToSection('ediciones')}
-        onOpenCompetitorLogin={handleCompetitorAccess}
-      />
+          {/* Hero Section */}
+          <EventHero
+            registeredCount={registrations.length}
+            onRegisterClick={() => scrollToSection('formulario-registro')}
+            onExploreUpcoming={() => scrollToSection('ediciones')}
+            onOpenCompetitorLogin={handleCompetitorAccess}
+          />
 
-      {/* Upcoming Race Teaser (Kit Oficial & Inversión S/ 70) */}
-      <UpcomingRaceTeaser
-        onRegisterClick={() => scrollToSection('formulario-registro')}
-      />
+          {/* Upcoming Race Teaser (Kit Oficial & Inversión S/ 70) */}
+          <UpcomingRaceTeaser
+            onRegisterClick={() => scrollToSection('formulario-registro')}
+          />
 
-      {/* Official Registration Form for Santa Run Tarapoto 2026 */}
-      <RegistrationForm
-        onRegistrationSuccess={handleRegistrationSuccess}
-        onOpenCompetitorLogin={handleCompetitorAccess}
-        onGoToRoute={() => scrollToSection('ediciones')}
-      />
+          {/* Official Registration Form for Santa Run Tarapoto 2026 */}
+          <RegistrationForm
+            onRegistrationSuccess={handleRegistrationSuccess}
+            onOpenCompetitorLogin={handleCompetitorAccess}
+            onGoToRoute={() => scrollToSection('ediciones')}
+          />
 
-      {/* Ohana Merch Section (Indumentaria oficial) */}
-      <OhanaMerchSection />
+          {/* Ohana Merch Section (Indumentaria oficial) */}
+          <OhanaMerchSection />
 
-      {/* Past Editions Archive (Preserva Halloween 5K y medalla conmemorativa) */}
-      <PastEditionsArchive
-        registrations={registrations}
-      />
+          {/* Past Editions Archive (Preserva Halloween 5K y medalla conmemorativa) */}
+          <PastEditionsArchive registrations={registrations} />
 
-      {/* Footer */}
-      <Footer onOpenAdmin={handleAdminAccess} />
+          {/* Footer */}
+          <Footer onOpenAdmin={handleAdminAccess} />
+        </>
+      )}
 
       {/* Registration Success Modal */}
       <RegistrationSuccessModal
@@ -481,6 +565,7 @@ export const App: React.FC = () => {
       {isAdminOpen && (
         <AdminDashboard
           registrations={registrations}
+          initialEdition={currentRoute === 'rioja' ? 'santa-run-rioja-2026' : 'santa-run-2026'}
           onUpdateRegistrations={(updated) => setRegistrations(updated)}
           onClose={() => setIsAdminOpen(false)}
           onLogout={() => setIsAdminOpen(false)}

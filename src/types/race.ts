@@ -57,8 +57,9 @@ export interface RunnerRegistration {
   finishedAtMeta?: boolean;
   finishCheckinTime?: string;
   medalDelivered?: boolean;
-  // Santa Run Tarapoto 2026 specific fields
-  edition?: 'santa-run-2026' | 'halloween-5k-2026';
+  // Santa Run 2026 (Tarapoto & Rioja) specific fields
+  edition?: 'santa-run-2026' | 'santa-run-rioja-2026' | 'halloween-5k-2026';
+  raceCategory?: 'Kids 2K' | 'Libre 5K' | '6K General';
   hasPreviousDiscount?: boolean;
   amountPaid?: number;
   turkeyRaffleTicket?: string;

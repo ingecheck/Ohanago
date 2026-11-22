@@ -11,6 +11,9 @@ import {
   cleanFirestoreData,
   saveRegistrationFirestore,
   deleteRegistrationEverywhere,
+  isRiojaRunner,
+  isTarapotoRunner,
+  isCloudSantaRunner,
 } from '../utils/checkinManager';
 import { resetAnalyticsSafe } from '../utils/analytics';
 import { doc, setDoc, getDoc, deleteField } from 'firebase/firestore';
@@ -93,6 +96,7 @@ interface AdminDashboardProps {
   onUpdateRegistrations: (updated: RunnerRegistration[]) => void;
   onClose: () => void;
   onLogout: () => void;
+  initialEdition?: 'santa-run-2026' | 'santa-run-rioja-2026';
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -100,12 +104,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onUpdateRegistrations,
   onClose,
   onLogout,
+  initialEdition = 'santa-run-2026',
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCheckin, setFilterCheckin] = useState<'all' | 'confirmed' | 'pending'>('all');
   const [filterPayment, setFilterPayment] = useState<'all' | 'verified' | 'pending'>('all');
-  const [filterEdition, setFilterEdition] = useState<'all' | 'santa-run-2026' | 'halloween-5k-2026'>('santa-run-2026');
+  const [filterEdition, setFilterEdition] = useState<
+    'all' | 'santa-run-2026' | 'santa-run-rioja-2026' | 'halloween-5k-2026'
+  >(initialEdition);
   const [showTurkeyLottery, setShowTurkeyLottery] = useState(false);
+
+  useEffect(() => {
+    setFilterEdition(initialEdition);
+  }, [initialEdition]);
 
   // Modals
   const [scannedRunnerModal, setScannedRunnerModal] = useState<RunnerRegistration | null>(null);
@@ -150,6 +161,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [editPhoneValue, setEditPhoneValue] = useState('');
   const [editAgeValue, setEditAgeValue] = useState('');
   const [editTShirtSizeValue, setEditTShirtSizeValue] = useState('M');
+  const [editRaceCategoryValue, setEditRaceCategoryValue] = useState<'Kids 2K' | 'Libre 5K'>('Libre 5K');
   const [editPaymentRefValue, setEditPaymentRefValue] = useState('');
   const [editPaymentStatusValue, setEditPaymentStatusValue] = useState<PaymentStatus>('No Verificado');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
@@ -162,6 +174,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setEditPhoneValue(runner.whatsapp || '');
     setEditAgeValue(runner.age ? String(runner.age) : '');
     setEditTShirtSizeValue(runner.tShirtSize || 'M');
+    setEditRaceCategoryValue(runner.raceCategory === 'Kids 2K' ? 'Kids 2K' : 'Libre 5K');
     setEditPaymentRefValue(runner.paymentReference || '');
     setEditPaymentStatusValue(runner.paymentStatus || 'No Verificado');
   };
@@ -171,12 +184,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     if (!editingRunner) return;
     setIsSavingEdit(true);
 
+    const editingIsRioja = isRiojaRunner(editingRunner);
     const newFirstName = editFirstNameValue.trim() || editingRunner.firstName;
     const newLastName = editLastNameValue.trim() || editingRunner.lastName;
     const newDni = editDniValue.trim();
     const newPhone = editPhoneValue.trim();
-    const newAge = Number(editAgeValue) || editingRunner.age || 25;
-    const newTShirtSize = editTShirtSizeValue || 'M';
+    const newAge = Number(editAgeValue) || editingRunner.age || (editingIsRioja && editRaceCategoryValue === 'Kids 2K' ? 10 : 25);
+    const newTShirtSize = editingIsRioja ? undefined : (editTShirtSizeValue || 'M');
+    const newRaceCategory = editingIsRioja ? editRaceCategoryValue : editingRunner.raceCategory;
+    const newAmountPaid = editingIsRioja
+      ? editRaceCategoryValue === 'Kids 2K'
+        ? 25.0
+        : 35.0
+      : editingRunner.amountPaid;
     const newPaymentRef = editPaymentRefValue.trim();
 
     const updatedRunner: RunnerRegistration = {
@@ -187,6 +207,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       whatsapp: newPhone,
       age: newAge,
       tShirtSize: newTShirtSize,
+      raceCategory: newRaceCategory,
+      amountPaid: newAmountPaid,
       paymentReference: newPaymentRef,
       paymentStatus: editPaymentStatusValue,
     };
@@ -215,6 +237,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           whatsapp: newPhone,
           age: newAge,
           tShirtSize: newTShirtSize,
+          raceCategory: newRaceCategory,
+          amountPaid: newAmountPaid,
           paymentReference: newPaymentRef,
           paymentStatus: editPaymentStatusValue,
         }),
@@ -280,7 +304,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const handleExportHalloweenAuditCSV = (filterMode: 'all' | 'pending' | 'qr-confirmed' = 'all') => {
-    let list = registrations.filter((r) => r.edition !== 'santa-run-2026' && !r.id.startsWith('SR-'));
+    let list = registrations.filter((r) => !isCloudSantaRunner(r));
     if (filterMode === 'pending') {
       list = list.filter((r) => !r.confirmedAtStart);
     } else if (filterMode === 'qr-confirmed') {
@@ -329,7 +353,56 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const handleExportSantaRunCSV = () => {
-    const list = registrations.filter((r) => r.edition === 'santa-run-2026' || r.id.startsWith('SR-'));
+    const exportingRioja = filterEdition === 'santa-run-rioja-2026';
+    const list = exportingRioja
+      ? registrations.filter(isRiojaRunner)
+      : registrations.filter(isTarapotoRunner);
+
+    if (exportingRioja) {
+      const headers = [
+        'N°',
+        'ID Santa Run Rioja',
+        'Nombres',
+        'Apellidos',
+        'DNI',
+        'WhatsApp',
+        'Categoría Rioja',
+        'Monto Inversión',
+        'Estado Pago',
+        'Kit Rioja',
+        'Fecha Registro',
+      ];
+      const rows = list.map((r, i) => {
+        const cat = r.raceCategory === 'Kids 2K' ? 'Kids 2K' : 'Libre 5K';
+        const price =
+          typeof r.amountPaid === 'number' && r.amountPaid > 0
+            ? r.amountPaid
+            : cat === 'Kids 2K'
+              ? 25
+              : 35;
+        return [
+          i + 1,
+          `"${r.id}"`,
+          `"${r.firstName.replace(/"/g, '""')}"`,
+          `"${r.lastName.replace(/"/g, '""')}"`,
+          `"${r.documentNumber}"`,
+          `"${r.whatsapp}"`,
+          `"${cat}"`,
+          `S/ ${price.toFixed(2)}`,
+          `"${r.paymentStatus || 'No Verificado'}"`,
+          r.confirmedAtStart ? 'ENTREGADO' : 'PENDIENTE',
+          r.createdAt ? `"${new Date(r.createdAt).toLocaleString('es-PE')}"` : '""',
+        ];
+      });
+      const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+      downloadFile(
+        `Ohana_SantaRunRioja2026_Inscripciones_${new Date().toISOString().slice(0, 10)}.csv`,
+        csvContent,
+        'text/csv;charset=utf-8;'
+      );
+      return;
+    }
+
     const headers = [
       'N°',
       'ID Santa Run',
@@ -340,28 +413,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       'Talla Polo',
       'Monto Inversión',
       'Descuento 15% Exclusivo',
+      'Estado Pago',
       'Kit Santa Run',
-      'Check-in QR',
-      'Fecha Registro'
+      'Fecha Registro',
     ];
 
-    const rows = list.map((r, i) => [
-      i + 1,
-      `"${r.id.startsWith('SR-') ? r.id : `SR-${r.id}`}"`,
-      `"${r.firstName.replace(/"/g, '""')}"`,
-      `"${r.lastName.replace(/"/g, '""')}"`,
-      `"${r.documentNumber}"`,
-      `"${r.whatsapp}"`,
-      `"${r.tShirtSize || 'M'}"`,
-      'S/ 70.00',
-      'SÍ (Corredor Ohana)',
-      r.confirmedAtStart ? 'ENTREGADO' : 'PENDIENTE',
-      r.confirmedAtStart ? 'CONFIRMADO' : 'PENDIENTE',
-      r.createdAt ? `"${new Date(r.createdAt).toLocaleString('es-PE')}"` : '""'
-    ]);
+    const rows = list.map((r, i) => {
+      const price =
+        typeof r.amountPaid === 'number' && r.amountPaid > 0
+          ? r.amountPaid
+          : r.hasPreviousDiscount
+            ? 59.5
+            : 70;
+      return [
+        i + 1,
+        `"${r.id.startsWith('SR-') ? r.id : `SR-${r.id}`}"`,
+        `"${r.firstName.replace(/"/g, '""')}"`,
+        `"${r.lastName.replace(/"/g, '""')}"`,
+        `"${r.documentNumber}"`,
+        `"${r.whatsapp}"`,
+        `"${r.tShirtSize || 'M'}"`,
+        `S/ ${price.toFixed(2)}`,
+        r.hasPreviousDiscount ? 'SÍ (Corredor Ohana)' : 'NO',
+        `"${r.paymentStatus || 'No Verificado'}"`,
+        r.confirmedAtStart ? 'ENTREGADO' : 'PENDIENTE',
+        r.createdAt ? `"${new Date(r.createdAt).toLocaleString('es-PE')}"` : '""',
+      ];
+    });
 
     const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
-    downloadFile(`Ohana_SantaRun2026_Inscripciones_${new Date().toISOString().slice(0, 10)}.csv`, csvContent, 'text/csv;charset=utf-8;');
+    downloadFile(
+      `Ohana_SantaRunTarapoto2026_Inscripciones_${new Date().toISOString().slice(0, 10)}.csv`,
+      csvContent,
+      'text/csv;charset=utf-8;'
+    );
   };
 
   const handleExportRunnersCSV = () => {
@@ -796,12 +881,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     try {
       const cloudList = await fetchRegistrationsFirestore();
       const cloudSantaIds = new Set(
-        cloudList
-          .filter((r) => r.edition === 'santa-run-2026' || r.id?.startsWith('SR-'))
-          .map((r) => r.id)
+        cloudList.filter(isCloudSantaRunner).map((r) => r.id)
       );
       mergedList = mergedList.filter(
-        (r) => !(r.edition === 'santa-run-2026' || r.id?.startsWith('SR-')) || cloudSantaIds.has(r.id)
+        (r) => !isCloudSantaRunner(r) || cloudSantaIds.has(r.id)
       );
       if (Array.isArray(cloudList) && cloudList.length > 0) {
         mergedList = mergeRegistrationsLists(mergedList, cloudList);
@@ -878,17 +961,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       });
     } catch (e) {}
 
-    // Real-time Cloud Firestore collection listener (adds new inscriptions + syncs payments, photos, deletions & check-ins)
+    // Real-time Cloud Firestore collection listener (adds new inscriptions + syncs payments, photos, deletions & check-ins for Tarapoto & Rioja)
     let unsubFirestore: (() => void) | null = null;
     try {
       unsubFirestore = subscribeToRegistrationsCollection((cloudRunners) => {
         const cloudSantaIds = new Set(
-          cloudRunners
-            .filter((r) => r.edition === 'santa-run-2026' || r.id?.startsWith('SR-'))
-            .map((r) => r.id)
+          cloudRunners.filter(isCloudSantaRunner).map((r) => r.id)
         );
         const currentList = getStoredRegistrations().filter(
-          (r) => !(r.edition === 'santa-run-2026' || r.id?.startsWith('SR-')) || cloudSantaIds.has(r.id)
+          (r) => !isCloudSantaRunner(r) || cloudSantaIds.has(r.id)
         );
         const updated = mergeRegistrationsLists(currentList, cloudRunners);
         onUpdateRegistrations(updated);
@@ -1013,20 +1094,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     });
   };
 
-  // Santa Run 2026 metrics
-  const santaRunRegistrations = registrations.filter((r) => r.edition === 'santa-run-2026' || r.id.startsWith('SR-'));
-  const santaTotalCount = santaRunRegistrations.length;
-  const santaKitsConfirmed = santaRunRegistrations.filter((r) => r.confirmedAtStart).length;
+  // Per-edition metrics (Tarapoto 2026, Rioja 2026, Halloween Archive)
+  const tarapotoRegistrations = registrations.filter(isTarapotoRunner);
+  const riojaRegistrations = registrations.filter(isRiojaRunner);
+  const halloweenRegistrations = registrations.filter((r) => !isCloudSantaRunner(r));
+  const combinedSantaCount = tarapotoRegistrations.length + riojaRegistrations.length;
+
+  const activeEditionRunners =
+    filterEdition === 'santa-run-rioja-2026'
+      ? riojaRegistrations
+      : filterEdition === 'santa-run-2026'
+        ? tarapotoRegistrations
+        : filterEdition === 'halloween-5k-2026'
+          ? halloweenRegistrations
+          : registrations;
+
+  const isViewingRioja = filterEdition === 'santa-run-rioja-2026';
+  const isViewingHalloween = filterEdition === 'halloween-5k-2026';
+  const santaTotalCount = activeEditionRunners.length;
+  const santaKitsConfirmed = activeEditionRunners.filter((r) => r.confirmedAtStart).length;
   const santaKitsPending = santaTotalCount - santaKitsConfirmed;
-  const santaPaymentsVerified = santaRunRegistrations.filter((r) => r.paymentStatus === 'Verificado').length;
+  const santaPaymentsVerified = activeEditionRunners.filter((r) => r.paymentStatus === 'Verificado').length;
   const santaPaymentsPending = santaTotalCount - santaPaymentsVerified;
-  const santaPhotosCount = santaRunRegistrations.filter(
+  const santaPhotosCount = activeEditionRunners.filter(
     (r) => !!(r.personalPhotoUrl || r.drivePhotoFileId || r.drivePhotoUrl)
   ).length;
-  const santaVouchersCount = santaRunRegistrations.filter(
+  const santaVouchersCount = activeEditionRunners.filter(
     (r) => !!(r.voucherUrl || r.paymentProofImage || r.driveVoucherFileId || r.driveVoucherUrl)
   ).length;
-  const santaDriveSyncedCount = santaRunRegistrations.filter((r) => !!(r.driveVoucherFileId || r.drivePhotoFileId)).length;
+  const santaDriveSyncedCount = activeEditionRunners.filter((r) => !!(r.driveVoucherFileId || r.drivePhotoFileId)).length;
 
   // General metrics calculation
   const totalCount = registrations.length;
@@ -1045,7 +1141,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       r.documentNumber.includes(query) ||
       r.whatsapp.includes(query) ||
       r.id.toLowerCase().includes(query) ||
-      r.city.toLowerCase().includes(query) ||
+      (r.city && r.city.toLowerCase().includes(query)) ||
+      (r.raceCategory && r.raceCategory.toLowerCase().includes(query)) ||
       (r.department && r.department.toLowerCase().includes(query));
 
     // Attendance checkin filter
@@ -1061,21 +1158,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       (filterPayment === 'verified' && isVerified) ||
       (filterPayment === 'pending' && !isVerified);
 
-    // Edition filter (Santa Run 2026 vs Halloween 5K)
-    const isSanta = r.edition === 'santa-run-2026' || r.id.startsWith('SR-');
+    // Edition filter (Tarapoto 2026 vs Rioja 2026 vs Halloween Archive)
     const matchEdition =
       filterEdition === 'all' ||
-      (filterEdition === 'santa-run-2026' && isSanta) ||
-      (filterEdition === 'halloween-5k-2026' && !isSanta);
+      (filterEdition === 'santa-run-2026' && isTarapotoRunner(r)) ||
+      (filterEdition === 'santa-run-rioja-2026' && isRiojaRunner(r)) ||
+      (filterEdition === 'halloween-5k-2026' && !isCloudSantaRunner(r));
 
     return matchSearch && matchCheckin && matchPayment && matchEdition;
   });
 
-  // Sort registrations so Santa Run entries appear first, and within each edition newest entries appear first
+  // Sort registrations so active Santa Run entries appear first, newest on top
   const sortedRegistrations = [...filteredRegistrations].sort((a, b) => {
-    const isSantaA = a.edition === 'santa-run-2026' || a.id.startsWith('SR-');
-    const isSantaB = b.edition === 'santa-run-2026' || b.id.startsWith('SR-');
-    if (isSantaA !== isSantaB) return isSantaA ? -1 : 1;
+    const isCloudA = isCloudSantaRunner(a);
+    const isCloudB = isCloudSantaRunner(b);
+    if (isCloudA !== isCloudB) return isCloudA ? -1 : 1;
 
     const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
     const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -1110,7 +1207,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-neutral-400 mt-0.5 hidden md:block">
-                Tarapoto • {santaTotalCount} atletas inscritos en Santa Run Tarapoto 2026
+                Tarapoto: <strong className="text-red-400">{tarapotoRegistrations.length}</strong> · Rioja:{' '}
+                <strong className="text-amber-400">{riojaRegistrations.length}</strong> inscritos en vivo
               </p>
             </div>
           </div>
@@ -1224,7 +1322,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               }`}
             >
               <Users className="w-4 h-4" />
-              <span>Control de Atletas ({santaTotalCount})</span>
+              <span>Control de Atletas ({combinedSantaCount})</span>
             </button>
 
             <button
@@ -1285,24 +1383,98 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             isLoading={isLoadingAnalytics}
             onRefresh={loadAnalytics}
             onResetAnalytics={handleResetAnalytics}
+            initialEdition={filterEdition === 'santa-run-rioja-2026' ? 'santa-run-rioja-2026' : 'santa-run-2026'}
           />
         ) : (
           <>
+            {/* 3-Way Sede Switcher Bar (Tarapoto 2026 | Rioja 2026 | Archivo Halloween) */}
+            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-2.5 flex flex-wrap items-center justify-between gap-2.5 shadow-lg">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFilterEdition('santa-run-2026')}
+                  className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center gap-2 cursor-pointer border ${
+                    filterEdition === 'santa-run-2026'
+                      ? 'bg-red-600 text-white border-red-400 shadow-lg shadow-red-600/30'
+                      : 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:text-white hover:border-neutral-700'
+                  }`}
+                >
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>Santa Run Tarapoto ({tarapotoRegistrations.length})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFilterEdition('santa-run-rioja-2026')}
+                  className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition flex items-center gap-2 cursor-pointer border ${
+                    filterEdition === 'santa-run-rioja-2026'
+                      ? 'bg-amber-500 text-neutral-950 border-amber-300 shadow-lg shadow-amber-500/25'
+                      : 'bg-neutral-950 text-neutral-400 border-neutral-800 hover:text-amber-300 hover:border-amber-500/40'
+                  }`}
+                >
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>Santa Run Rioja ({riojaRegistrations.length})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFilterEdition('halloween-5k-2026')}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition flex items-center gap-1.5 cursor-pointer border ${
+                    filterEdition === 'halloween-5k-2026'
+                      ? 'bg-neutral-700 text-white border-neutral-500'
+                      : 'bg-neutral-950 text-neutral-500 border-neutral-800 hover:text-neutral-300'
+                  }`}
+                >
+                  <span>Archivo Halloween ({halloweenRegistrations.length})</span>
+                </button>
+              </div>
+
+              <div className="text-[11px] font-mono text-neutral-400 px-2">
+                {isViewingRioja
+                  ? 'Sede activa: Rioja · Dom 20 Dic · Kids 2K (S/ 25) & Libre 5K (S/ 35)'
+                  : isViewingHalloween
+                    ? 'Archivo histórico Halloween 5K'
+                    : 'Sede activa: Tarapoto · Sáb 19 Dic · 6K (S/ 70 / S/ 59.50)'}
+              </div>
+            </div>
+
             {/* High-Impact Athletic Metric Summary Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-              {/* Santa Run 2026 Inscriptions in Red */}
-              <div className="bg-neutral-900 p-4 sm:p-5 rounded-2xl border-2 border-red-500/60 shadow-lg shadow-red-500/10">
-                <span className="text-[10px] uppercase font-bold text-red-400 block flex items-center gap-1.5">
-                  <Gift className="w-3.5 h-3.5 text-red-400" />
-                  🎅 Santa Run 2026
+              {/* Active Sede Inscriptions */}
+              <div
+                className={`bg-neutral-900 p-4 sm:p-5 rounded-2xl border-2 shadow-lg ${
+                  isViewingRioja
+                    ? 'border-amber-500/60 shadow-amber-500/10'
+                    : 'border-red-500/60 shadow-red-500/10'
+                }`}
+              >
+                <span
+                  className={`text-[10px] uppercase font-bold block flex items-center gap-1.5 ${
+                    isViewingRioja ? 'text-amber-400' : 'text-red-400'
+                  }`}
+                >
+                  <Gift className={`w-3.5 h-3.5 ${isViewingRioja ? 'text-amber-400' : 'text-red-400'}`} />
+                  {isViewingRioja
+                    ? 'Santa Run Rioja 2026'
+                    : isViewingHalloween
+                      ? 'Archivo Halloween 5K'
+                      : 'Santa Run Tarapoto 2026'}
                 </span>
                 <div className="flex items-baseline gap-1.5 mt-1">
-                  <span className="font-bebas text-3xl sm:text-4xl text-red-500">{santaTotalCount}</span>
-                  <span className="text-[11px] text-neutral-400">inscritos (S/ 70)</span>
+                  <span
+                    className={`font-bebas text-3xl sm:text-4xl ${
+                      isViewingRioja ? 'text-amber-400' : 'text-red-500'
+                    }`}
+                  >
+                    {santaTotalCount}
+                  </span>
+                  <span className="text-[11px] text-neutral-400">
+                    {isViewingRioja ? 'inscritos (S/ 25 · S/ 35)' : isViewingHalloween ? 'registros' : 'inscritos (S/ 70)'}
+                  </span>
                 </div>
                 <div className="text-[10px] text-neutral-400 mt-1 flex items-center justify-between border-t border-neutral-800 pt-1">
                   <span>Kits entregados:</span>
-                  <span className="text-red-400 font-mono font-bold">
+                  <span className={`${isViewingRioja ? 'text-amber-400' : 'text-red-400'} font-mono font-bold`}>
                     {santaKitsConfirmed} / {santaTotalCount} ({santaKitsPending} pend.)
                   </span>
                 </div>
@@ -1700,8 +1872,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <th className="py-3.5 px-3">N°</th>
                   <th className="py-3.5 px-3">Atleta & ID Oficial</th>
                   <th className="py-3.5 px-3">DNI & Celular</th>
-                  <th className="py-3.5 px-3">Polo & Kit Navideño</th>
-                  <th className="py-3.5 px-3">Inversión & Sorteo Pavo</th>
+                  <th className="py-3.5 px-3">{isViewingRioja ? 'Categoría & Kit Rioja' : 'Polo & Kit Navideño'}</th>
+                  <th className="py-3.5 px-3">{isViewingRioja ? 'Inversión & Alianza' : 'Inversión & Sorteo Pavo'}</th>
                   <th className="py-3.5 px-3 text-right">Edición / Registro</th>
                 </tr>
               </thead>
@@ -1714,8 +1886,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </tr>
                 ) : (
                   sortedRegistrations.map((runner, index) => {
-                    const isSanta = runner.edition === 'santa-run-2026' || runner.id.startsWith('SR-');
+                    const runnerIsRioja = isRiojaRunner(runner);
+                    const runnerIsTarapoto = isTarapotoRunner(runner);
                     const isRunVirtual = runner.modality === 'Virtual';
+                    const riojaPrice = runner.raceCategory === 'Kids 2K' ? 25.0 : 35.0;
+                    const displayAmount = runner.amountPaid
+                      ? Number(runner.amountPaid).toFixed(2)
+                      : runnerIsRioja
+                        ? riojaPrice.toFixed(2)
+                        : runnerIsTarapoto
+                          ? (runner.hasPreviousDiscount ? '59.50' : '70.00')
+                          : '50.00';
+
                     return (
                       <tr key={runner.id} className="hover:bg-neutral-800/50 transition">
                         {/* Correlative index */}
@@ -1723,13 +1905,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           {index + 1}
                         </td>
 
-                        {/* Participant Name & Red IDs for Santa Run */}
+                        {/* Participant Name & Official IDs */}
                         <td className="py-3.5 px-3">
                           <div className="font-bold text-white text-sm">
                             {runner.firstName} {runner.lastName}
                           </div>
                           <div className="text-[11px] text-neutral-400 flex flex-wrap items-center gap-1.5 mt-0.5">
-                            {isSanta ? (
+                            {runnerIsRioja ? (
+                              <span className="font-mono text-xs font-black px-2 py-0.5 rounded bg-amber-950/90 text-amber-300 border border-amber-500/50 shadow-sm">
+                                {runner.id}
+                              </span>
+                            ) : runnerIsTarapoto ? (
                               <span className="font-mono text-xs font-black px-2 py-0.5 rounded bg-red-950/90 text-red-400 border border-red-500/50 shadow-sm">
                                 {runner.id.startsWith('SR-') ? runner.id : `SR-${runner.id}`}
                               </span>
@@ -1784,16 +1970,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           </div>
                         </td>
 
-                        {/* Talla Polo & Kit Navideño */}
+                        {/* Talla Polo / Categoría Rioja & Kit Navideño */}
                         <td className="py-3.5 px-3">
-                          <div className="flex items-center gap-1.5">
-                            <span className="px-2 py-0.5 rounded bg-neutral-800 text-white font-mono font-bold text-xs border border-neutral-700">
-                              Polo: {runner.tShirtSize || 'M'}
-                            </span>
-                            {isSanta && (
-                              <span className="text-[10px] text-red-300 bg-red-950/80 px-1.5 py-0.5 rounded border border-red-500/40">
-                                + Gorra + Mochila
-                              </span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {runnerIsRioja ? (
+                              <>
+                                <span className="px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 font-mono font-bold text-xs border border-amber-500/50">
+                                  {runner.raceCategory === 'Kids 2K' ? 'Kids 2K' : 'Libre 5K'}
+                                </span>
+                                <span className="text-[10px] text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded border border-neutral-700">
+                                  + Kit Rioja & Show
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="px-2 py-0.5 rounded bg-neutral-800 text-white font-mono font-bold text-xs border border-neutral-700">
+                                  Polo: {runner.tShirtSize || 'M'}
+                                </span>
+                                {runnerIsTarapoto && (
+                                  <span className="text-[10px] text-red-300 bg-red-950/80 px-1.5 py-0.5 rounded border border-red-500/40">
+                                    + Gorra + Mochila
+                                  </span>
+                                )}
+                              </>
                             )}
                           </div>
                           <div className="mt-1">
@@ -1819,20 +2018,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           </div>
                         </td>
 
-                        {/* Inversión & Ticket Sorteo Pavo & Voucher */}
+                        {/* Inversión & Ticket / Alianza & Voucher */}
                         <td className="py-3.5 px-3">
                           <div className="flex items-center gap-1.5">
                             <span className="font-bold text-white text-xs">
-                              {runner.amountPaid ? `S/ ${Number(runner.amountPaid).toFixed(2)}` : (isSanta ? 'S/ 70.00' : 'S/ 50.00')}
+                              S/ {displayAmount}
                             </span>
-                            {runner.hasPreviousDiscount && (
+                            {runner.hasPreviousDiscount && !runnerIsRioja && (
                               <span className="text-[9px] bg-red-950 text-red-300 px-1.5 py-0.2 rounded border border-red-500/40 font-bold">
                                 15% OHANA
                               </span>
                             )}
                           </div>
                           <div className="text-[11px] text-amber-400 font-mono mt-0.5 flex items-center gap-1">
-                            {isSanta ? (
+                            {runnerIsRioja ? (
+                              <span className="text-amber-300">Alianza Sacha Runners</span>
+                            ) : runnerIsTarapoto ? (
                               <span>🦃 {runner.turkeyRaffleTicket || `PAVO-${String(runner.registrationNumber || 1).padStart(4, '0')}`}</span>
                             ) : (
                               <span className="text-neutral-400">Método: {runner.paymentMethod || 'Yape'}</span>
@@ -1874,7 +2075,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               </button>
                             ) : (
                               <a
-                                href={`https://wa.me/51${runner.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Hola ${runner.firstName}, te saludamos de la organización de Santa Run Tarapoto 2026. Por favor envíanos la captura de tu voucher Yape para validar tu inscripción oficial.`)}`}
+                                href={`https://wa.me/51${runner.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(
+                                  runnerIsRioja
+                                    ? `Hola ${runner.firstName}, te saludamos de la organización de Santa Run Rioja 2026 (OHANA GO & Sacha Runners). Por favor envíanos la captura de tu voucher Yape para validar tu inscripción oficial.`
+                                    : `Hola ${runner.firstName}, te saludamos de la organización de Santa Run Tarapoto 2026. Por favor envíanos la captura de tu voucher Yape para validar tu inscripción oficial.`
+                                )}`}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="inline-flex items-center gap-1 text-[10px] text-neutral-400 hover:text-amber-300 font-mono transition"
@@ -1904,9 +2109,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         {/* Edición / Registro */}
                         <td className="py-3.5 px-3 text-right">
                           <div>
-                            {isSanta ? (
+                            {runnerIsRioja ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-amber-950/90 text-amber-300 border border-amber-500/50 shadow-sm">
+                                Santa Run Rioja
+                              </span>
+                            ) : runnerIsTarapoto ? (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-red-950/80 text-red-400 border border-red-500/40 shadow-sm">
-                                🎅 Santa Run
+                                Santa Run Tarapoto
                               </span>
                             ) : isRunVirtual ? (
                               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-neutral-800 text-neutral-300 border border-neutral-700">
@@ -2328,7 +2537,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </label>
                   <input
                     type="number"
-                    min={10}
+                    min={3}
                     max={95}
                     value={editAgeValue}
                     onChange={(e) => setEditAgeValue(e.target.value)}
@@ -2336,22 +2545,38 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[10px] uppercase font-bold text-neutral-400 mb-1">
-                    Talla de Polo
-                  </label>
-                  <select
-                    value={editTShirtSizeValue}
-                    onChange={(e) => setEditTShirtSizeValue(e.target.value)}
-                    className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2.5 text-white font-bold text-sm focus:outline-none focus:border-red-500"
-                  >
-                    <option value="S">S</option>
-                    <option value="M">M</option>
-                    <option value="L">L</option>
-                    <option value="XL">XL</option>
-                    <option value="XXL">XXL</option>
-                  </select>
-                </div>
+                {isRiojaRunner(editingRunner) ? (
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-amber-400 mb-1">
+                      Categoría Rioja
+                    </label>
+                    <select
+                      value={editRaceCategoryValue}
+                      onChange={(e) => setEditRaceCategoryValue(e.target.value as 'Kids 2K' | 'Libre 5K')}
+                      className="w-full bg-neutral-950 border border-amber-500/50 rounded-xl px-3 py-2.5 text-white font-bold text-sm focus:outline-none focus:border-amber-400"
+                    >
+                      <option value="Kids 2K">Kids 2K (S/ 25)</option>
+                      <option value="Libre 5K">Libre 5K (S/ 35)</option>
+                    </select>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-[10px] uppercase font-bold text-neutral-400 mb-1">
+                      Talla de Polo
+                    </label>
+                    <select
+                      value={editTShirtSizeValue}
+                      onChange={(e) => setEditTShirtSizeValue(e.target.value)}
+                      className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2.5 text-white font-bold text-sm focus:outline-none focus:border-red-500"
+                    >
+                      <option value="S">S</option>
+                      <option value="M">M</option>
+                      <option value="L">L</option>
+                      <option value="XL">XL</option>
+                      <option value="XXL">XXL</option>
+                    </select>
+                  </div>
+                )}
 
                 <div className="col-span-2 sm:col-span-1">
                   <label className="block text-[10px] uppercase font-bold text-neutral-400 mb-1">

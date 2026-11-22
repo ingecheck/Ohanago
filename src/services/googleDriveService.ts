@@ -351,13 +351,15 @@ export function formatRunnerNumberTag(runner: RunnerRegistration): string {
 export function buildVoucherDriveFileName(runner: RunnerRegistration): string {
   const personName = buildRunnerPersonName(runner);
   const numTag = formatRunnerNumberTag(runner);
-  return `${personName} - Yape - ${numTag}`;
+  const isRioja = runner.edition === 'santa-run-rioja-2026' || runner.id?.startsWith('SRR-');
+  return isRioja ? `${personName} - Yape Rioja - ${numTag}` : `${personName} - Yape - ${numTag}`;
 }
 
 export function buildPhotoDriveFileName(runner: RunnerRegistration): string {
   const personName = buildRunnerPersonName(runner);
   const numTag = formatRunnerNumberTag(runner);
-  return `${personName} - Foto - ${numTag}`;
+  const isRioja = runner.edition === 'santa-run-rioja-2026' || runner.id?.startsWith('SRR-');
+  return isRioja ? `${personName} - Foto Rioja - ${numTag}` : `${personName} - Foto - ${numTag}`;
 }
 
 export async function uploadFileToDriveFolder(params: {

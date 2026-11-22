@@ -1,6 +1,21 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { RunnerRegistration } from '../types/race';
-import { Printer, Share2, CheckCircle2, Clock, QrCode, Award, Droplets, Sparkles, Gift, ArrowLeft, Shirt, ShoppingBag } from 'lucide-react';
+import { isRiojaRunner } from '../utils/checkinManager';
+import {
+  Printer,
+  Share2,
+  CheckCircle2,
+  Clock,
+  QrCode,
+  Award,
+  Droplets,
+  Sparkles,
+  Gift,
+  ArrowLeft,
+  Shirt,
+  ShoppingBag,
+  Coffee,
+} from 'lucide-react';
 import QRCode from 'qrcode';
 
 interface DigitalBibProps {
@@ -16,6 +31,7 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [bibQrUrl, setBibQrUrl] = useState<string | null>(null);
+  const isRioja = isRiojaRunner(registration);
 
   useEffect(() => {
     // Generate real scannable QR code containing universal verification URL
@@ -35,18 +51,30 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({
   };
 
   const handleShareWhatsApp = () => {
-    const text = encodeURIComponent(
-      `¡Ya tengo mi Pase Oficial para la SANTA RUN TARAPOTO 2026 con OHANA GO! 🎅🏃‍♂️💨\n\n` +
-      `Código de Registro: ${registration.id}\n` +
-      `Participante: ${registration.firstName} ${registration.lastName}\n` +
-      `DNI: ${registration.documentNumber}\n` +
-      `Fecha: Sábado 19 de Diciembre 2026\n` +
-      `Horario: 7:00 P.M. (Partida Nocturna)\n` +
-      `Partida: Aviación\n` +
-      `Llegada: Concha Acústica\n` +
-      `Kit Incluido: Medalla Finisher Oficial 6K + Polo Oficial + Gorra Santa + Mochila + Pulsera + Sorteo de Pavo 🦃\n\n` +
-      `Consulta tu pase oficial en: https://ohanago.pro`
-    );
+    const text = isRioja
+      ? encodeURIComponent(
+          `¡Ya tengo mi Pase Oficial para la SANTA RUN RIOJA 2026 con OHANA GO & Sacha Runners! 🎅🏃‍♂️\n\n` +
+            `Código de Registro: ${registration.id}\n` +
+            `Categoría: ${registration.raceCategory || 'Libre 5K'}\n` +
+            `Participante: ${registration.firstName} ${registration.lastName}\n` +
+            `DNI: ${registration.documentNumber}\n` +
+            `Fecha: Domingo 20 de Diciembre 2026 · 7:30 a. m.\n` +
+            `Llegada: Don Diogo\n` +
+            `Kit Incluido: Medalla Finisher + Gorra Navideña + Hidratación + Panetón + Chocolate + Pulsera + Show Infantil\n\n` +
+            `Inscríbete en: https://ohanago.pro/santarunrioja`
+        )
+      : encodeURIComponent(
+          `¡Ya tengo mi Pase Oficial para la SANTA RUN TARAPOTO 2026 con OHANA GO! 🎅🏃‍♂️💨\n\n` +
+            `Código de Registro: ${registration.id}\n` +
+            `Participante: ${registration.firstName} ${registration.lastName}\n` +
+            `DNI: ${registration.documentNumber}\n` +
+            `Fecha: Sábado 19 de Diciembre 2026\n` +
+            `Horario: 7:00 P.M. (Partida Nocturna)\n` +
+            `Partida: Aviación\n` +
+            `Llegada: Concha Acústica\n` +
+            `Kit Incluido: Medalla Finisher Oficial 6K + Polo Oficial + Gorra Santa + Mochila + Pulsera + Sorteo de Pavo 🦃\n\n` +
+            `Consulta tu pase oficial en: https://ohanago.pro/santaruntarapoto`
+        );
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
 
@@ -69,20 +97,22 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({
                 OHANA <span className="text-red-500 font-extrabold">GO</span>
               </span>
               <span className="bg-red-600 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-sm font-mono shadow-sm">
-                🎅 SANTA RUN
+                {isRioja ? 'RIOJA × SACHA' : '🎅 SANTA RUN'}
               </span>
             </div>
             <p className="text-[10px] font-bold tracking-wider uppercase text-neutral-400">
-              PASE OFICIAL DE PARTICIPANTE • TARAPOTO 2026
+              {isRioja
+                ? 'PASE OFICIAL DE PARTICIPANTE • RIOJA 2026'
+                : 'PASE OFICIAL DE PARTICIPANTE • TARAPOTO 2026'}
             </p>
           </div>
 
           <div className="text-right">
             <span className="inline-block bg-red-600 text-white font-bebas text-lg px-2.5 py-0.5 rounded-lg tracking-wider font-extrabold shadow-md">
-              19 DIC
+              {isRioja ? '20 DIC' : '19 DIC'}
             </span>
             <div className="text-[9px] font-bold text-neutral-400 uppercase mt-0.5">
-              7:00 P.M.
+              {isRioja ? '7:30 A.M.' : '7:00 P.M.'}
             </div>
           </div>
         </div>
@@ -98,10 +128,16 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({
           <div className="text-xs font-mono text-amber-400 font-bold mt-1">
             {registration.documentType}: {registration.documentNumber}
           </div>
-          {registration.tShirtSize && (
-            <div className="text-xs text-neutral-400 uppercase tracking-wider mt-0.5 font-medium">
-              Talla Polo Oficial: <strong className="text-white">{registration.tShirtSize}</strong>
+          {isRioja ? (
+            <div className="text-xs text-amber-300 uppercase tracking-wider mt-1 font-bold">
+              Categoría: <strong className="text-white">{registration.raceCategory || 'Libre 5K'}</strong>
             </div>
+          ) : (
+            registration.tShirtSize && (
+              <div className="text-xs text-neutral-400 uppercase tracking-wider mt-0.5 font-medium">
+                Talla Polo Oficial: <strong className="text-white">{registration.tShirtSize}</strong>
+              </div>
+            )
           )}
         </div>
 
@@ -115,11 +151,13 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({
               {registration.id}
             </span>
           </div>
-          <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-3 py-1 rounded-full ${
-            registration.paymentStatus === 'Verificado'
-              ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40'
-              : 'bg-amber-950 text-amber-400 border border-amber-500/40'
-          }`}>
+          <span
+            className={`inline-flex items-center gap-1 text-[11px] font-bold px-3 py-1 rounded-full ${
+              registration.paymentStatus === 'Verificado'
+                ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40'
+                : 'bg-amber-950 text-amber-400 border border-amber-500/40'
+            }`}
+          >
             {registration.paymentStatus === 'Verificado' ? (
               <CheckCircle2 className="w-3.5 h-3.5" />
             ) : (
@@ -130,48 +168,94 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({
         </div>
 
         {/* Event Logistics & Included Benefits */}
-        <div className="space-y-2 mb-4 text-xs text-neutral-300 bg-slate-950/70 p-3 rounded-2xl border border-white/10">
-          <div className="flex items-center justify-between">
-            <span className="text-neutral-400">Partida:</span>
-            <span className="text-white font-bold">Aviación (7:00 PM)</span>
+        {isRioja ? (
+          <div className="space-y-2 mb-4 text-xs text-neutral-300 bg-slate-950/70 p-3 rounded-2xl border border-white/10">
+            <div className="flex items-center justify-between">
+              <span className="text-neutral-400">Horario:</span>
+              <span className="text-white font-bold">Domingo 20 Dic · 7:30 a. m.</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-neutral-400">Llegada:</span>
+              <span className="text-amber-400 font-bold">Don Diogo · Rioja</span>
+            </div>
+            <div className="flex items-center justify-between pt-1 border-t border-white/10 text-[11px]">
+              <span className="text-red-400 font-bold">Alianza Oficial:</span>
+              <span className="text-white font-medium">Sacha Runners · Show Infantil</span>
+            </div>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-neutral-400">Llegada:</span>
-            <span className="text-red-400 font-bold">Concha Acústica</span>
+        ) : (
+          <div className="space-y-2 mb-4 text-xs text-neutral-300 bg-slate-950/70 p-3 rounded-2xl border border-white/10">
+            <div className="flex items-center justify-between">
+              <span className="text-neutral-400">Partida:</span>
+              <span className="text-white font-bold">Aviación (7:00 PM)</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-neutral-400">Llegada:</span>
+              <span className="text-red-400 font-bold">Concha Acústica</span>
+            </div>
+            <div className="flex items-center justify-between pt-1 border-t border-white/10 text-[11px]">
+              <span className="text-amber-400 font-bold">🦃 Sorteo Especial:</span>
+              <span className="text-white font-medium">Pavo Navideño con tu DNI</span>
+            </div>
           </div>
-          <div className="flex items-center justify-between pt-1 border-t border-white/10 text-[11px]">
-            <span className="text-amber-400 font-bold">🦃 Sorteo Especial:</span>
-            <span className="text-white font-medium">Pavo Navideño con tu DNI</span>
-          </div>
-        </div>
+        )}
 
         {/* Included benefits icons bar */}
-        <div className="grid grid-cols-6 gap-1 py-2 text-center text-[8px] text-neutral-300 border-t border-white/10">
-          <div className="flex flex-col items-center">
-            <Award className="w-3.5 h-3.5 text-amber-400 mb-0.5" />
-            <span>Medalla</span>
+        {isRioja ? (
+          <div className="grid grid-cols-6 gap-1 py-2 text-center text-[8px] text-neutral-300 border-t border-white/10">
+            <div className="flex flex-col items-center">
+              <Award className="w-3.5 h-3.5 text-amber-400 mb-0.5" />
+              <span>Medalla</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <Sparkles className="w-3.5 h-3.5 text-rose-400 mb-0.5" />
+              <span>Gorra</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <Droplets className="w-3.5 h-3.5 text-cyan-400 mb-0.5" />
+              <span>Hidratación</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <Gift className="w-3.5 h-3.5 text-amber-300 mb-0.5" />
+              <span>Panetón</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <Coffee className="w-3.5 h-3.5 text-orange-400 mb-0.5" />
+              <span>Chocolate</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 mb-0.5" />
+              <span>Pulsera</span>
+            </div>
           </div>
-          <div className="flex flex-col items-center">
-            <Droplets className="w-3.5 h-3.5 text-cyan-400 mb-0.5" />
-            <span>Hidratación</span>
+        ) : (
+          <div className="grid grid-cols-6 gap-1 py-2 text-center text-[8px] text-neutral-300 border-t border-white/10">
+            <div className="flex flex-col items-center">
+              <Award className="w-3.5 h-3.5 text-amber-400 mb-0.5" />
+              <span>Medalla</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <Droplets className="w-3.5 h-3.5 text-cyan-400 mb-0.5" />
+              <span>Hidratación</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <Shirt className="w-3.5 h-3.5 text-red-400 mb-0.5" />
+              <span>Polo</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <Sparkles className="w-3.5 h-3.5 text-rose-400 mb-0.5" />
+              <span>Gorro</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <ShoppingBag className="w-3.5 h-3.5 text-emerald-400 mb-0.5" />
+              <span>Mochila</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <CheckCircle2 className="w-3.5 h-3.5 text-amber-300 mb-0.5" />
+              <span>Pulsera</span>
+            </div>
           </div>
-          <div className="flex flex-col items-center">
-            <Shirt className="w-3.5 h-3.5 text-red-400 mb-0.5" />
-            <span>Polo</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <Sparkles className="w-3.5 h-3.5 text-rose-400 mb-0.5" />
-            <span>Gorro</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <ShoppingBag className="w-3.5 h-3.5 text-emerald-400 mb-0.5" />
-            <span>Mochila</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <CheckCircle2 className="w-3.5 h-3.5 text-amber-300 mb-0.5" />
-            <span>Pulsera</span>
-          </div>
-        </div>
+        )}
 
         {/* Bottom Bar: QR Code & Verification */}
         <div className="flex items-center justify-between pt-3 border-t border-white/10">
@@ -180,7 +264,9 @@ export const DigitalBib: React.FC<DigitalBibProps> = ({
               Válido para Acreditación & Kit
             </span>
             <span className="text-[9px] text-neutral-400">
-              Escanea este QR con el personal en Aviación
+              {isRioja
+                ? 'Presenta este QR en la acreditación de Santa Run Rioja'
+                : 'Escanea este QR con el personal en Aviación'}
             </span>
           </div>
           <div className="w-12 h-12 bg-white text-black rounded-xl p-0.5 flex items-center justify-center overflow-hidden border border-red-500/50 shadow-sm">

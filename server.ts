@@ -433,21 +433,52 @@ app.get('/api/registrations', (req, res) => {
 app.post('/api/registrations', (req, res) => {
   const current = readJSON<any[]>(REGISTRATIONS_FILE, []);
   const newRunner = req.body;
-  const isSanta = newRunner.edition === 'santa-run-2026' || !newRunner.edition || (newRunner.id && newRunner.id.startsWith('SR-'));
-  const edition = isSanta ? 'santa-run-2026' : (newRunner.edition || 'halloween-5k-2026');
+  const isRioja =
+    newRunner.edition === 'santa-run-rioja-2026' ||
+    (newRunner.id && String(newRunner.id).startsWith('SRR-'));
+  const isSantaTarapoto =
+    !isRioja &&
+    (newRunner.edition === 'santa-run-2026' ||
+      !newRunner.edition ||
+      (newRunner.id && String(newRunner.id).startsWith('SR-')));
+  const edition = isRioja
+    ? 'santa-run-rioja-2026'
+    : isSantaTarapoto
+      ? 'santa-run-2026'
+      : newRunner.edition || 'halloween-5k-2026';
 
-  const santaRunners = current.filter((r: any) => r.edition === 'santa-run-2026' || (r.id && r.id.startsWith('SR-')));
-  const nextSantaNum = santaRunners.length > 0
-    ? Math.max(...santaRunners.map((r: any) => r.registrationNumber || 0)) + 1
-    : 1;
+  const riojaRunners = current.filter(
+    (r: any) => r.edition === 'santa-run-rioja-2026' || (r.id && String(r.id).startsWith('SRR-'))
+  );
+  const nextRiojaNum =
+    riojaRunners.length > 0
+      ? Math.max(...riojaRunners.map((r: any) => r.registrationNumber || 0)) + 1
+      : 1;
 
-  const nextNum = current.length > 0
-    ? Math.max(...current.map((r: any) => r.registrationNumber || r.bibNumber || 0)) + 1
-    : 1;
+  const santaRunners = current.filter(
+    (r: any) =>
+      r.edition === 'santa-run-2026' ||
+      (r.id && String(r.id).startsWith('SR-') && !String(r.id).startsWith('SRR-'))
+  );
+  const nextSantaNum =
+    santaRunners.length > 0
+      ? Math.max(...santaRunners.map((r: any) => r.registrationNumber || 0)) + 1
+      : 1;
 
-  const newId = isSanta
-    ? (newRunner.id && newRunner.id.startsWith('SR-') ? newRunner.id : `SR-2026-${String(nextSantaNum).padStart(4, '0')}`)
-    : (newRunner.id || `OHA-2026-${String(nextNum).padStart(4, '0')}`);
+  const nextNum =
+    current.length > 0
+      ? Math.max(...current.map((r: any) => r.registrationNumber || r.bibNumber || 0)) + 1
+      : 1;
+
+  const newId = isRioja
+    ? newRunner.id && String(newRunner.id).startsWith('SRR-')
+      ? newRunner.id
+      : `SRR-2026-${String(nextRiojaNum).padStart(4, '0')}`
+    : isSantaTarapoto
+      ? newRunner.id && String(newRunner.id).startsWith('SR-')
+        ? newRunner.id
+        : `SR-2026-${String(nextSantaNum).padStart(4, '0')}`
+      : newRunner.id || `OHA-2026-${String(nextNum).padStart(4, '0')}`;
 
   const fullRunnerName = `${newRunner.firstName || ''} ${newRunner.lastName || ''}`.trim();
 
@@ -455,9 +486,11 @@ app.post('/api/registrations', (req, res) => {
   const resolvedRegNum =
     typeof newRunner.registrationNumber === 'number' && newRunner.registrationNumber > 0
       ? newRunner.registrationNumber
-      : isSanta
-        ? nextSantaNum
-        : nextNum;
+      : isRioja
+        ? nextRiojaNum
+        : isSantaTarapoto
+          ? nextSantaNum
+          : nextNum;
   const resolvedBibNum =
     typeof newRunner.bibNumber === 'number' && newRunner.bibNumber > 0
       ? newRunner.bibNumber
@@ -468,6 +501,7 @@ app.post('/api/registrations', (req, res) => {
     registrationNumber: resolvedRegNum,
     bibNumber: resolvedBibNum,
     edition,
+    ...(newRunner.raceCategory ? { raceCategory: newRunner.raceCategory } : {}),
     createdAt: newRunner.createdAt || new Date().toISOString(),
     firstName: (newRunner.firstName || '').trim(),
     lastName: (newRunner.lastName || '').trim(),
@@ -476,21 +510,27 @@ app.post('/api/registrations', (req, res) => {
     documentNumber: (newRunner.documentNumber || '').trim(),
     whatsapp: (newRunner.whatsapp || '').trim(),
     age: Number(newRunner.age) || 25,
-    tShirtSize: newRunner.tShirtSize || 'M',
+    ...(isRioja ? (newRunner.tShirtSize ? { tShirtSize: newRunner.tShirtSize } : {}) : { tShirtSize: newRunner.tShirtSize || 'M' }),
     gender: newRunner.gender || 'Mixto',
     email: (newRunner.email || '').trim(),
     department: newRunner.department || 'San Martín',
-    city: newRunner.city || 'Tarapoto',
-    district: newRunner.district || 'Tarapoto',
-    runningClub: newRunner.runningClub || 'Santa Run Club',
+    city: newRunner.city || (isRioja ? 'Rioja' : 'Tarapoto'),
+    district: newRunner.district || (isRioja ? 'Rioja' : 'Tarapoto'),
+    runningClub: newRunner.runningClub || (isRioja ? 'Sacha Runners / Ohana Go' : 'Santa Run Club'),
     emergencyContactName: (newRunner.emergencyContactName || '').trim(),
     emergencyContactPhone: (newRunner.emergencyContactPhone || '').trim(),
     paymentMethod: 'Yape',
     paymentReference: (newRunner.paymentReference || '').trim(),
-    amountPaid: newRunner.amountPaid || (newRunner.hasPreviousDiscount ? 59.5 : 70.0),
+    amountPaid:
+      newRunner.amountPaid ||
+      (isRioja ? (newRunner.raceCategory === 'Kids 2K' ? 25.0 : 35.0) : newRunner.hasPreviousDiscount ? 59.5 : 70.0),
     hasPreviousDiscount: Boolean(newRunner.hasPreviousDiscount),
     paymentStatus: 'No Verificado',
-    turkeyRaffleTicket: newRunner.turkeyRaffleTicket || (isSanta ? `PAVO-${String(nextSantaNum).padStart(4, '0')}` : undefined),
+    ...(newRunner.turkeyRaffleTicket
+      ? { turkeyRaffleTicket: newRunner.turkeyRaffleTicket }
+      : isSantaTarapoto
+        ? { turkeyRaffleTicket: `PAVO-${String(resolvedRegNum).padStart(4, '0')}` }
+        : {}),
     disclaimerAccepted: Boolean(newRunner.disclaimerAccepted),
     ...(newRunner.drivePhotoFileId ? { drivePhotoFileId: newRunner.drivePhotoFileId } : {}),
     ...(newRunner.drivePhotoUrl ? { drivePhotoUrl: newRunner.drivePhotoUrl } : {}),
@@ -675,6 +715,8 @@ app.post('/api/runner/update', (req, res) => {
     lastName,
     age,
     tShirtSize,
+    raceCategory,
+    amountPaid,
     paymentReference,
     paymentStatus,
     confirmedAtStart,
@@ -699,6 +741,8 @@ app.post('/api/runner/update', (req, res) => {
       ...(lastName !== undefined ? { lastName: String(lastName).trim() } : {}),
       ...(age !== undefined ? { age: Number(age) || registrations[idx].age } : {}),
       ...(tShirtSize !== undefined ? { tShirtSize } : {}),
+      ...(raceCategory !== undefined ? { raceCategory } : {}),
+      ...(amountPaid !== undefined ? { amountPaid: Number(amountPaid) } : {}),
       ...(paymentReference !== undefined ? { paymentReference: String(paymentReference).trim() } : {}),
       ...(paymentStatus !== undefined ? { paymentStatus } : {}),
       ...(confirmedAtStart !== undefined ? { confirmedAtStart } : {}),
@@ -760,29 +804,38 @@ function generateStaticExport(list: any[]) {
     'Estado de Pago'
   ];
 
-  const rows = list.map((r: any) => [
-    `"${(r.id || '').replace(/"/g, '""')}"`,
-    `"${(r.edition === 'santa-run-2026' || r.id?.startsWith('SR-') ? 'Santa Run 2026' : 'Halloween 5K').replace(/"/g, '""')}"`,
-    `"${r.registrationNumber || r.bibNumber || ''}"`,
-    `"${(r.firstName || '').replace(/"/g, '""')}"`,
-    `"${(r.lastName || '').replace(/"/g, '""')}"`,
-    `"${r.documentType || 'DNI'}"`,
-    `"${r.documentNumber || ''}"`,
-    `"${r.whatsapp || ''}"`,
-    `"${r.email || ''}"`,
-    `"${r.tShirtSize || ''}"`,
-    `"${r.amountPaid ? `S/ ${r.amountPaid}` : (r.edition === 'santa-run-2026' || r.id?.startsWith('SR-') ? 'S/ 70' : 'S/ 50')}"`,
-    `"${r.hasPreviousDiscount ? 'SI (15%)' : 'Tarifa Normal'}"`,
-    `"${r.turkeyRaffleTicket || ''}"`,
-    `"${r.confirmedAtStart ? 'ENTREGADO' : 'PENDIENTE'}"`,
-    `"${r.confirmedAtStart ? 'CONFIRMADO (QR)' : 'NO REGISTRADO'}"`,
-    `"${r.startCheckinTime || ''}"`,
-    `"${r.finishedAtMeta ? 'SI' : 'NO'}"`,
-    `"${r.finishCheckinTime || ''}"`,
-    `"${r.medalDelivered ? 'SI' : 'NO'}"`,
-    `"${r.createdAt || ''}"`,
-    `"${r.paymentStatus || 'No Verificado'}"`
-  ]);
+  const rows = list.map((r: any) => {
+    const isRiojaRow = r.edition === 'santa-run-rioja-2026' || String(r.id || '').startsWith('SRR-');
+    const isTarapotoRow = !isRiojaRow && (r.edition === 'santa-run-2026' || String(r.id || '').startsWith('SR-'));
+    const editionLabel = isRiojaRow
+      ? `Santa Run Rioja 2026 (${r.raceCategory || 'Libre 5K'})`
+      : isTarapotoRow
+        ? 'Santa Run Tarapoto 2026'
+        : 'Halloween 5K';
+    return [
+      `"${(r.id || '').replace(/"/g, '""')}"`,
+      `"${editionLabel.replace(/"/g, '""')}"`,
+      `"${r.registrationNumber || r.bibNumber || ''}"`,
+      `"${(r.firstName || '').replace(/"/g, '""')}"`,
+      `"${(r.lastName || '').replace(/"/g, '""')}"`,
+      `"${r.documentType || 'DNI'}"`,
+      `"${r.documentNumber || ''}"`,
+      `"${r.whatsapp || ''}"`,
+      `"${r.email || ''}"`,
+      `"${isRiojaRow ? (r.raceCategory || 'Libre 5K') : (r.tShirtSize || '')}"`,
+      `"${r.amountPaid ? `S/ ${r.amountPaid}` : isRiojaRow ? 'S/ 35' : isTarapotoRow ? 'S/ 70' : 'S/ 50'}"`,
+      `"${r.hasPreviousDiscount ? 'SI (15%)' : 'Tarifa Normal'}"`,
+      `"${r.turkeyRaffleTicket || ''}"`,
+      `"${r.confirmedAtStart ? 'ENTREGADO' : 'PENDIENTE'}"`,
+      `"${r.confirmedAtStart ? 'CONFIRMADO (QR)' : 'NO REGISTRADO'}"`,
+      `"${r.startCheckinTime || ''}"`,
+      `"${r.finishedAtMeta ? 'SI' : 'NO'}"`,
+      `"${r.finishCheckinTime || ''}"`,
+      `"${r.medalDelivered ? 'SI' : 'NO'}"`,
+      `"${r.createdAt || ''}"`,
+      `"${r.paymentStatus || 'No Verificado'}"`,
+    ];
+  });
 
   const csv = '\uFEFF' + [headers.join(','), ...rows.map(row => row.join(','))].join('\r\n');
   fs.writeFileSync(path.join(__dirname, 'public', 'inscripciones-sincronizadas.csv'), csv, 'utf8');

@@ -1,19 +1,19 @@
 import { RunnerRegistration } from '../types/race';
+import { isRiojaRunner, isTarapotoRunner } from '../utils/checkinManager';
 import * as XLSX from 'xlsx';
 
 /**
  * Generates an authentic Microsoft Excel (.xlsx) workbook directly in the browser
- * with multiple formatted sheets, proper column widths, and zero coding artifacts.
- * Operates 100% locally with zero external API calls or authentication requirements.
+ * with separate formatted sheets for Santa Run Tarapoto, Santa Run Rioja, and Halloween 5K.
  */
 export function exportToNativeXLSX(registrations: RunnerRegistration[]): void {
   const wb = XLSX.utils.book_new();
 
-  // 1. Santa Run 2026 Sheet
-  const santaList = registrations.filter((r) => r.edition === 'santa-run-2026' || r.id.startsWith('SR-'));
-  const santaData = [
+  // 1. Santa Run Tarapoto 2026 Sheet
+  const tarapotoList = registrations.filter((r) => isTarapotoRunner(r));
+  const tarapotoData = [
     [
-      'ID Corredor (Santa Run)',
+      'ID Corredor (Tarapoto)',
       'N° Inscripción',
       'Nombres',
       'Apellidos',
@@ -35,21 +35,21 @@ export function exportToNativeXLSX(registrations: RunnerRegistration[]): void {
       'Método Pago',
       'Estado de Pago',
     ],
-    ...santaList.map((r) => [
+    ...tarapotoList.map((r) => [
       r.id.startsWith('SR-') ? r.id : `SR-2026-${String(r.registrationNumber || 1).padStart(4, '0')}`,
-      `#${String(r.registrationNumber || 1).padStart(3, '0')}`,
+      `#${String(r.registrationNumber || 1).padStart(4, '0')}`,
       r.firstName,
       r.lastName,
       r.documentNumber,
       r.whatsapp,
-      r.email,
+      r.email || '',
       r.tShirtSize || 'M',
       r.amountPaid ? `S/ ${r.amountPaid}` : 'S/ 70',
       r.hasPreviousDiscount ? 'SÍ (15%)' : 'Tarifa Normal',
       r.turkeyRaffleTicket || `PAVO-${String(r.registrationNumber || 1).padStart(4, '0')}`,
-      r.voucherUrl || r.paymentProofImage ? 'SÍ (Adjuntado)' : 'PENDIENTE',
-      r.personalPhotoUrl ? 'SÍ (Adjuntada)' : 'PENDIENTE',
-      r.driveVoucherFileId || r.drivePhotoFileId ? 'Respaldado en Drive' : 'Local',
+      r.driveVoucherFileId || r.driveVoucherUrl || r.voucherUrl || r.paymentProofImage ? 'SÍ (Drive)' : 'PENDIENTE',
+      r.drivePhotoFileId || r.drivePhotoUrl || r.personalPhotoUrl ? 'SÍ (Drive)' : 'PENDIENTE',
+      r.driveVoucherFileId || r.drivePhotoFileId ? 'Respaldado en Drive' : 'Sin archivos',
       r.paymentReference || 'Yape Directo',
       r.kitClaimed || r.confirmedAtStart ? 'ENTREGADO' : 'PENDIENTE',
       r.confirmedAtStart ? 'CONFIRMADO' : 'NO REGISTRADO',
@@ -60,18 +60,68 @@ export function exportToNativeXLSX(registrations: RunnerRegistration[]): void {
     ]),
   ];
 
-  const wsSanta = XLSX.utils.aoa_to_sheet(santaData);
-  wsSanta['!cols'] = [
+  const wsTarapoto = XLSX.utils.aoa_to_sheet(tarapotoData);
+  wsTarapoto['!cols'] = [
     { wch: 22 }, { wch: 15 }, { wch: 20 }, { wch: 20 },
     { wch: 14 }, { wch: 15 }, { wch: 25 }, { wch: 12 },
     { wch: 14 }, { wch: 16 }, { wch: 20 }, { wch: 20 },
     { wch: 20 }, { wch: 20 }, { wch: 18 }, { wch: 14 },
-    { wch: 18 }, { wch: 16 }, { wch: 22 }, { wch: 14 }, { wch: 24 }
+    { wch: 18 }, { wch: 16 }, { wch: 22 }, { wch: 14 }, { wch: 24 },
   ];
-  XLSX.utils.book_append_sheet(wb, wsSanta, 'Santa Run 2026');
+  XLSX.utils.book_append_sheet(wb, wsTarapoto, 'Santa Run Tarapoto 2026');
 
-  // 2. Halloween 5K Sheet
-  const halloweenList = registrations.filter((r) => r.edition !== 'santa-run-2026' && !r.id.startsWith('SR-'));
+  // 2. Santa Run Rioja 2026 Sheet
+  const riojaList = registrations.filter((r) => isRiojaRunner(r));
+  const riojaData = [
+    [
+      'ID Corredor (Rioja)',
+      'N° Inscripción',
+      'Categoría',
+      'Nombres',
+      'Apellidos',
+      'DNI',
+      'WhatsApp',
+      'Edad',
+      'Monto Pagado',
+      'Voucher / Constancia',
+      'Foto Personal',
+      'N° Operación Ref',
+      'Estado Kit',
+      'Check-in QR',
+      'Fecha Registro',
+      'Estado de Pago',
+    ],
+    ...riojaList.map((r) => [
+      r.id,
+      `#${String(r.registrationNumber || 1).padStart(4, '0')}`,
+      r.raceCategory || 'Libre 5K',
+      r.firstName,
+      r.lastName,
+      r.documentNumber,
+      r.whatsapp,
+      r.age || '',
+      r.amountPaid ? `S/ ${Number(r.amountPaid).toFixed(2)}` : r.raceCategory === 'Kids 2K' ? 'S/ 25.00' : 'S/ 35.00',
+      r.driveVoucherFileId || r.driveVoucherUrl || r.voucherUrl || r.paymentProofImage ? 'SÍ (Drive)' : 'PENDIENTE',
+      r.drivePhotoFileId || r.drivePhotoUrl || r.personalPhotoUrl ? 'SÍ (Drive)' : 'PENDIENTE',
+      r.paymentReference || 'Yape Directo',
+      r.kitClaimed || r.confirmedAtStart ? 'ENTREGADO' : 'PENDIENTE',
+      r.confirmedAtStart ? 'CONFIRMADO' : 'NO REGISTRADO',
+      r.createdAt ? new Date(r.createdAt).toLocaleString('es-PE') : '-',
+      r.paymentStatus || 'No Verificado',
+    ]),
+  ];
+
+  const wsRioja = XLSX.utils.aoa_to_sheet(riojaData);
+  wsRioja['!cols'] = [
+    { wch: 22 }, { wch: 14 }, { wch: 14 }, { wch: 20 },
+    { wch: 20 }, { wch: 14 }, { wch: 15 }, { wch: 8 },
+    { wch: 14 }, { wch: 18 }, { wch: 16 }, { wch: 18 },
+    { wch: 14 }, { wch: 16 }, { wch: 22 }, { wch: 20 },
+  ];
+  XLSX.utils.book_append_sheet(wb, wsRioja, 'Santa Run Rioja 2026');
+
+  // 3. Halloween 5K Sheet
+  const halloweenList = registrations.filter((r) => !isTarapotoRunner(r) && !isRiojaRunner(r));
   const halloweenData = [
     [
       'ID Atleta',
@@ -96,7 +146,7 @@ export function exportToNativeXLSX(registrations: RunnerRegistration[]): void {
       r.lastName,
       r.documentNumber,
       r.whatsapp,
-      r.email,
+      r.email || '',
       r.modality || 'Presencial',
       r.confirmedAtStart ? 'ENTREGADO' : 'NO ENTREGADO',
       r.confirmedAtStart ? 'CONFIRMADO' : 'PENDIENTE',
@@ -112,7 +162,7 @@ export function exportToNativeXLSX(registrations: RunnerRegistration[]): void {
     { wch: 18 }, { wch: 12 }, { wch: 20 }, { wch: 20 },
     { wch: 14 }, { wch: 15 }, { wch: 25 }, { wch: 15 },
     { wch: 18 }, { wch: 20 }, { wch: 16 }, { wch: 14 },
-    { wch: 18 }, { wch: 22 }
+    { wch: 18 }, { wch: 22 },
   ];
   XLSX.utils.book_append_sheet(wb, wsHalloween, 'Halloween 5K (Auditoría)');
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, X, Shield, Instagram, Sparkles, User, Gift } from 'lucide-react';
+import { Menu, X, Shield, Instagram, Sparkles, User, Gift, ArrowLeft } from 'lucide-react';
 import { trackMiEspacioClick, trackSectionView } from '../utils/analytics';
 import { BrandLogo } from './BrandLogo';
 
@@ -7,6 +7,8 @@ interface NavbarProps {
   onOpenAdmin: () => void;
   onOpenCompetitorLogin?: () => void;
   onGoToSection: (sectionId: string) => void;
+  onGoHome?: () => void;
+  onSwitchToRioja?: () => void;
   loggedInCompetitorName?: string | null;
 }
 
@@ -14,6 +16,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenAdmin,
   onOpenCompetitorLogin,
   onGoToSection,
+  onGoHome,
+  onSwitchToRioja,
   loggedInCompetitorName,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -35,12 +39,25 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <nav className="sticky top-0 z-40 bg-black/95 backdrop-blur-md border-b border-red-950/50 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-        {/* Native Vector Brand Logo */}
-        <div
-          onClick={() => handleNavClick('inicio', 'Inicio')}
-          className="flex items-center gap-2.5 cursor-pointer group hover:opacity-90 transition"
-        >
-          <BrandLogo size="sm" variant="crimson" />
+        {/* Native Vector Brand Logo + Back to Hub */}
+        <div className="flex items-center gap-2.5">
+          {onGoHome && (
+            <button
+              type="button"
+              onClick={onGoHome}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-white/10 text-neutral-300 hover:text-white text-xs font-bold transition cursor-pointer"
+              title="Volver al selector de sedes OHANA GO"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Sedes</span>
+            </button>
+          )}
+          <div
+            onClick={() => handleNavClick('inicio', 'Inicio')}
+            className="flex items-center gap-2.5 cursor-pointer group hover:opacity-90 transition"
+          >
+            <BrandLogo size="sm" variant="crimson" />
+          </div>
         </div>
 
         {/* Desktop Navigation Links */}
@@ -65,6 +82,18 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             Merch Oficial
           </button>
+          {onSwitchToRioja && (
+            <a
+              href="/santarunrioja"
+              onClick={(e) => {
+                e.preventDefault();
+                onSwitchToRioja();
+              }}
+              className="text-amber-400 hover:text-amber-300 transition cursor-pointer"
+            >
+              Sede Rioja
+            </a>
+          )}
           <button
             onClick={() => handleNavClick('edicion-halloween-archive', 'Archivo Halloween 5K')}
             className="text-neutral-500 hover:text-neutral-300 transition cursor-pointer text-[11px]"
@@ -167,6 +196,19 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             🎽 Merch & Indumentaria
           </button>
+
+          {onSwitchToRioja && (
+            <button
+              type="button"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onSwitchToRioja();
+              }}
+              className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-amber-400 border-b border-white/5"
+            >
+              Cambiar a Santa Run Rioja 2026
+            </button>
+          )}
 
           <button
             onClick={() => handleNavClick('edicion-halloween-archive', 'Archivo Halloween 5K')}

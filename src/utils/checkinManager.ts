@@ -138,11 +138,26 @@ function sanitizeTextOnlyField(value: unknown): string {
   return str;
 }
 
+export function isRiojaRunner(r?: Partial<RunnerRegistration> | null): boolean {
+  if (!r) return false;
+  return r.edition === 'santa-run-rioja-2026' || String(r.id || '').startsWith('SRR-');
+}
+
+export function isTarapotoRunner(r?: Partial<RunnerRegistration> | null): boolean {
+  if (!r || isRiojaRunner(r)) return false;
+  return r.edition === 'santa-run-2026' || String(r.id || '').startsWith('SR-');
+}
+
+export function isCloudSantaRunner(r?: Partial<RunnerRegistration> | null): boolean {
+  return isTarapotoRunner(r) || isRiojaRunner(r);
+}
+
 /**
  * Builds a clean, ordered, text-only registration document for Cloud Firestore.
  * Photos and payment vouchers live EXCLUSIVELY in Google Drive (never in Firestore).
  */
 export function buildOrderedFirestoreRunnerDoc(runner: RunnerRegistration): Record<string, any> {
+  const isRioja = isRiojaRunner(runner);
   const firstName = sanitizeTextOnlyField(runner.firstName);
   const lastName = sanitizeTextOnlyField(runner.lastName);
   const fullName = `${firstName} ${lastName}`.trim();
@@ -150,13 +165,16 @@ export function buildOrderedFirestoreRunnerDoc(runner: RunnerRegistration): Reco
   const cleanEmail = rawEmail && !rawEmail.endsWith('@ohanago.pro') ? rawEmail : '';
   const emergencyName = sanitizeTextOnlyField(runner.emergencyContactName);
   const emergencyPhone = sanitizeTextOnlyField(runner.emergencyContactPhone);
+  const cleanTShirt = sanitizeTextOnlyField(runner.tShirtSize);
+  const cleanCategory = sanitizeTextOnlyField(runner.raceCategory);
 
   const ordered: Record<string, any> = {
     // 1. Orden e Identificación
     id: sanitizeTextOnlyField(runner.id),
     registrationNumber: Number(runner.registrationNumber) || 1,
     bibNumber: Number(runner.bibNumber ?? runner.registrationNumber) || 1,
-    edition: runner.edition || 'santa-run-2026',
+    edition: isRioja ? 'santa-run-rioja-2026' : (runner.edition || 'santa-run-2026'),
+    ...(cleanCategory ? { raceCategory: cleanCategory } : {}),
     createdAt: sanitizeTextOnlyField(runner.createdAt) || new Date().toISOString(),
 
     // 2. Datos Escritos del Participante (en orden del formulario)
@@ -167,13 +185,14 @@ export function buildOrderedFirestoreRunnerDoc(runner: RunnerRegistration): Reco
     documentNumber: sanitizeTextOnlyField(runner.documentNumber),
     whatsapp: sanitizeTextOnlyField(runner.whatsapp),
     age: Number(runner.age) || 0,
-    tShirtSize: sanitizeTextOnlyField(runner.tShirtSize) || 'M',
+    ...(isRioja ? (cleanTShirt ? { tShirtSize: cleanTShirt } : {}) : { tShirtSize: cleanTShirt || 'M' }),
     gender: runner.gender || 'Mixto',
     ...(cleanEmail ? { email: cleanEmail } : {}),
-    city: sanitizeTextOnlyField(runner.city) || 'Tarapoto',
-    district: sanitizeTextOnlyField(runner.district) || 'Tarapoto',
+    city: sanitizeTextOnlyField(runner.city) || (isRioja ? 'Rioja' : 'Tarapoto'),
+    district: sanitizeTextOnlyField(runner.district) || (isRioja ? 'Rioja' : 'Tarapoto'),
     department: sanitizeTextOnlyField(runner.department) || 'San Martín',
-    runningClub: sanitizeTextOnlyField(runner.runningClub) || 'Santa Run Club',
+    runningClub:
+      sanitizeTextOnlyField(runner.runningClub) || (isRioja ? 'Sacha Runners / Ohana Go' : 'Santa Run Club'),
     ...(emergencyName && emergencyName !== 'Contacto de Emergencia'
       ? { emergencyContactName: emergencyName }
       : {}),
@@ -184,10 +203,19 @@ export function buildOrderedFirestoreRunnerDoc(runner: RunnerRegistration): Reco
     // 3. Datos de Pago y Sorteo (solo texto)
     paymentMethod: runner.paymentMethod || 'Yape',
     paymentReference: sanitizeTextOnlyField(runner.paymentReference),
-    amountPaid: typeof runner.amountPaid === 'number' ? runner.amountPaid : 70,
+    amountPaid:
+      typeof runner.amountPaid === 'number'
+        ? runner.amountPaid
+        : isRioja
+          ? cleanCategory === 'Kids 2K'
+            ? 25
+            : 35
+          : 70,
     hasPreviousDiscount: Boolean(runner.hasPreviousDiscount),
     paymentStatus: runner.paymentStatus || 'No Verificado',
-    turkeyRaffleTicket: sanitizeTextOnlyField(runner.turkeyRaffleTicket),
+    ...(sanitizeTextOnlyField(runner.turkeyRaffleTicket)
+      ? { turkeyRaffleTicket: sanitizeTextOnlyField(runner.turkeyRaffleTicket) }
+      : {}),
     disclaimerAccepted: Boolean(runner.disclaimerAccepted),
 
     // 4. Enlaces de texto hacia Google Drive (0 imágenes en la base de datos)
@@ -232,10 +260,15 @@ export async function saveRegistrationFirestore(runner: RunnerRegistration): Pro
 }
 
 export async function reserveNextSantaRunNumber(
-  knownRegistrations: RunnerRegistration[] = []
+  knownRegistrations: RunnerRegistration[] = [],
+  edition: 'santa-run-2026' | 'santa-run-rioja-2026' = 'santa-run-2026'
 ): Promise<number> {
+  const isRioja = edition === 'santa-run-rioja-2026';
+  const matchesEdition = (r?: Partial<RunnerRegistration> | null) =>
+    isRioja ? isRiojaRunner(r) : isTarapotoRunner(r);
+
   const localMax = knownRegistrations
-    .filter((r) => r.edition === 'santa-run-2026' || r.id?.startsWith('SR-'))
+    .filter((r) => matchesEdition(r))
     .reduce((max, r) => Math.max(max, Number(r.registrationNumber || r.bibNumber || 0)), 0);
 
   let cloudMax = localMax;
@@ -247,7 +280,7 @@ export async function reserveNextSantaRunNumber(
     if (snap) {
       snap.forEach((docSnap) => {
         const data = docSnap.data() as Partial<RunnerRegistration>;
-        if (data?.edition === 'santa-run-2026' || String(data?.id || docSnap.id).startsWith('SR-')) {
+        if (matchesEdition({ ...data, id: data?.id || docSnap.id })) {
           const n = Number(data?.registrationNumber || data?.bibNumber || 0);
           if (n > cloudMax) cloudMax = n;
         }
@@ -256,7 +289,8 @@ export async function reserveNextSantaRunNumber(
   } catch (e) {}
 
   try {
-    const counterRef = doc(db, 'analytics', 'santa_run_counter');
+    const counterDocId = isRioja ? 'santa_run_rioja_counter' : 'santa_run_counter';
+    const counterRef = doc(db, 'analytics', counterDocId);
     const reserved = await runTransaction(db, async (tx) => {
       const snap = await tx.get(counterRef);
       const currentLast = snap.exists() ? Number(snap.data()?.lastNumber || 0) : 0;
@@ -274,7 +308,6 @@ export async function reserveNextSantaRunNumber(
     return reserved;
   } catch (err) {
     console.warn('Firestore atomic counter fallback:', err);
-    // Fallback if offline: still avoids colliding with small sequential numbers
     const base = Math.max(cloudMax, localMax) + 1;
     const uniqueSuffix = Number(String(Date.now()).slice(-3));
     return Math.max(base, base + (uniqueSuffix % 90) + 10);
