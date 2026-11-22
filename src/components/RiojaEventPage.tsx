@@ -169,16 +169,6 @@ export const RiojaEventPage: React.FC<RiojaEventPageProps> = ({
                   : 'Mi Espacio'}
               </span>
             </button>
-            <a
-              href="/santaruntarapoto"
-              onClick={(e) => {
-                e.preventDefault();
-                onSwitchToTarapoto();
-              }}
-              className="px-3 py-2 rounded-xl bg-neutral-900 border border-white/10 hover:border-white/30 text-neutral-300 hover:text-white transition text-xs font-bold"
-            >
-              Ver Tarapoto
-            </a>
           </div>
 
           {/* Mobile Controls */}
@@ -238,16 +228,6 @@ export const RiojaEventPage: React.FC<RiojaEventPageProps> = ({
               className="w-full text-left py-2 text-neutral-200 font-bold uppercase border-b border-white/5"
             >
               Causa Solidaria & Sacha Runners
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onSwitchToTarapoto();
-              }}
-              className="w-full text-left py-2 text-amber-400 font-bold uppercase border-b border-white/5"
-            >
-              Cambiar a Santa Run Tarapoto
             </button>
             <button
               type="button"
@@ -648,16 +628,6 @@ export const RiojaEventPage: React.FC<RiojaEventPageProps> = ({
             >
               Inicio OHANA GO
             </button>
-            <a
-              href="/santaruntarapoto"
-              onClick={(e) => {
-                e.preventDefault();
-                onSwitchToTarapoto();
-              }}
-              className="hover:text-white transition"
-            >
-              Santa Run Tarapoto
-            </a>
             <a
               href="https://www.instagram.com/ohanago.peru/"
               target="_blank"

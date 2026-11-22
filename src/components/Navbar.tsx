@@ -76,30 +76,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Gift className="w-3.5 h-3.5 text-amber-400" />
             <span>Kit & Precios</span>
           </button>
-          <button
-            onClick={() => handleNavClick('merch-oficial', 'Merch Oficial')}
-            className="hover:text-red-400 transition cursor-pointer"
-          >
-            Merch Oficial
-          </button>
-          {onSwitchToRioja && (
-            <a
-              href="/santarunrioja"
-              onClick={(e) => {
-                e.preventDefault();
-                onSwitchToRioja();
-              }}
-              className="text-amber-400 hover:text-amber-300 transition cursor-pointer"
-            >
-              Sede Rioja
-            </a>
-          )}
-          <button
-            onClick={() => handleNavClick('edicion-halloween-archive', 'Archivo Halloween 5K')}
-            className="text-neutral-500 hover:text-neutral-300 transition cursor-pointer text-[11px]"
-          >
-            <span>Ediciones Anteriores</span>
-          </button>
         </div>
 
         {/* Right Action Buttons */}
@@ -188,33 +164,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-neutral-200 border-b border-white/5"
           >
             🎁 Kit Oficial & S/ 70.00
-          </button>
-
-          <button
-            onClick={() => handleNavClick('merch-oficial', 'Merch Oficial')}
-            className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-neutral-200 border-b border-white/5"
-          >
-            🎽 Merch & Indumentaria
-          </button>
-
-          {onSwitchToRioja && (
-            <button
-              type="button"
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onSwitchToRioja();
-              }}
-              className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-amber-400 border-b border-white/5"
-            >
-              Cambiar a Santa Run Rioja 2026
-            </button>
-          )}
-
-          <button
-            onClick={() => handleNavClick('edicion-halloween-archive', 'Archivo Halloween 5K')}
-            className="w-full text-left py-2.5 text-sm font-bold uppercase tracking-wider text-neutral-400 border-b border-white/5"
-          >
-            🎃 Archivo Halloween 5K
           </button>
 
           {onOpenCompetitorLogin && (

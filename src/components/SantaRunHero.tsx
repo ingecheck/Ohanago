@@ -20,9 +20,9 @@ export const SantaRunHero: React.FC<SantaRunHeroProps> = ({
 
   const posters = {
     launch: {
-      src: '/assets/aistudio/OHANA_GO_ULALA_3bc4d451.jpeg',
-      title: 'Afiche Oficial 6K · Santa Run Tarapoto',
-      badge: 'Gran Carrera 6K',
+      src: '/assets/aistudio/WhatsApp_Image_2026-11-22_at_2.21.47_AM__1__3bc4d451.jpeg',
+      title: 'Afiche Oficial 6K · Santa Run Tarapoto en alianza con Master Ulala',
+      badge: 'Alianza Master Ulala',
     },
     kit: {
       src: '/assets/aistudio/OHANA_GO_PRINCIPAL_3d791120.jpeg',

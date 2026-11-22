@@ -4,8 +4,6 @@ import { OhanaHubLanding } from './components/OhanaHubLanding';
 import { RiojaEventPage } from './components/RiojaEventPage';
 import { EventHero } from './components/EventHero';
 import { UpcomingRaceTeaser } from './components/UpcomingRaceTeaser';
-import { PastEditionsArchive } from './components/PastEditionsArchive';
-import { OhanaMerchSection } from './components/OhanaMerchSection';
 import { SnowfallCanvas } from './components/SnowfallCanvas';
 import { RegistrationForm } from './components/RegistrationForm';
 import { RegistrationSuccessModal } from './components/RegistrationSuccessModal';
@@ -439,6 +437,7 @@ export const App: React.FC = () => {
 
       {currentRoute === 'hub' ? (
         <OhanaHubLanding
+          registrations={registrations}
           onSelectTarapoto={() => navigateToRoute('tarapoto')}
           onSelectRioja={() => navigateToRoute('rioja')}
           onOpenCompetitorLogin={handleCompetitorAccess}
@@ -500,12 +499,6 @@ export const App: React.FC = () => {
             onOpenCompetitorLogin={handleCompetitorAccess}
             onGoToRoute={() => scrollToSection('ediciones')}
           />
-
-          {/* Ohana Merch Section (Indumentaria oficial) */}
-          <OhanaMerchSection />
-
-          {/* Past Editions Archive (Preserva Halloween 5K y medalla conmemorativa) */}
-          <PastEditionsArchive registrations={registrations} />
 
           {/* Footer */}
           <Footer onOpenAdmin={() => handleAdminAccess('santa-run-2026')} />

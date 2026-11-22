@@ -6,14 +6,17 @@ import {
   MapPin,
   User,
   Instagram,
-  Shield,
   Heart,
   Gift,
   Sparkles,
 } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
+import { OhanaMerchSection } from './OhanaMerchSection';
+import { PastEditionsArchive } from './PastEditionsArchive';
+import { RunnerRegistration } from '../types/race';
 
 interface OhanaHubLandingProps {
+  registrations: RunnerRegistration[];
   onSelectTarapoto: () => void;
   onSelectRioja: () => void;
   onOpenCompetitorLogin: () => void;
@@ -22,31 +25,29 @@ interface OhanaHubLandingProps {
 }
 
 export const OhanaHubLanding: React.FC<OhanaHubLandingProps> = ({
+  registrations,
   onSelectTarapoto,
   onSelectRioja,
   onOpenCompetitorLogin,
   onOpenAdmin,
   loggedInCompetitorName,
 }) => {
+  const scrollToHubSection = (sectionId: string) => {
+    const el = document.getElementById(sectionId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
   return (
-    <div className="min-h-screen bg-[#060606] text-neutral-100 flex flex-col font-sans selection:bg-red-600 selection:text-white relative z-30">
-      {/* Subtle atmospheric top glow */}
-      <div
-        className="pointer-events-none fixed inset-x-0 top-0 h-[420px] opacity-35"
-        style={{
-          background:
-            'radial-gradient(ellipse 70% 55% at 50% 0%, rgba(220, 38, 38, 0.35), transparent 70%)',
-        }}
-      />
-
+    <div className="min-h-screen bg-black text-neutral-100 flex flex-col font-sans selection:bg-red-600 selection:text-white relative z-30">
       {/* Clean 3-Zone Top Header */}
-      <header className="sticky top-0 z-40 bg-[#060606]/95 backdrop-blur-md border-b border-white/10">
+      <header className="sticky top-0 z-40 bg-black/95 backdrop-blur-md border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
           <div className="flex items-center">
             <BrandLogo size="sm" variant="crimson" />
           </div>
 
-          <nav className="hidden md:flex items-center gap-7 text-xs font-bold uppercase tracking-widest text-neutral-300">
+          <nav className="hidden md:flex items-center gap-6 text-xs font-bold uppercase tracking-widest text-neutral-300">
             <a
               href="/santaruntarapoto"
               onClick={(e) => {
@@ -55,7 +56,7 @@ export const OhanaHubLanding: React.FC<OhanaHubLandingProps> = ({
               }}
               className="hover:text-white transition"
             >
-              Santa Run Tarapoto
+              Tarapoto
             </a>
             <a
               href="/santarunrioja"
@@ -65,8 +66,22 @@ export const OhanaHubLanding: React.FC<OhanaHubLandingProps> = ({
               }}
               className="hover:text-white transition"
             >
-              Santa Run Rioja
+              Rioja
             </a>
+            <button
+              type="button"
+              onClick={() => scrollToHubSection('merch-oficial')}
+              className="hover:text-red-400 transition cursor-pointer uppercase"
+            >
+              Merch Oficial
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollToHubSection('edicion-halloween-archive')}
+              className="hover:text-amber-300 transition cursor-pointer uppercase"
+            >
+              Ediciones
+            </button>
           </nav>
 
           <div className="flex items-center gap-2.5">
@@ -100,16 +115,13 @@ export const OhanaHubLanding: React.FC<OhanaHubLandingProps> = ({
       {/* Main Hub Selector */}
       <main className="flex-1 relative z-10">
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 sm:pt-14 pb-16 sm:pb-24">
-          {/* Editorial Heading: 1. SANTA RUN 2026 · 2. ELIGE TU SEDE · 3. OHANA GO · MUÉVETE. CONECTA. VIVE. */}
+          {/* Editorial Heading */}
           <div className="max-w-3xl mx-auto text-center mb-10 sm:mb-14">
             <h1 className="font-bebas text-6xl sm:text-7xl lg:text-8xl tracking-tight text-white uppercase leading-[0.92]">
               SANTA RUN <span className="text-red-500">2026</span>
             </h1>
             <p className="font-bebas text-3xl sm:text-4xl lg:text-5xl tracking-wide text-neutral-100 uppercase mt-2 leading-none">
               ELIGE TU SEDE
-            </p>
-            <p className="text-xs sm:text-sm font-mono font-bold uppercase tracking-[0.28em] text-amber-400 mt-3">
-              OHANA GO · MUÉVETE. CONECTA. VIVE.
             </p>
             <p className="mt-4 text-sm sm:text-base text-neutral-300 max-w-2xl mx-auto leading-relaxed">
               Dos ciudades de San Martín, un mismo propósito navideño: correr, compartir en comunidad y regalar sonrisas. Selecciona tu evento oficial para ver toda la información e inscribirte.
@@ -121,37 +133,31 @@ export const OhanaHubLanding: React.FC<OhanaHubLandingProps> = ({
             {/* CARD 1: SANTA RUN TARAPOTO 2026 */}
             <article
               onClick={onSelectTarapoto}
-              className="group relative bg-neutral-950 border-2 border-red-600/50 hover:border-red-500 rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(220,38,38,0.16)] hover:shadow-[0_24px_75px_rgba(220,38,38,0.28)] transition-all duration-300 flex flex-col cursor-pointer"
+              className="group relative bg-black border-2 border-red-600/50 hover:border-red-500 rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(220,38,38,0.16)] hover:shadow-[0_24px_75px_rgba(220,38,38,0.28)] transition-all duration-300 flex flex-col cursor-pointer"
             >
-              {/* Event Poster Showcase */}
+              {/* Event Poster Showcase — Clean Unobstructed Artwork */}
               <div className="relative bg-black aspect-[4/3] sm:aspect-[16/11] overflow-hidden border-b border-white/10">
                 <img
-                  src="/assets/aistudio/santa_run_poster_edition.jpeg"
-                  alt="Afiche oficial Santa Run Tarapoto 2026 por OHANA GO"
+                  src="/assets/aistudio/WhatsApp_Image_2026-11-22_at_2.21.47_AM__1__3bc4d451.jpeg"
+                  alt="Afiche oficial Santa Run Tarapoto 2026 por OHANA GO en alianza estratégica con Master Ulala"
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-contain bg-black group-hover:scale-[1.03] transition-transform duration-500"
                 />
-                <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-neutral-950 via-neutral-950/60 to-transparent pointer-events-none" />
-                <div className="absolute top-4 left-4 bg-black/85 backdrop-blur-sm border border-red-500/50 px-3 py-1.5 rounded-xl">
-                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-red-400">
-                    Sede Tarapoto · 6K Nocturna
-                  </span>
-                </div>
-                <div className="absolute top-4 right-4 bg-black/85 backdrop-blur-sm border border-white/15 px-3 py-1.5 rounded-xl">
-                  <span className="text-[11px] font-mono font-bold text-amber-400 tabular-nums">
-                    S/ 70.00
-                  </span>
-                </div>
               </div>
 
               {/* Card Body */}
               <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-6">
                 <div className="space-y-4">
                   <div>
-                    <p className="text-xs font-mono uppercase tracking-widest text-neutral-400">
-                      ohanago.pro/santaruntarapoto
-                    </p>
-                    <h2 className="font-bebas text-4xl sm:text-5xl text-white uppercase tracking-wide mt-1 leading-none">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-mono uppercase tracking-wider text-neutral-400">
+                        Alianza estratégica: <span className="text-white font-bold">Master Ulala</span>
+                      </p>
+                      <span className="text-xs font-mono font-bold text-amber-400 bg-neutral-950 border border-white/15 px-2.5 py-1 rounded-lg tabular-nums whitespace-nowrap shrink-0">
+                        S/ 70.00
+                      </span>
+                    </div>
+                    <h2 className="font-bebas text-4xl sm:text-5xl text-white uppercase tracking-wide mt-1.5 leading-none">
                       SANTA RUN <span className="text-red-500">TARAPOTO</span> 2026
                     </h2>
                     <p className="text-sm text-neutral-300 mt-2 leading-relaxed">
@@ -206,9 +212,9 @@ export const OhanaHubLanding: React.FC<OhanaHubLandingProps> = ({
             {/* CARD 2: SANTA RUN RIOJA 2026 */}
             <article
               onClick={onSelectRioja}
-              className="group relative bg-neutral-950 border-2 border-amber-500/50 hover:border-amber-400 rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(245,158,11,0.14)] hover:shadow-[0_24px_75px_rgba(245,158,11,0.24)] transition-all duration-300 flex flex-col cursor-pointer"
+              className="group relative bg-black border-2 border-amber-500/50 hover:border-amber-400 rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(245,158,11,0.14)] hover:shadow-[0_24px_75px_rgba(245,158,11,0.24)] transition-all duration-300 flex flex-col cursor-pointer"
             >
-              {/* Event Poster Showcase */}
+              {/* Event Poster Showcase — Clean Unobstructed Artwork */}
               <div className="relative bg-black aspect-[4/3] sm:aspect-[16/11] overflow-hidden border-b border-white/10">
                 <img
                   src="/assets/aistudio/WhatsApp_Image_2026-11-22_at_1.00.04_AM__1__922813aa.jpeg"
@@ -216,31 +222,25 @@ export const OhanaHubLanding: React.FC<OhanaHubLandingProps> = ({
                   referrerPolicy="no-referrer"
                   className="w-full h-full object-contain bg-black group-hover:scale-[1.03] transition-transform duration-500"
                 />
-                <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-neutral-950 via-neutral-950/60 to-transparent pointer-events-none" />
-                <div className="absolute top-4 left-4 bg-black/85 backdrop-blur-sm border border-amber-400/50 px-3 py-1.5 rounded-xl">
-                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-amber-300">
-                    Sede Rioja · Alianza Sacha Runners
-                  </span>
-                </div>
-                <div className="absolute top-4 right-4 bg-black/85 backdrop-blur-sm border border-white/15 px-3 py-1.5 rounded-xl">
-                  <span className="text-[11px] font-mono font-bold text-white tabular-nums">
-                    S/ 25 · S/ 35
-                  </span>
-                </div>
               </div>
 
               {/* Card Body */}
               <div className="p-6 sm:p-8 flex-1 flex flex-col justify-between space-y-6">
                 <div className="space-y-4">
                   <div>
-                    <p className="text-xs font-mono uppercase tracking-widest text-neutral-400">
-                      ohanago.pro/santarunrioja
-                    </p>
-                    <h2 className="font-bebas text-4xl sm:text-5xl text-white uppercase tracking-wide mt-1 leading-none">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-mono uppercase tracking-wider text-neutral-400">
+                        Alianza estratégica: <span className="text-amber-300 font-bold">Sacha Runners</span>
+                      </p>
+                      <span className="text-xs font-mono font-bold text-white bg-neutral-950 border border-white/15 px-2.5 py-1 rounded-lg tabular-nums whitespace-nowrap shrink-0">
+                        S/ 25 · S/ 35
+                      </span>
+                    </div>
+                    <h2 className="font-bebas text-4xl sm:text-5xl text-white uppercase tracking-wide mt-1.5 leading-none">
                       SANTA RUN <span className="text-amber-400">RIOJA</span> 2026
                     </h2>
                     <p className="text-sm text-neutral-300 mt-2 leading-relaxed">
-                      En alianza estratégica con <strong className="text-white">Sacha Runners</strong>. Categorías <strong className="text-amber-300">Kids 2K (S/ 25)</strong> y <strong className="text-white">Libre 5K (S/ 35)</strong> con medalla finisher, gorra navideña, panetón, chocolate, pulsera y show infantil.
+                      Categorías <strong className="text-amber-300">Kids 2K (S/ 25.00)</strong> y <strong className="text-white">Libre 5K (S/ 35.00)</strong> con medalla finisher, gorra navideña, panetón, chocolate, pulsera y show infantil.
                     </p>
                   </div>
 
@@ -313,6 +313,12 @@ export const OhanaHubLanding: React.FC<OhanaHubLandingProps> = ({
             </button>
           </div>
         </section>
+
+        {/* Indumentaria & Merch Oficial OHANA GO (En la página principal ohanago.pro) */}
+        <OhanaMerchSection />
+
+        {/* Ediciones que dejaron huella (Abajo en la página principal ohanago.pro) */}
+        <PastEditionsArchive registrations={registrations} />
       </main>
 
       {/* Clean Hub Footer */}
@@ -347,22 +353,6 @@ export const OhanaHubLanding: React.FC<OhanaHubLandingProps> = ({
             >
               /santarunrioja
             </a>
-            <button
-              type="button"
-              onClick={() => onOpenAdmin('santa-run-2026')}
-              className="inline-flex items-center gap-1.5 text-neutral-400 hover:text-red-400 transition cursor-pointer font-semibold"
-            >
-              <Shield className="w-3.5 h-3.5 text-red-500" />
-              <span>Panel Tarapoto</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onOpenAdmin('santa-run-rioja-2026')}
-              className="inline-flex items-center gap-1.5 text-neutral-400 hover:text-amber-300 transition cursor-pointer font-semibold"
-            >
-              <Shield className="w-3.5 h-3.5 text-amber-400" />
-              <span>Panel Rioja</span>
-            </button>
           </div>
         </div>
       </footer>

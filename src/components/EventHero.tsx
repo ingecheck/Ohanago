@@ -33,9 +33,9 @@ export const EventHero: React.FC<EventHeroProps> = ({
 
         {/* Narrative & Slogan */}
         <div className="max-w-3xl mx-auto space-y-3 mb-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-neutral-900 border border-red-500/30 text-xs font-mono text-neutral-300">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-neutral-900 border border-red-500/35 text-xs font-mono text-neutral-200">
             <span className="font-bold text-white tracking-widest uppercase">
-              OHANA GO
+              OHANA GO · EN ALIANZA ESTRATÉGICA CON <span className="text-amber-400">MASTER ULALA</span>
             </span>
           </div>
 
@@ -72,7 +72,7 @@ export const EventHero: React.FC<EventHeroProps> = ({
             <span className="text-[10px] font-mono uppercase text-rose-400 font-bold block flex items-center gap-1.5 mb-1">
               <MapPin className="w-3.5 h-3.5 text-rose-400" /> Partida
             </span>
-            <span className="font-bebas text-lg sm:text-xl text-white block leading-tight truncate">Aviación</span>
+            <span className="font-bebas text-lg sm:text-xl text-white block leading-tight truncate">Av. Aviación</span>
             <span className="text-[11px] text-neutral-400">Partida Oficial</span>
           </div>
 
@@ -113,20 +113,19 @@ export const EventHero: React.FC<EventHeroProps> = ({
           )}
         </div>
 
-        {/* Clean Official Poster Showcase */}
-        <div className="max-w-3xl mx-auto rounded-3xl overflow-hidden border border-red-500/30 shadow-[0_20px_80px_rgba(212,36,38,0.25)] relative group">
+        {/* Clean Official Poster Showcase — En Alianza Estratégica con Master Ulala */}
+        <div className="max-w-xl mx-auto rounded-3xl overflow-hidden border-2 border-red-500/40 shadow-[0_20px_80px_rgba(212,36,38,0.28)] bg-black group">
           <img
-            src="/assets/aistudio/santa_run_poster_edition.jpeg"
-            alt="Santa Run Tarapoto 2026 - Afiche Oficial"
-            className="w-full h-auto object-cover group-hover:scale-[1.01] transition-transform duration-700"
+            src="/assets/aistudio/WhatsApp_Image_2026-11-22_at_2.21.47_AM__1__3bc4d451.jpeg"
+            alt="Santa Run Tarapoto 2026 6K - Afiche Oficial OHANA GO en alianza estratégica con Master Ulala"
+            className="w-full h-auto object-contain group-hover:scale-[1.01] transition-transform duration-700"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-          <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-xs font-mono text-white">
-            <span className="bg-black/80 px-3 py-1 rounded-full border border-red-500/30 font-bold backdrop-blur-md">
-              🎅 Santa Run Oficial 2026
+          <div className="px-4 py-3 bg-neutral-950 border-t border-red-500/25 flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-white">
+            <span className="text-amber-400 font-bold uppercase tracking-wider">
+              Alianza Oficial · Master Ulala
             </span>
-            <span className="bg-red-600/90 text-white font-bold px-3 py-1 rounded-full shadow-md">
-              Sábado 19 Dic · 7:00 PM
+            <span className="text-neutral-300">
+              Sáb 19 Dic · 7:00 p. m. · Av. Aviación → Concha Acústica
             </span>
           </div>
         </div>
