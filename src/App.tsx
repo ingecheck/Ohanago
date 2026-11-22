@@ -57,6 +57,11 @@ export const App: React.FC = () => {
   const [recentlyRegistered, setRecentlyRegistered] = useState<RunnerRegistration | null>(null);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
+  const [adminTargetEdition, setAdminTargetEdition] = useState<'santa-run-2026' | 'santa-run-rioja-2026'>(() =>
+    resolveRouteFromPathname(typeof window !== 'undefined' ? window.location.pathname : '/') === 'rioja'
+      ? 'santa-run-rioja-2026'
+      : 'santa-run-2026'
+  );
   const [isCompetitorLoginOpen, setIsCompetitorLoginOpen] = useState(false);
 
   const navigateToRoute = (nextRoute: OhanaRoute) => {
@@ -267,9 +272,9 @@ export const App: React.FC = () => {
       const runnerParam = urlParams.get('runner') || urlParams.get('runnerId');
       const dniParam = urlParams.get('dni');
 
-      if (adminParam === '1' || adminParam === 'true') {
+      if (adminParam === '1' || adminParam === 'true' || adminParam === 'tarapoto' || adminParam === 'rioja') {
         window.history.replaceState({}, document.title, window.location.pathname);
-        handleAdminAccess();
+        handleAdminAccess(adminParam === 'rioja' ? 'santa-run-rioja-2026' : adminParam === 'tarapoto' ? 'santa-run-2026' : undefined);
       } else if (runnerParam || dniParam) {
         // Limpiar URL sin recargar
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -395,7 +400,10 @@ export const App: React.FC = () => {
     localStorage.setItem('ohana_active_competitor', JSON.stringify(newReg));
   };
 
-  const handleAdminAccess = () => {
+  const handleAdminAccess = (targetEdition?: 'santa-run-2026' | 'santa-run-rioja-2026') => {
+    const resolvedEdition =
+      targetEdition || (currentRoute === 'rioja' ? 'santa-run-rioja-2026' : 'santa-run-2026');
+    setAdminTargetEdition(resolvedEdition);
     if (isAdminAuthenticated()) {
       setIsAdminOpen(true);
     } else {
@@ -434,7 +442,7 @@ export const App: React.FC = () => {
           onSelectTarapoto={() => navigateToRoute('tarapoto')}
           onSelectRioja={() => navigateToRoute('rioja')}
           onOpenCompetitorLogin={handleCompetitorAccess}
-          onOpenAdmin={handleAdminAccess}
+          onOpenAdmin={(targetEdition) => handleAdminAccess(targetEdition)}
           loggedInCompetitorName={
             activeCompetitor ? `${activeCompetitor.firstName} ${activeCompetitor.lastName}` : null
           }
@@ -445,7 +453,7 @@ export const App: React.FC = () => {
           onSwitchToTarapoto={() => navigateToRoute('tarapoto')}
           onRegistrationSuccess={handleRegistrationSuccess}
           onOpenCompetitorLogin={handleCompetitorAccess}
-          onOpenAdmin={handleAdminAccess}
+          onOpenAdmin={() => handleAdminAccess('santa-run-rioja-2026')}
           loggedInCompetitorName={
             activeCompetitor ? `${activeCompetitor.firstName} ${activeCompetitor.lastName}` : null
           }
@@ -463,7 +471,7 @@ export const App: React.FC = () => {
 
           {/* Main Navbar */}
           <Navbar
-            onOpenAdmin={handleAdminAccess}
+            onOpenAdmin={() => handleAdminAccess('santa-run-2026')}
             onOpenCompetitorLogin={handleCompetitorAccess}
             onGoToSection={scrollToSection}
             onGoHome={() => navigateToRoute('hub')}
@@ -500,7 +508,7 @@ export const App: React.FC = () => {
           <PastEditionsArchive registrations={registrations} />
 
           {/* Footer */}
-          <Footer onOpenAdmin={handleAdminAccess} />
+          <Footer onOpenAdmin={() => handleAdminAccess('santa-run-2026')} />
         </>
       )}
 
@@ -565,7 +573,7 @@ export const App: React.FC = () => {
       {isAdminOpen && (
         <AdminDashboard
           registrations={registrations}
-          initialEdition={currentRoute === 'rioja' ? 'santa-run-rioja-2026' : 'santa-run-2026'}
+          initialEdition={adminTargetEdition}
           onUpdateRegistrations={(updated) => setRegistrations(updated)}
           onClose={() => setIsAdminOpen(false)}
           onLogout={() => setIsAdminOpen(false)}

@@ -46,6 +46,118 @@ export const DEFAULT_OHANA_DRIVE_FOLDERS: OhanaDriveFolders = {
   photosFolderUrl: `https://drive.google.com/drive/folders/${DEFAULT_PHOTOS_FOLDER_ID}`,
 };
 
+export interface RiojaDriveFoldersConfig {
+  vouchersFolderId: string;
+  photosFolderId: string;
+  vouchersFolderUrl: string;
+  photosFolderUrl: string;
+  isDedicated: boolean;
+}
+
+const RIOJA_DRIVE_FOLDERS_KEY = 'ohana_rioja_drive_folders';
+let cachedRiojaDriveFolders: RiojaDriveFoldersConfig | null = null;
+
+/**
+ * Extracts a Google Drive folder ID from either a full Drive folder URL or a bare folder ID.
+ */
+export function extractDriveFolderId(input: string): string {
+  const clean = (input || '').trim();
+  if (!clean) return '';
+  const folderMatch = clean.match(/\/folders\/([a-zA-Z0-9_-]{10,})/);
+  if (folderMatch?.[1]) return folderMatch[1];
+  const idParamMatch = clean.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
+  if (idParamMatch?.[1]) return idParamMatch[1];
+  if (/^[a-zA-Z0-9_-]{15,}$/.test(clean)) return clean;
+  return '';
+}
+
+export async function getRiojaDriveFolders(): Promise<RiojaDriveFoldersConfig> {
+  if (cachedRiojaDriveFolders) return cachedRiojaDriveFolders;
+
+  try {
+    const snap = await getDoc(doc(db, 'analytics', 'drive_folders_rioja'));
+    if (snap.exists()) {
+      const data = snap.data() as Partial<RiojaDriveFoldersConfig>;
+      const vId = extractDriveFolderId(data.vouchersFolderId || '');
+      const pId = extractDriveFolderId(data.photosFolderId || '');
+      if (vId || pId) {
+        const finalV = vId || DEFAULT_YAPE_FOLDER_ID;
+        const finalP = pId || DEFAULT_PHOTOS_FOLDER_ID;
+        const cfg: RiojaDriveFoldersConfig = {
+          vouchersFolderId: finalV,
+          photosFolderId: finalP,
+          vouchersFolderUrl: `https://drive.google.com/drive/folders/${finalV}`,
+          photosFolderUrl: `https://drive.google.com/drive/folders/${finalP}`,
+          isDedicated: !!(vId || pId),
+        };
+        cachedRiojaDriveFolders = cfg;
+        try {
+          localStorage.setItem(RIOJA_DRIVE_FOLDERS_KEY, JSON.stringify(cfg));
+        } catch {}
+        return cfg;
+      }
+    }
+  } catch {}
+
+  try {
+    const raw = localStorage.getItem(RIOJA_DRIVE_FOLDERS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as RiojaDriveFoldersConfig;
+      if (parsed?.vouchersFolderId && parsed?.photosFolderId) {
+        cachedRiojaDriveFolders = parsed;
+        return parsed;
+      }
+    }
+  } catch {}
+
+  return {
+    vouchersFolderId: DEFAULT_YAPE_FOLDER_ID,
+    photosFolderId: DEFAULT_PHOTOS_FOLDER_ID,
+    vouchersFolderUrl: `https://drive.google.com/drive/folders/${DEFAULT_YAPE_FOLDER_ID}`,
+    photosFolderUrl: `https://drive.google.com/drive/folders/${DEFAULT_PHOTOS_FOLDER_ID}`,
+    isDedicated: false,
+  };
+}
+
+export async function saveRiojaDriveFolders(params: {
+  vouchersInput: string;
+  photosInput: string;
+}): Promise<RiojaDriveFoldersConfig> {
+  const vId = extractDriveFolderId(params.vouchersInput);
+  const pId = extractDriveFolderId(params.photosInput);
+  const isDedicated = !!(vId || pId);
+  const finalV = vId || DEFAULT_YAPE_FOLDER_ID;
+  const finalP = pId || DEFAULT_PHOTOS_FOLDER_ID;
+
+  const cfg: RiojaDriveFoldersConfig = {
+    vouchersFolderId: finalV,
+    photosFolderId: finalP,
+    vouchersFolderUrl: `https://drive.google.com/drive/folders/${finalV}`,
+    photosFolderUrl: `https://drive.google.com/drive/folders/${finalP}`,
+    isDedicated,
+  };
+
+  cachedRiojaDriveFolders = cfg;
+  try {
+    localStorage.setItem(RIOJA_DRIVE_FOLDERS_KEY, JSON.stringify(cfg));
+  } catch {}
+
+  await setDoc(
+    doc(db, 'analytics', 'drive_folders_rioja'),
+    {
+      vouchersFolderId: vId,
+      photosFolderId: pId,
+      vouchersFolderUrl: cfg.vouchersFolderUrl,
+      photosFolderUrl: cfg.photosFolderUrl,
+      isDedicated,
+      updatedAt: new Date().toISOString(),
+    },
+    { merge: true }
+  );
+
+  return cfg;
+}
+
 let cachedFolders: OhanaDriveFolders | null = null;
 
 export const initDriveAuth = (
@@ -352,14 +464,14 @@ export function buildVoucherDriveFileName(runner: RunnerRegistration): string {
   const personName = buildRunnerPersonName(runner);
   const numTag = formatRunnerNumberTag(runner);
   const isRioja = runner.edition === 'santa-run-rioja-2026' || runner.id?.startsWith('SRR-');
-  return isRioja ? `${personName} - Yape Rioja - ${numTag}` : `${personName} - Yape - ${numTag}`;
+  return isRioja ? `RIOJA - ${personName} - Yape - ${numTag}` : `${personName} - Yape - ${numTag}`;
 }
 
 export function buildPhotoDriveFileName(runner: RunnerRegistration): string {
   const personName = buildRunnerPersonName(runner);
   const numTag = formatRunnerNumberTag(runner);
   const isRioja = runner.edition === 'santa-run-rioja-2026' || runner.id?.startsWith('SRR-');
-  return isRioja ? `${personName} - Foto Rioja - ${numTag}` : `${personName} - Foto - ${numTag}`;
+  return isRioja ? `RIOJA - ${personName} - Foto - ${numTag}` : `${personName} - Foto - ${numTag}`;
 }
 
 export async function uploadFileToDriveFolder(params: {
@@ -778,12 +890,21 @@ export async function syncRunnerMediaViaAppsScript(
 
   if (!needVoucher && !needPhoto) return null;
 
+  const isRioja = runner.edition === 'santa-run-rioja-2026' || runner.id?.startsWith('SRR-');
+  const riojaFolders = isRioja ? await getRiojaDriveFolders() : null;
+  const targetYapeFolderId = riojaFolders?.isDedicated
+    ? riojaFolders.vouchersFolderId
+    : DEFAULT_YAPE_FOLDER_ID;
+  const targetPhotosFolderId = riojaFolders?.isDedicated
+    ? riojaFolders.photosFolderId
+    : DEFAULT_PHOTOS_FOLDER_ID;
+
   // Upload voucher and photo IN PARALLEL so mobile runners wait half the time
   const [voucherOutcome, photoOutcome] = await Promise.all([
     needVoucher
       ? uploadFileViaAppsScript({
           bridgeUrl,
-          folderId: DEFAULT_YAPE_FOLDER_ID,
+          folderId: targetYapeFolderId,
           kind: 'voucher',
           baseFileName: voucherBaseName,
           source: voucherSrc!,
@@ -795,7 +916,7 @@ export async function syncRunnerMediaViaAppsScript(
     needPhoto
       ? uploadFileViaAppsScript({
           bridgeUrl,
-          folderId: DEFAULT_PHOTOS_FOLDER_ID,
+          folderId: targetPhotosFolderId,
           kind: 'photo',
           baseFileName: photoBaseName,
           source: runner.personalPhotoUrl!,

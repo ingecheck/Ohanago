@@ -337,7 +337,7 @@ export const RiojaRegistrationForm: React.FC<RiojaRegistrationFormProps> = ({
                     : 'bg-black border-neutral-800 hover:border-neutral-600'
                 }`}
               >
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start justify-between gap-3">
                   <div>
                     <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-bold">
                       Categoría Infantil
@@ -346,7 +346,9 @@ export const RiojaRegistrationForm: React.FC<RiojaRegistrationFormProps> = ({
                       KIDS 2K
                     </h3>
                   </div>
-                  <span className="font-bebas text-3xl text-amber-400 tabular-nums">S/ 25.00</span>
+                  <span className="font-bebas text-3xl text-amber-400 tabular-nums whitespace-nowrap shrink-0">
+                    S/ 25.00
+                  </span>
                 </div>
                 <p className="text-xs text-neutral-300 mt-3 leading-relaxed">
                   Incluye medalla finisher, gorra navideña, hidratación, panetón, chocolate, pulsera y acceso al show infantil.
@@ -362,7 +364,7 @@ export const RiojaRegistrationForm: React.FC<RiojaRegistrationFormProps> = ({
                     : 'bg-black border-neutral-800 hover:border-neutral-600'
                 }`}
               >
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start justify-between gap-3">
                   <div>
                     <span className="text-[11px] font-mono uppercase tracking-wider text-red-400 font-bold">
                       Categoría General
@@ -371,7 +373,9 @@ export const RiojaRegistrationForm: React.FC<RiojaRegistrationFormProps> = ({
                       LIBRE 5K
                     </h3>
                   </div>
-                  <span className="font-bebas text-3xl text-white tabular-nums">S/ 35.00</span>
+                  <span className="font-bebas text-3xl text-white tabular-nums whitespace-nowrap shrink-0">
+                    S/ 35.00
+                  </span>
                 </div>
                 <p className="text-xs text-neutral-300 mt-3 leading-relaxed">
                   Incluye medalla finisher, gorra navideña, hidratación, panetón, chocolate, pulsera y show infantil familiar.

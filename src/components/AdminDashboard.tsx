@@ -70,17 +70,24 @@ import {
   AnalyticsSummary,
 } from '../utils/analytics';
 import { getStoredRouletteState } from '../utils/rouletteManager';
-import { exportToNativeXLSX } from '../services/googleWorkspaceService';
+import {
+  exportToNativeXLSX,
+  exportTarapotoXLSX,
+  exportRiojaXLSX,
+} from '../services/googleWorkspaceService';
 import {
   buildRunnerPersonName,
   buildVoucherDriveFileName,
   buildPhotoDriveFileName,
   OhanaDriveFolders,
+  RiojaDriveFoldersConfig,
   DEFAULT_OHANA_DRIVE_FOLDERS,
   DEFAULT_YAPE_FOLDER_ID,
   DEFAULT_PHOTOS_FOLDER_ID,
   DEFAULT_APPS_SCRIPT_BRIDGE_URL,
   getDriveBridgeUrl,
+  getRiojaDriveFolders,
+  saveRiojaDriveFolders,
   syncRunnerMediaViaAppsScript,
   isValidAppsScriptUrl,
   initDriveAuth,
@@ -130,6 +137,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [driveUser, setDriveUser] = useState<FirebaseUser | { email: string | null } | null>(null);
   const [driveAuthError, setDriveAuthError] = useState<string | null>(null);
   const [driveFolders, setDriveFolders] = useState<OhanaDriveFolders>(DEFAULT_OHANA_DRIVE_FOLDERS);
+  const [riojaDriveFolders, setRiojaDriveFolders] = useState<RiojaDriveFoldersConfig>({
+    vouchersFolderId: DEFAULT_YAPE_FOLDER_ID,
+    photosFolderId: DEFAULT_PHOTOS_FOLDER_ID,
+    vouchersFolderUrl: `https://drive.google.com/drive/folders/${DEFAULT_YAPE_FOLDER_ID}`,
+    photosFolderUrl: `https://drive.google.com/drive/folders/${DEFAULT_PHOTOS_FOLDER_ID}`,
+    isDedicated: false,
+  });
+  const [showRiojaDriveConfig, setShowRiojaDriveConfig] = useState(false);
+  const [riojaYapeFolderInput, setRiojaYapeFolderInput] = useState('');
+  const [riojaPhotosFolderInput, setRiojaPhotosFolderInput] = useState('');
+  const [isSavingRiojaFolders, setIsSavingRiojaFolders] = useState(false);
   const [isLoggingInDrive, setIsLoggingInDrive] = useState(false);
   const [isSyncingDrive, setIsSyncingDrive] = useState(false);
   const [autoSyncDrive, setAutoSyncDrive] = useState(true);
@@ -596,6 +614,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   useEffect(() => {
     fetchStorageStats();
     fetchSavedDriveFolders();
+    getRiojaDriveFolders().then((cfg) => {
+      setRiojaDriveFolders(cfg);
+      if (cfg.isDedicated) {
+        setRiojaYapeFolderInput(cfg.vouchersFolderUrl);
+        setRiojaPhotosFolderInput(cfg.photosFolderUrl);
+      }
+    });
     getDriveBridgeUrl().then((url) => {
       if (url) {
         setBridgeUrl(url);
@@ -1200,10 +1225,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bebas text-2xl sm:text-3xl text-white tracking-wide uppercase leading-none">
-                  Panel del <span className="text-red-500">Organizador</span>
+                  Panel{' '}
+                  <span className={isViewingRioja ? 'text-amber-400' : 'text-red-500'}>
+                    {isViewingRioja
+                      ? 'Santa Run Rioja'
+                      : isViewingHalloween
+                        ? 'Archivo Halloween'
+                        : 'Santa Run Tarapoto'}
+                  </span>
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full bg-red-950/80 text-red-400 font-bold uppercase text-[10px] tracking-wider border border-red-500/40 hidden sm:inline-block">
-                  Control de Atletas & Reportes
+                <span
+                  className={`px-2.5 py-0.5 rounded-full font-bold uppercase text-[10px] tracking-wider border hidden sm:inline-block ${
+                    isViewingRioja
+                      ? 'bg-amber-950/80 text-amber-300 border-amber-500/40'
+                      : 'bg-red-950/80 text-red-400 border-red-500/40'
+                  }`}
+                >
+                  {isViewingRioja ? 'Sede Rioja · Sacha Runners' : 'Sede Tarapoto · 6K'}
                 </span>
               </div>
               <p className="text-[11px] text-neutral-400 mt-0.5 hidden md:block">
@@ -1215,13 +1253,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* Action Buttons Toolbar */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* LECTOR QR DE CONTROL DE ATLETAS (CÁMARA DEL CELULAR / EN ROJO) */}
+            {/* LECTOR QR DE CONTROL DE ATLETAS */}
             <button
               onClick={() => setShowStaffScanner(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-red-600 via-rose-600 to-red-600 hover:from-red-500 text-white rounded-xl text-xs font-black transition shadow-lg shadow-red-600/30 cursor-pointer ring-2 ring-red-500/60 hover:scale-[1.02]"
+              className={`flex items-center gap-1.5 px-3.5 py-2 text-white rounded-xl text-xs font-black transition shadow-lg cursor-pointer hover:scale-[1.02] ${
+                isViewingRioja
+                  ? 'bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 hover:from-amber-500 text-neutral-950 shadow-amber-600/25 ring-2 ring-amber-400/60'
+                  : 'bg-gradient-to-r from-red-600 via-rose-600 to-red-600 hover:from-red-500 shadow-red-600/30 ring-2 ring-red-500/60'
+              }`}
               title="Abrir lector QR con la cámara del celular para acreditar atleta y entregar kit"
             >
-              <Camera className="w-4 h-4 text-white" />
+              <Camera className="w-4 h-4" />
               <span>📷 Lector QR Atletas</span>
             </button>
 
@@ -1229,37 +1271,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <button
               onClick={() => setShowExportModal(true)}
               className="flex items-center gap-1.5 px-3.5 py-2 bg-neutral-800 hover:bg-neutral-700 text-amber-300 rounded-xl text-xs font-black transition border border-amber-500/40 shadow-sm cursor-pointer hover:scale-[1.02]"
-              title="Descargar reportes oficiales de Santa Run Tarapoto 2026"
+              title="Descargar Excel y reportes por separado de Tarapoto y Rioja"
             >
               <Download className="w-4 h-4 text-amber-400" />
-              <span>📥 Descargar Reportes</span>
+              <span>📥 Reportes & Excel</span>
             </button>
 
-            {/* Sorteo del Pavo Navideño (Santa Run 2026) */}
-            <button
-              onClick={() => setShowTurkeyLottery(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-xs font-black transition border border-neutral-700 shadow cursor-pointer"
-              title="Girar la Tómbola Digital del Sorteo del Pavo Santa Run 2026"
-            >
-              <Gift className="w-4 h-4 text-amber-300" />
-              <span>🦃 Sorteo Pavo</span>
-            </button>
+            {/* Sorteos exclusivos Tarapoto (ocultos en Panel Rioja para mantenerlo limpio) */}
+            {!isViewingRioja && (
+              <>
+                <button
+                  onClick={() => setShowTurkeyLottery(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-neutral-900 hover:bg-neutral-800 text-white rounded-xl text-xs font-black transition border border-neutral-700 shadow cursor-pointer"
+                  title="Girar la Tómbola Digital del Sorteo del Pavo Santa Run Tarapoto 2026"
+                >
+                  <Gift className="w-4 h-4 text-amber-300" />
+                  <span>🦃 Sorteo Pavo</span>
+                </button>
 
-            {/* Ruleta de Sorteos (25 Premios) */}
-            <button
-              onClick={() => setShowRouletteModal(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-neutral-900 hover:bg-neutral-800 text-amber-400 rounded-xl text-xs font-black transition border border-neutral-700 shadow cursor-pointer"
-              title="Controlar y Girar Ruleta de Sorteos en Vivo (25 Premios)"
-            >
-              <Trophy className="w-4 h-4 text-amber-400" />
-              <span>🎡 25 Premios</span>
-            </button>
+                <button
+                  onClick={() => setShowRouletteModal(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-2 bg-neutral-900 hover:bg-neutral-800 text-amber-400 rounded-xl text-xs font-black transition border border-neutral-700 shadow cursor-pointer"
+                  title="Controlar y Girar Ruleta de Sorteos en Vivo (25 Premios)"
+                >
+                  <Trophy className="w-4 h-4 text-amber-400" />
+                  <span>🎡 25 Premios</span>
+                </button>
+              </>
+            )}
 
             {/* Kit Delivery QR Projector Button */}
             <button
               onClick={() => setShowStartQRModal(true)}
               className="flex items-center gap-1.5 px-3.5 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-bold transition shadow cursor-pointer border border-neutral-700"
-              title="Mostrar y proyectar QR oficial de entrega de kit para Aviación"
+              title="Mostrar y proyectar QR oficial de entrega de kit"
             >
               <QrCode className="w-4 h-4 text-red-400" />
               <span>Proyectar QR</span>
@@ -1356,15 +1401,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <button
               onClick={() => {
-                exportToNativeXLSX(registrations);
-                setLiveNotice('✓ Archivo Excel oficial (.xlsx) descargado.');
+                if (isViewingRioja) {
+                  exportRiojaXLSX(registrations);
+                  setLiveNotice('✓ Archivo Excel de Santa Run Rioja 2026 (.xlsx) descargado.');
+                } else {
+                  exportTarapotoXLSX(registrations);
+                  setLiveNotice('✓ Archivo Excel de Santa Run Tarapoto 2026 (.xlsx) descargado.');
+                }
                 setTimeout(() => setLiveNotice(null), 4000);
               }}
               className="px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition flex items-center gap-2 cursor-pointer bg-emerald-600 text-white hover:bg-emerald-500 shadow-md shadow-emerald-950/40"
-              title="Descargar archivo Excel oficial nativo (.xlsx) de Santa Run 2026"
+              title={
+                isViewingRioja
+                  ? 'Descargar Excel (.xlsx) exclusivo de Santa Run Rioja 2026'
+                  : 'Descargar Excel (.xlsx) exclusivo de Santa Run Tarapoto 2026'
+              }
             >
               <Download className="w-4 h-4 text-white" />
-              <span>Descargar Excel Oficial (.xlsx)</span>
+              <span>{isViewingRioja ? 'Excel Rioja (.xlsx)' : 'Excel Tarapoto (.xlsx)'}</span>
             </button>
           </div>
 
@@ -1532,33 +1586,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <span className="text-[10px] uppercase font-bold text-neutral-400 flex items-center justify-between">
                     <span className="flex items-center gap-1.5">
                       <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
-                      Descargas & Excel
+                      Excel {isViewingRioja ? 'Rioja' : 'Tarapoto'}
                     </span>
                     <span className="text-[9px] bg-emerald-950 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/40 font-mono font-bold">
-                      .XLSX DIRECTO
+                      .XLSX SEPARADO
                     </span>
                   </span>
                   <div className="text-xs text-neutral-300 mt-1 font-sans">
-                    Nómina oficial de Santa Run 2026
+                    {isViewingRioja
+                      ? `Solo participantes de Rioja (${riojaRegistrations.length})`
+                      : `Solo participantes de Tarapoto (${tarapotoRegistrations.length})`}
                   </div>
                 </div>
                 <div className="mt-2 flex flex-col gap-1.5">
                   <button
                     onClick={() => {
-                      exportToNativeXLSX(registrations);
-                      setLiveNotice('✓ Archivo Excel oficial (.xlsx) descargado.');
+                      if (isViewingRioja) {
+                        exportRiojaXLSX(registrations);
+                        setLiveNotice('✓ Excel Santa Run Rioja 2026 (.xlsx) descargado.');
+                      } else {
+                        exportTarapotoXLSX(registrations);
+                        setLiveNotice('✓ Excel Santa Run Tarapoto 2026 (.xlsx) descargado.');
+                      }
                       setTimeout(() => setLiveNotice(null), 4000);
                     }}
                     className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    <span>Descargar Excel (.xlsx)</span>
+                    <span>{isViewingRioja ? 'Excel Rioja (.xlsx)' : 'Excel Tarapoto (.xlsx)'}</span>
                   </button>
                   <button
                     onClick={() => setShowExportModal(true)}
                     className="w-full py-1 text-center rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-[10px] font-bold transition border border-neutral-700 cursor-pointer"
                   >
-                    Más opciones (CSV / Backup)
+                    Descargar ambas sedes / CSV
                   </button>
                 </div>
               </div>
@@ -1574,14 +1635,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-bebas text-xl text-white uppercase tracking-wide leading-none">
-                        Google Drive Automático · Constancias Yape & Fotos para Marcos
+                        Google Drive Automático · {isViewingRioja ? 'Santa Run Rioja 2026' : 'Constancias Yape & Fotos'}
                       </h3>
                       <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/40 text-[10px] font-bold">
                         ✓ Conectado Automáticamente ({driveUser?.email || 'Envío Directo Activo'})
                       </span>
                     </div>
                     <p className="text-xs text-neutral-400 mt-1">
-                      Guarda automáticamente cada archivo en tus 2 carpetas oficiales de Google Drive: <strong>Constancias Yape</strong> y <strong>Fotos Atletas</strong> (nombradas con el nombre completo de cada corredor).
+                      {isViewingRioja ? (
+                        riojaDriveFolders.isDedicated ? (
+                          <>
+                            Enviando archivos de Rioja a tus <strong>2 carpetas dedicadas de Rioja</strong> como{' '}
+                            <code className="text-amber-300">RIOJA - Nombre - Yape / Foto</code>.
+                          </>
+                        ) : (
+                          <>
+                            Clasificación automática activa: guarda cada archivo de Rioja con prefijo{' '}
+                            <strong className="text-amber-300">RIOJA - Nombre - Yape / Foto</strong> en tus carpetas conectadas. Si deseas, también puedes asignar 2 carpetas aparte solo para Rioja abajo.
+                          </>
+                        )
+                      ) : (
+                        <>
+                          Guarda automáticamente cada archivo en tus 2 carpetas oficiales de Google Drive: <strong>Constancias Yape</strong> y <strong>Fotos Atletas</strong> (nombradas con el nombre completo de cada corredor).
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>
@@ -1633,6 +1710,117 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   >
                     <X className="w-4 h-4" />
                   </button>
+                </div>
+              )}
+
+              {/* Optional 2 Dedicated Google Drive Folders Config for Rioja (Zero Apps Script edit needed) */}
+              {isViewingRioja && (
+                <div className="pt-2 border-t border-amber-500/20 space-y-2.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {riojaDriveFolders.isDedicated ? (
+                        <>
+                          <a
+                            href={riojaDriveFolders.vouchersFolderUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-950/80 border border-amber-500/50 text-amber-300 hover:bg-amber-900 font-bold text-[11px]"
+                          >
+                            <FolderOpen className="w-3.5 h-3.5" />
+                            <span>Yape Rioja (Carpeta Dedicada)</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                          <a
+                            href={riojaDriveFolders.photosFolderUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-950/80 border border-amber-500/50 text-amber-300 hover:bg-amber-900 font-bold text-[11px]"
+                          >
+                            <FolderOpen className="w-3.5 h-3.5" />
+                            <span>Fotos Rioja (Carpeta Dedicada)</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </>
+                      ) : (
+                        <span className="text-[11px] text-amber-300/90 font-mono">
+                          Modo automático: los archivos de Rioja se clasifican con prefijo <strong>RIOJA - ...</strong>
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowRiojaDriveConfig((v) => !v)}
+                      className="px-3 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/40 text-amber-300 text-[11px] font-bold cursor-pointer transition"
+                    >
+                      {showRiojaDriveConfig
+                        ? 'Ocultar configuración'
+                        : riojaDriveFolders.isDedicated
+                          ? 'Cambiar carpetas Drive Rioja'
+                          : 'Usar 2 carpetas Drive aparte para Rioja'}
+                    </button>
+                  </div>
+
+                  {showRiojaDriveConfig && (
+                    <div className="p-3.5 rounded-xl bg-black/70 border border-amber-500/30 space-y-3 text-xs">
+                      <p className="text-neutral-300 leading-relaxed">
+                        Si creas 2 carpetas en tu Google Drive (ej. <strong>Yape Rioja</strong> y <strong>Fotos Rioja</strong>), pega sus enlaces aquí y guarda. Tu script actual ya soporta carpetas separadas sin tocar nada más. (Déjalos vacíos para volver al modo automático con prefijo <code className="text-amber-300">RIOJA -</code>).
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                        <div>
+                          <label className="block text-[10px] uppercase font-bold text-neutral-400 mb-1">
+                            Enlace o ID carpeta Constancias Yape Rioja
+                          </label>
+                          <input
+                            type="text"
+                            value={riojaYapeFolderInput}
+                            onChange={(e) => setRiojaYapeFolderInput(e.target.value)}
+                            placeholder="https://drive.google.com/drive/folders/..."
+                            className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-400"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase font-bold text-neutral-400 mb-1">
+                            Enlace o ID carpeta Fotos Atletas Rioja
+                          </label>
+                          <input
+                            type="text"
+                            value={riojaPhotosFolderInput}
+                            onChange={(e) => setRiojaPhotosFolderInput(e.target.value)}
+                            placeholder="https://drive.google.com/drive/folders/..."
+                            className="w-full bg-neutral-950 border border-neutral-700 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-400"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          disabled={isSavingRiojaFolders}
+                          onClick={async () => {
+                            setIsSavingRiojaFolders(true);
+                            try {
+                              const saved = await saveRiojaDriveFolders({
+                                vouchersInput: riojaYapeFolderInput,
+                                photosInput: riojaPhotosFolderInput,
+                              });
+                              setRiojaDriveFolders(saved);
+                              setShowRiojaDriveConfig(false);
+                              setLiveNotice(
+                                saved.isDedicated
+                                  ? '✓ Carpetas Google Drive dedicadas de Rioja guardadas en la nube.'
+                                  : '✓ Rioja volvió a usar las carpetas generales con prefijo automático RIOJA -.'
+                              );
+                              setTimeout(() => setLiveNotice(null), 5000);
+                            } finally {
+                              setIsSavingRiojaFolders(false);
+                            }
+                          }}
+                          className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-black text-xs cursor-pointer transition"
+                        >
+                          {isSavingRiojaFolders ? 'Guardando...' : 'Guardar Carpetas Rioja'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -2789,41 +2977,143 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <div>
               <span className="text-[10px] font-black uppercase tracking-wider text-red-400 bg-red-950/80 px-2.5 py-1 rounded-full border border-red-500/40">
-                Auditoría & Descargas Oficiales
+                Excel & Descargas por Sede
               </span>
               <h3 className="font-bebas text-3xl sm:text-4xl text-white tracking-wide uppercase mt-1 leading-none">
-                Exportar Reportes & Google Drive
+                Descargar Excel por Separado · Tarapoto y Rioja
               </h3>
               <p className="text-xs text-neutral-400 mt-1">
-                Descarga la nómina oficial de atletas con control de entrega de kits, pagos Yape y respaldo para Santa Run Tarapoto 2026.
+                Descarga la nómina oficial de participantes de cada ciudad en su propio archivo Excel (.xlsx) o CSV.
               </p>
             </div>
 
-            {/* Section 1: Reporte Santa Run 2026 */}
+            {/* Section 1: Santa Run Tarapoto 2026 */}
             <div className="p-4 rounded-2xl bg-neutral-950 border border-red-500/40 space-y-3">
-              <h4 className="font-bebas text-xl text-red-400 uppercase tracking-wide flex items-center gap-2">
-                <span>🎅 Inscripciones Santa Run Tarapoto 2026</span>
-              </h4>
+              <div className="flex items-center justify-between gap-2">
+                <h4 className="font-bebas text-xl text-red-400 uppercase tracking-wide flex items-center gap-2">
+                  <span>Santa Run Tarapoto 2026</span>
+                </h4>
+                <span className="px-2.5 py-0.5 rounded-full bg-red-950 text-red-300 border border-red-500/40 text-[10px] font-mono font-bold">
+                  {tarapotoRegistrations.length} inscritos
+                </span>
+              </div>
               <p className="text-xs text-neutral-400">
-                Lista de nuevos inscritos con sus IDs oficiales de Ohana Santa Run, tallas de polo, montos y validación de descuento 15%.
+                Archivo exclusivo de Tarapoto con IDs `SR-2026`, tallas de polo, montos (S/ 70 / S/ 59.50), ticket del pavo, pagos y kits.
               </p>
 
-              <button
-                onClick={handleExportSantaRunCSV}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-red-600 via-rose-600 to-red-600 hover:from-red-500 text-white font-bebas text-lg uppercase tracking-wider font-black transition flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-red-600/30"
-              >
-                <Download className="w-4 h-4" />
-                <span>Descargar Nómina Santa Run 2026 (CSV / Excel)</span>
-              </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button
+                  onClick={() => {
+                    exportTarapotoXLSX(registrations);
+                    setLiveNotice('✓ Excel Santa Run Tarapoto 2026 (.xlsx) descargado.');
+                    setTimeout(() => setLiveNotice(null), 4000);
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-red-600/25"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  <span>Excel Tarapoto (.xlsx)</span>
+                </button>
+                <button
+                  onClick={() => {
+                    const prev = filterEdition;
+                    setFilterEdition('santa-run-2026');
+                    const headers = ['N°', 'ID', 'Nombres', 'Apellidos', 'DNI', 'WhatsApp', 'Talla Polo', 'Monto', 'Pago', 'Kit', 'Fecha'];
+                    const rows = tarapotoRegistrations.map((r, i) => [
+                      i + 1,
+                      `"${r.id}"`,
+                      `"${r.firstName.replace(/"/g, '""')}"`,
+                      `"${r.lastName.replace(/"/g, '""')}"`,
+                      `"${r.documentNumber}"`,
+                      `"${r.whatsapp}"`,
+                      `"${r.tShirtSize || 'M'}"`,
+                      `S/ ${Number(r.amountPaid || (r.hasPreviousDiscount ? 59.5 : 70)).toFixed(2)}`,
+                      `"${r.paymentStatus || 'No Verificado'}"`,
+                      r.confirmedAtStart ? 'ENTREGADO' : 'PENDIENTE',
+                      r.createdAt ? `"${new Date(r.createdAt).toLocaleString('es-PE')}"` : '""',
+                    ]);
+                    downloadFile(
+                      `SantaRun_Tarapoto_2026_${new Date().toISOString().slice(0, 10)}.csv`,
+                      '\uFEFF' + [headers.join(','), ...rows.map((row) => row.join(','))].join('\n'),
+                      'text/csv;charset=utf-8;'
+                    );
+                    setFilterEdition(prev);
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-neutral-700 text-xs font-bold uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Download className="w-4 h-4 text-red-400" />
+                  <span>CSV Tarapoto</span>
+                </button>
+              </div>
             </div>
 
-            {/* Section 3: Descarga de Respaldo Completo y Excel Nativo */}
+            {/* Section 2: Santa Run Rioja 2026 */}
+            <div className="p-4 rounded-2xl bg-neutral-950 border border-amber-500/40 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <h4 className="font-bebas text-xl text-amber-400 uppercase tracking-wide flex items-center gap-2">
+                  <span>Santa Run Rioja 2026 · Sacha Runners</span>
+                </h4>
+                <span className="px-2.5 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-500/40 text-[10px] font-mono font-bold">
+                  {riojaRegistrations.length} inscritos
+                </span>
+              </div>
+              <p className="text-xs text-neutral-400">
+                Archivo exclusivo de Rioja con IDs `SRR-2026`, categoría (`Kids 2K` S/ 25.00 o `Libre 5K` S/ 35.00), edad, estado de pago y entrega de kit.
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button
+                  onClick={() => {
+                    exportRiojaXLSX(registrations);
+                    setLiveNotice('✓ Excel Santa Run Rioja 2026 (.xlsx) descargado.');
+                    setTimeout(() => setLiveNotice(null), 4000);
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-black uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-amber-500/20"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  <span>Excel Rioja (.xlsx)</span>
+                </button>
+                <button
+                  onClick={() => {
+                    const headers = ['N°', 'ID Rioja', 'Categoría', 'Nombres', 'Apellidos', 'DNI', 'WhatsApp', 'Edad', 'Monto', 'Pago', 'Kit', 'Fecha'];
+                    const rows = riojaRegistrations.map((r, i) => {
+                      const cat = r.raceCategory === 'Kids 2K' ? 'Kids 2K' : 'Libre 5K';
+                      const price = Number(r.amountPaid || (cat === 'Kids 2K' ? 25 : 35));
+                      return [
+                        i + 1,
+                        `"${r.id}"`,
+                        `"${cat}"`,
+                        `"${r.firstName.replace(/"/g, '""')}"`,
+                        `"${r.lastName.replace(/"/g, '""')}"`,
+                        `"${r.documentNumber}"`,
+                        `"${r.whatsapp}"`,
+                        r.age || '',
+                        `S/ ${price.toFixed(2)}`,
+                        `"${r.paymentStatus || 'No Verificado'}"`,
+                        r.confirmedAtStart ? 'ENTREGADO' : 'PENDIENTE',
+                        r.createdAt ? `"${new Date(r.createdAt).toLocaleString('es-PE')}"` : '""',
+                      ];
+                    });
+                    downloadFile(
+                      `SantaRun_Rioja_2026_${new Date().toISOString().slice(0, 10)}.csv`,
+                      '\uFEFF' + [headers.join(','), ...rows.map((row) => row.join(','))].join('\n'),
+                      'text/csv;charset=utf-8;'
+                    );
+                  }}
+                  className="w-full py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-neutral-700 text-xs font-bold uppercase tracking-wider transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Download className="w-4 h-4 text-amber-400" />
+                  <span>CSV Rioja</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Section 3: Libro Consolidado & Respaldo JSON */}
             <div className="p-4 rounded-2xl bg-neutral-950 border border-neutral-800 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Database className="w-5 h-5 text-neutral-400" />
                   <span className="font-bebas text-xl text-white uppercase tracking-wide">
-                    Respaldo Completo & Excel
+                    Respaldo Completo (Todas las Sedes)
                   </span>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full bg-neutral-900 text-neutral-300 border border-neutral-700 text-[10px] font-mono">
@@ -2831,20 +3121,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </span>
               </div>
               <p className="text-xs text-neutral-400 leading-relaxed">
-                Descarga de forma directa y sin configuraciones la nómina completa en Excel (.xlsx) o una copia de seguridad en formato JSON.
+                Descarga un solo libro Excel con 3 pestañas (Tarapoto + Rioja + Halloween) o copia de seguridad JSON.
               </p>
 
               <div className="pt-1 flex flex-wrap items-center gap-2.5">
                 <button
                   onClick={() => {
                     exportToNativeXLSX(registrations);
-                    setLiveNotice('✓ Archivo Excel oficial (.xlsx) descargado.');
+                    setLiveNotice('✓ Libro Excel consolidado (.xlsx) descargado.');
                     setTimeout(() => setLiveNotice(null), 4000);
                   }}
                   className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow"
                 >
                   <Download className="w-4 h-4 text-white" />
-                  <span>Descargar Excel Oficial (.xlsx)</span>
+                  <span>Excel Consolidado (.xlsx)</span>
                 </button>
 
                 <button

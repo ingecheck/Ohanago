@@ -383,21 +383,23 @@ export const RiojaEventPage: React.FC<RiojaEventPageProps> = ({
               {/* KIDS 2K */}
               <div className="bg-neutral-950 border-2 border-amber-400/50 rounded-3xl p-6 sm:p-7 flex flex-col justify-between space-y-6">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-mono uppercase tracking-widest text-amber-400 font-bold">
                       Infantil / Familiar
                     </span>
-                    <span className="text-xs font-mono text-neutral-400">20 DIC</span>
+                    <span className="text-xs font-mono text-neutral-400 shrink-0">20 DIC</span>
                   </div>
                   <div>
-                    <h3 className="font-bebas text-5xl text-white uppercase leading-none">
+                    <h3 className="font-bebas text-4xl xl:text-5xl text-white uppercase leading-none">
                       CATEGORÍA <span className="text-amber-400">KIDS 2K</span>
                     </h3>
-                    <div className="mt-3 flex items-baseline gap-2">
-                      <span className="font-bebas text-6xl text-white tabular-nums leading-none">
+                    <div className="mt-4 pt-3 border-t border-white/10">
+                      <span className="block font-bebas text-5xl xl:text-6xl text-white tabular-nums leading-none whitespace-nowrap">
                         S/ 25.00
                       </span>
-                      <span className="text-xs text-neutral-400">inscripción completa</span>
+                      <span className="block text-xs text-neutral-400 mt-1">
+                        inscripción completa
+                      </span>
                     </div>
                   </div>
                   <ul className="space-y-2.5 text-sm text-neutral-300 pt-3 border-t border-white/10">
@@ -419,30 +421,32 @@ export const RiojaEventPage: React.FC<RiojaEventPageProps> = ({
                 <button
                   type="button"
                   onClick={() => handleSelectCategoryAndRegister('Kids 2K')}
-                  className="w-full py-3.5 px-5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-bebas text-2xl tracking-wider uppercase transition cursor-pointer font-black"
+                  className="w-full py-3.5 px-5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-bebas text-2xl tracking-wider uppercase transition cursor-pointer font-black whitespace-nowrap"
                 >
-                  Elegir Kids 2K (S/ 25)
+                  Elegir Kids 2K (S/ 25.00)
                 </button>
               </div>
 
               {/* LIBRE 5K */}
               <div className="bg-neutral-950 border-2 border-red-500/60 rounded-3xl p-6 sm:p-7 flex flex-col justify-between space-y-6">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-mono uppercase tracking-widest text-red-400 font-bold">
                       Jóvenes & Adultos
                     </span>
-                    <span className="text-xs font-mono text-neutral-400">20 DIC</span>
+                    <span className="text-xs font-mono text-neutral-400 shrink-0">20 DIC</span>
                   </div>
                   <div>
-                    <h3 className="font-bebas text-5xl text-white uppercase leading-none">
+                    <h3 className="font-bebas text-4xl xl:text-5xl text-white uppercase leading-none">
                       CATEGORÍA <span className="text-red-500">LIBRE 5K</span>
                     </h3>
-                    <div className="mt-3 flex items-baseline gap-2">
-                      <span className="font-bebas text-6xl text-white tabular-nums leading-none">
+                    <div className="mt-4 pt-3 border-t border-white/10">
+                      <span className="block font-bebas text-5xl xl:text-6xl text-white tabular-nums leading-none whitespace-nowrap">
                         S/ 35.00
                       </span>
-                      <span className="text-xs text-neutral-400">inscripción completa</span>
+                      <span className="block text-xs text-neutral-400 mt-1">
+                        inscripción completa
+                      </span>
                     </div>
                   </div>
                   <ul className="space-y-2.5 text-sm text-neutral-300 pt-3 border-t border-white/10">
@@ -464,9 +468,9 @@ export const RiojaEventPage: React.FC<RiojaEventPageProps> = ({
                 <button
                   type="button"
                   onClick={() => handleSelectCategoryAndRegister('Libre 5K')}
-                  className="w-full py-3.5 px-5 rounded-2xl bg-red-600 hover:bg-red-500 text-white font-bebas text-2xl tracking-wider uppercase transition cursor-pointer shadow-lg shadow-red-600/25"
+                  className="w-full py-3.5 px-5 rounded-2xl bg-red-600 hover:bg-red-500 text-white font-bebas text-2xl tracking-wider uppercase transition cursor-pointer shadow-lg shadow-red-600/25 whitespace-nowrap"
                 >
-                  Elegir Libre 5K (S/ 35)
+                  Elegir Libre 5K (S/ 35.00)
                 </button>
               </div>
             </div>
@@ -551,15 +555,18 @@ export const RiojaEventPage: React.FC<RiojaEventPageProps> = ({
         id="causa-rioja"
         className="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 border-t border-white/10 bg-[#090909]"
       >
-        <div className="max-w-7xl mx-auto">
-          <div className="max-w-3xl mx-auto text-center mb-12">
-            <p className="text-xs font-mono font-bold uppercase tracking-[0.26em] text-red-400">
-              Propósito Social · En Alianza Estratégica con Sacha Runners
-            </p>
-            <h2 className="font-bebas text-4xl sm:text-6xl text-white uppercase tracking-wide mt-2 leading-none">
-              CORRE Y REGALA <span className="text-red-500">SONRISAS</span>
-            </h2>
-            <p className="text-sm sm:text-base text-neutral-300 mt-4 leading-relaxed">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+          <div className="lg:col-span-6 space-y-6">
+            <div>
+              <p className="text-xs font-mono font-bold uppercase tracking-[0.26em] text-red-400">
+                Propósito Social · En Alianza Estratégica con Sacha Runners
+              </p>
+              <h2 className="font-bebas text-4xl sm:text-6xl text-white uppercase tracking-wide mt-2 leading-none">
+                CORRE Y REGALA <span className="text-red-500">SONRISAS</span>
+              </h2>
+            </div>
+
+            <p className="text-sm sm:text-base text-neutral-300 leading-relaxed">
               <strong className="text-white">
                 Cada inscripción nos permitirá invitar a niños y niñas en situación de vulnerabilidad
               </strong>{' '}
@@ -567,22 +574,44 @@ export const RiojaEventPage: React.FC<RiojaEventPageProps> = ({
               <strong className="text-amber-300">OHANA GO</strong> y{' '}
               <strong className="text-emerald-400">SACHA RUNNERS</strong> (Corremos · Conectamos · Crecemos).
             </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+              <div className="p-4 rounded-2xl bg-neutral-950 border border-white/10">
+                <span className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-red-400">
+                  <Heart className="w-4 h-4 text-red-500" /> Impacto Directo
+                </span>
+                <p className="text-xs text-neutral-300 mt-1.5 leading-relaxed">
+                  Tu participación financia la presencia, chocolatada y show infantil de niños invitados en Rioja.
+                </p>
+              </div>
+              <div className="p-4 rounded-2xl bg-neutral-950 border border-emerald-500/30">
+                <span className="flex items-center gap-2 text-xs font-mono font-bold uppercase text-emerald-400">
+                  <Sparkles className="w-4 h-4 text-emerald-400" /> Alianza Oficial
+                </span>
+                <p className="text-xs text-neutral-300 mt-1.5 leading-relaxed">
+                  Organizado por <strong className="text-white">OHANA GO</strong> junto al club local <strong className="text-emerald-300">Sacha Runners</strong>.
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="button"
+                onClick={() => scrollToSection('inscripcion-rioja')}
+                className="px-7 py-3.5 rounded-2xl bg-red-600 hover:bg-red-500 text-white font-bebas text-2xl tracking-wider uppercase transition inline-flex items-center gap-2.5 cursor-pointer shadow-lg shadow-red-600/25"
+              >
+                <span>Sumarme a la Causa</span>
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto items-stretch">
-            <div className="rounded-3xl overflow-hidden border border-white/15 bg-black shadow-2xl flex items-center justify-center">
+          {/* Single Official Solidarity Flyer WITH Sacha Runners Logo */}
+          <div className="lg:col-span-6 flex justify-center">
+            <div className="w-full max-w-md rounded-3xl overflow-hidden border border-white/15 bg-black shadow-2xl">
               <img
                 src="/assets/aistudio/WhatsApp_Image_2026-11-22_at_1.34.06_AM_0e58b6ac.jpeg"
                 alt="Santa Run Rioja 2026 en alianza estratégica con Sacha Runners: cada inscripción invita a niños y niñas en situación de vulnerabilidad"
-                referrerPolicy="no-referrer"
-                className="w-full h-auto object-contain block"
-              />
-            </div>
-
-            <div className="rounded-3xl overflow-hidden border border-white/15 bg-black shadow-2xl flex items-center justify-center">
-              <img
-                src="/assets/aistudio/WhatsApp_Image_2026-11-22_at_1.00.04_AM__2__c3bec4be.jpeg"
-                alt="Corre y regala Sonrisas - Santa Run Rioja 2026"
                 referrerPolicy="no-referrer"
                 className="w-full h-auto object-contain block"
               />

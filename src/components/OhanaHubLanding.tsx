@@ -17,7 +17,7 @@ interface OhanaHubLandingProps {
   onSelectTarapoto: () => void;
   onSelectRioja: () => void;
   onOpenCompetitorLogin: () => void;
-  onOpenAdmin: () => void;
+  onOpenAdmin: (targetEdition?: 'santa-run-2026' | 'santa-run-rioja-2026') => void;
   loggedInCompetitorName?: string | null;
 }
 
@@ -100,14 +100,17 @@ export const OhanaHubLanding: React.FC<OhanaHubLandingProps> = ({
       {/* Main Hub Selector */}
       <main className="flex-1 relative z-10">
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 sm:pt-14 pb-16 sm:pb-24">
-          {/* Editorial Heading */}
+          {/* Editorial Heading: 1. SANTA RUN 2026 · 2. ELIGE TU SEDE · 3. OHANA GO · MUÉVETE. CONECTA. VIVE. */}
           <div className="max-w-3xl mx-auto text-center mb-10 sm:mb-14">
-            <p className="text-xs sm:text-sm font-mono font-bold uppercase tracking-[0.28em] text-amber-400 mb-3">
+            <h1 className="font-bebas text-6xl sm:text-7xl lg:text-8xl tracking-tight text-white uppercase leading-[0.92]">
+              SANTA RUN <span className="text-red-500">2026</span>
+            </h1>
+            <p className="font-bebas text-3xl sm:text-4xl lg:text-5xl tracking-wide text-neutral-100 uppercase mt-2 leading-none">
+              ELIGE TU SEDE
+            </p>
+            <p className="text-xs sm:text-sm font-mono font-bold uppercase tracking-[0.28em] text-amber-400 mt-3">
               OHANA GO · MUÉVETE. CONECTA. VIVE.
             </p>
-            <h1 className="font-bebas text-5xl sm:text-7xl lg:text-8xl tracking-tight text-white uppercase leading-[0.92]">
-              ELIGE TU SEDE <span className="text-red-500">SANTA RUN 2026</span>
-            </h1>
             <p className="mt-4 text-sm sm:text-base text-neutral-300 max-w-2xl mx-auto leading-relaxed">
               Dos ciudades de San Martín, un mismo propósito navideño: correr, compartir en comunidad y regalar sonrisas. Selecciona tu evento oficial para ver toda la información e inscribirte.
             </p>
@@ -346,11 +349,19 @@ export const OhanaHubLanding: React.FC<OhanaHubLandingProps> = ({
             </a>
             <button
               type="button"
-              onClick={onOpenAdmin}
-              className="inline-flex items-center gap-1.5 text-neutral-500 hover:text-neutral-200 transition cursor-pointer"
+              onClick={() => onOpenAdmin('santa-run-2026')}
+              className="inline-flex items-center gap-1.5 text-neutral-400 hover:text-red-400 transition cursor-pointer font-semibold"
             >
-              <Shield className="w-3.5 h-3.5" />
-              <span>Panel Organizador</span>
+              <Shield className="w-3.5 h-3.5 text-red-500" />
+              <span>Panel Tarapoto</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onOpenAdmin('santa-run-rioja-2026')}
+              className="inline-flex items-center gap-1.5 text-neutral-400 hover:text-amber-300 transition cursor-pointer font-semibold"
+            >
+              <Shield className="w-3.5 h-3.5 text-amber-400" />
+              <span>Panel Rioja</span>
             </button>
           </div>
         </div>

@@ -2,14 +2,7 @@ import { RunnerRegistration } from '../types/race';
 import { isRiojaRunner, isTarapotoRunner } from '../utils/checkinManager';
 import * as XLSX from 'xlsx';
 
-/**
- * Generates an authentic Microsoft Excel (.xlsx) workbook directly in the browser
- * with separate formatted sheets for Santa Run Tarapoto, Santa Run Rioja, and Halloween 5K.
- */
-export function exportToNativeXLSX(registrations: RunnerRegistration[]): void {
-  const wb = XLSX.utils.book_new();
-
-  // 1. Santa Run Tarapoto 2026 Sheet
+function buildTarapotoSheet(registrations: RunnerRegistration[]): XLSX.WorkSheet {
   const tarapotoList = registrations.filter((r) => isTarapotoRunner(r));
   const tarapotoData = [
     [
@@ -44,7 +37,7 @@ export function exportToNativeXLSX(registrations: RunnerRegistration[]): void {
       r.whatsapp,
       r.email || '',
       r.tShirtSize || 'M',
-      r.amountPaid ? `S/ ${r.amountPaid}` : 'S/ 70',
+      r.amountPaid ? `S/ ${Number(r.amountPaid).toFixed(2)}` : r.hasPreviousDiscount ? 'S/ 59.50' : 'S/ 70.00',
       r.hasPreviousDiscount ? 'SÍ (15%)' : 'Tarifa Normal',
       r.turkeyRaffleTicket || `PAVO-${String(r.registrationNumber || 1).padStart(4, '0')}`,
       r.driveVoucherFileId || r.driveVoucherUrl || r.voucherUrl || r.paymentProofImage ? 'SÍ (Drive)' : 'PENDIENTE',
@@ -68,9 +61,10 @@ export function exportToNativeXLSX(registrations: RunnerRegistration[]): void {
     { wch: 20 }, { wch: 20 }, { wch: 18 }, { wch: 14 },
     { wch: 18 }, { wch: 16 }, { wch: 22 }, { wch: 14 }, { wch: 24 },
   ];
-  XLSX.utils.book_append_sheet(wb, wsTarapoto, 'Santa Run Tarapoto 2026');
+  return wsTarapoto;
+}
 
-  // 2. Santa Run Rioja 2026 Sheet
+function buildRiojaSheet(registrations: RunnerRegistration[]): XLSX.WorkSheet {
   const riojaList = registrations.filter((r) => isRiojaRunner(r));
   const riojaData = [
     [
@@ -118,9 +112,36 @@ export function exportToNativeXLSX(registrations: RunnerRegistration[]): void {
     { wch: 14 }, { wch: 18 }, { wch: 16 }, { wch: 18 },
     { wch: 14 }, { wch: 16 }, { wch: 22 }, { wch: 20 },
   ];
-  XLSX.utils.book_append_sheet(wb, wsRioja, 'Santa Run Rioja 2026');
+  return wsRioja;
+}
 
-  // 3. Halloween 5K Sheet
+/**
+ * Exports ONLY Santa Run Tarapoto 2026 participants into a dedicated Excel (.xlsx) file.
+ */
+export function exportTarapotoXLSX(registrations: RunnerRegistration[]): void {
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, buildTarapotoSheet(registrations), 'Santa Run Tarapoto 2026');
+  XLSX.writeFile(wb, `SantaRun_Tarapoto_2026_Participantes_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+/**
+ * Exports ONLY Santa Run Rioja 2026 participants into a dedicated Excel (.xlsx) file.
+ */
+export function exportRiojaXLSX(registrations: RunnerRegistration[]): void {
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, buildRiojaSheet(registrations), 'Santa Run Rioja 2026');
+  XLSX.writeFile(wb, `SantaRun_Rioja_2026_Participantes_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+/**
+ * Generates an authentic Microsoft Excel (.xlsx) workbook directly in the browser
+ * with separate formatted sheets for Santa Run Tarapoto, Santa Run Rioja, and Halloween 5K.
+ */
+export function exportToNativeXLSX(registrations: RunnerRegistration[]): void {
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, buildTarapotoSheet(registrations), 'Santa Run Tarapoto 2026');
+  XLSX.utils.book_append_sheet(wb, buildRiojaSheet(registrations), 'Santa Run Rioja 2026');
+
   const halloweenList = registrations.filter((r) => !isTarapotoRunner(r) && !isRiojaRunner(r));
   const halloweenData = [
     [
@@ -166,5 +187,5 @@ export function exportToNativeXLSX(registrations: RunnerRegistration[]): void {
   ];
   XLSX.utils.book_append_sheet(wb, wsHalloween, 'Halloween 5K (Auditoría)');
 
-  XLSX.writeFile(wb, `OHANA_GO_Inscripciones_Oficiales_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  XLSX.writeFile(wb, `OHANA_GO_Consolidado_TodasLasSedes_${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
